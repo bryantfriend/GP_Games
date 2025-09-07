@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
-            fileName: 'trade-routes-game.html',
-            title: 'Global Trade Route Challenge'
+            fileName: 'primary_vs_secondary_source.html',
+            title: 'Primary vs. Secondary Sources'
         },
         {
             fileName: 'climate-negotiator.html',
