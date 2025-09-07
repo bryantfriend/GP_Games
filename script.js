@@ -18,8 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
             title: 'Primary vs. Secondary Sources'
         },
         {
-            fileName: 'climate-negotiator.html',
-            title: 'Climate Change Negotiator'
+            fileName: 'global_skills_navigator.html',
+            title: 'Global Skills Navigator'
         },
         {
             fileName: 'cultural-exchange.html',
