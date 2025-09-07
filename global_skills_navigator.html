@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Skills Navigator - Team Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+        }
+        .card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .emoji-btn {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .emoji-btn:hover {
+            transform: scale(1.2);
+            background-color: #e0f2fe; /* light blue */
+        }
+        .emoji-btn.selected {
+            background-color: #3b82f6; /* blue-500 */
+            border-radius: 50%;
+            transform: scale(1.1);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+        .point-btn, .action-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .point-btn:hover {
+            transform: scale(1.1);
+            background-color: #15803d; /* darker green */
+        }
+        .action-btn:hover:not(:disabled) {
+             transform: translateY(-2px);
+             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .action-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        .action-btn:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .lock-in-btn {
+            transition: all 0.1s ease-in-out;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .lock-in-btn.selected {
+             background-color: #3b82f6;
+             color: white;
+             border-color: #3b82f6;
+        }
+        .lock-in-btn:disabled {
+            background-color: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+            border-color: #d1d5db;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+    <div id="app-container" class="w-full max-w-5xl mx-auto relative">
+
+        <button id="fullscreen-btn" title="Toggle Fullscreen" class="absolute top-0 right-0 mt-2 mr-2 p-2 rounded-full bg-white/50 hover:bg-white/90 backdrop-blur-sm transition text-gray-600 z-10">
+            <svg id="fullscreen-icon-open" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+            <svg id="fullscreen-icon-close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg>
+        </button>
+
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="card p-8 text-center">
+            <!-- ... existing setup screen HTML ... -->
+            <h1 class="text-4xl md:text-5xl font-extrabold text-blue-600 mb-2">Team Setup</h1>
+            <p class="text-gray-600 mb-8">Set up the teams that will be playing.</p>
+            
+            <div class="mb-8">
+                <label for="teams-count" class="block text-lg font-medium text-gray-700 mb-2">How many teams are participating?</label>
+                <select id="teams-count" class="p-2 border border-gray-300 rounded-md shadow-sm w-full max-w-xs mx-auto">
+                    <option value="1">1 Team</option>
+                    <option value="2" selected>2 Teams</option>
+                    <option value="3">3 Teams</option>
+                    <option value="4">4 Teams</option>
+                    <option value="5">5 Teams</option>
+                    <option value="6">6 Teams</option>
+                    <option value="7">7 Teams</option>
+                    <option value="8">8 Teams</option>
+                </select>
+            </div>
+            
+            <div id="teams-config-container" class="space-y-6 mb-8">
+                <!-- Team config sections will be injected here -->
+            </div>
+            
+            <button id="start-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-xl shadow-lg transition duration-300">
+                Start Game
+            </button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-center text-gray-800 mb-6">Scoreboard</h1>
+            <div id="scoreboard-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+                <!-- Scoreboards will be injected here -->
+            </div>
+            
+            <div class="card p-6 md:p-10 text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Current Scenario</h2>
+                <div class="text-lg md:text-xl font-medium text-gray-700 mb-6 min-h-[120px] flex items-center justify-center" id="scenario-text">
+                    Click "New Scenario" to begin!
+                </div>
+                <div id="answer-container" class="bg-blue-100 text-blue-800 p-4 rounded-lg min-h-[50px] text-left mb-6">
+                   <p class="font-bold text-lg text-center">Correct Answer: <span id="correct-answer-text"></span></p>
+                   <div id="answer-explanation" class="text-sm mt-2 text-blue-700"></div>
+                </div>
+                <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                    <button id="new-scenario-btn" class="action-btn w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-md">
+                        New Scenario
+                    </button>
+                    <button id="show-answer-btn" class="action-btn w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-md">
+                        Show Answer
+                    </button>
+                </div>
+            </div>
+            <button id="reset-game-btn" class="mt-8 mx-auto block text-gray-500 hover:text-red-500 font-semibold transition">Reset Game</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-notification" class="hidden fixed bottom-5 right-5 bg-red-600 text-white py-3 px-5 rounded-lg shadow-xl transition-opacity duration-300 z-50">
+        <!-- Message will be injected here -->
+    </div>
+
+
+    <script>
+        // DOM Elements
+        const setupScreen = document.getElementById('setup-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const teamsCountSelect = document.getElementById('teams-count');
+        const teamsConfigContainer = document.getElementById('teams-config-container');
+        const startBtn = document.getElementById('start-btn');
+        const scoreboardContainer = document.getElementById('scoreboard-container');
+        const scenarioText = document.getElementById('scenario-text');
+        const newScenarioBtn = document.getElementById('new-scenario-btn');
+        const showAnswerBtn = document.getElementById('show-answer-btn');
+        const correctAnswerText = document.getElementById('correct-answer-text');
+        const answerContainer = document.getElementById('answer-container');
+        const answerExplanation = document.getElementById('answer-explanation');
+        const resetGameBtn = document.getElementById('reset-game-btn');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const fullscreenIconOpen = document.getElementById('fullscreen-icon-open');
+        const fullscreenIconClose = document.getElementById('fullscreen-icon-close');
+
+        // Game Data & State
+        const EMOJIS = ['🐼', '🐉', '🧙', '🚀', '🦄', '🦁', '🤖', '👾', '🦊', '🦉', '🐯', '🦅', '🌟', '💎', '🌊', '🔥', '⚡️', '🌙', '☀️', '🌳'];
+        const SKILLS = ["Research", "Analysis", "Evaluation", "Reflection", "Collaboration", "Communication"];
+        const SKILL_ABBREVIATIONS = {
+            "Research": "Rsch",
+            "Analysis": "Anly",
+            "Evaluation": "Eval",
+            "Reflection": "Refl",
+            "Collaboration": "Collab",
+            "Communication": "Comm"
+        };
+        const scenarios = [
+            // Research Scenarios
+            { skill: "Research", text: { en: "Using a library database and trusted websites to gather information for a history project.", ru: "Использование библиотечной базы данных и надежных веб-сайтов для сбора информации для исторического проекта." }, explanation: { en: "This is Research because the focus is on actively gathering information from various sources.", ru: "Это исследование, потому что основное внимание уделяется активному сбору информации из различных источников." } },
+            { skill: "Research", text: { en: "Conducting a survey to collect data about students' favorite school subjects.", ru: "Проведение опроса для сбора данных о любимых школьных предметах учащихся." }, explanation: { en: "This is Research because a survey is a method of collecting new, primary data.", ru: "Это исследование, потому что опрос является методом сбора новых, первичных данных." } },
+            { skill: "Research", text: { en: "Finding primary sources like letters and diaries to understand a past event.", ru: "Поиск первоисточников, таких как письма и дневники, для понимания прошлого события." }, explanation: { en: "This is Research because it involves finding and using original, firsthand sources of information.", ru: "Это исследование, потому что оно включает в себя поиск и использование оригинальных, первоисточных источников информации." } },
+            { skill: "Research", text: { en: "Watching documentaries and taking notes to understand a scientific topic like black holes.", ru: "Просмотр документальных фильмов и ведение записей для понимания научной темы, такой как черные дыры." }, explanation: { en: "This is Research as it's about collecting information from educational media to build knowledge.", ru: "Это исследование, так как речь идет о сборе информации из образовательных медиа для накопления знаний." } },
+            { skill: "Research", text: { en: "Interviewing a local community leader to understand their perspective on a new city project.", ru: "Интервью с лидером местного сообщества, чтобы понять его точку зрения на новый городской проект." }, explanation: { en: "This is Research because interviewing is a direct method of gathering qualitative data from a person.", ru: "Это исследование, потому что интервью — это прямой метод сбора качественных данных от человека." } },
+            { skill: "Research", text: { en: "Setting up a simple science experiment to test which type of soil is best for growing beans.", ru: "Проведение простого научного эксперимента для проверки, какой тип почвы лучше всего подходит для выращивания бобов." }, explanation: { en: "This is Research as it involves systematically collecting data through experimentation to answer a question.", ru: "Это исследование, поскольку оно включает систематический сбор данных путем экспериментов для ответа на вопрос." } },
+            { skill: "Research", text: { en: "Using Google Scholar to find academic papers about the effects of social media on teenagers.", ru: "Использование Google Scholar для поиска научных статей о влиянии социальных сетей на подростков." }, explanation: { en: "This is Research because it's about using a specialized tool to find credible, academic sources of information.", ru: "Это исследование, потому что речь идет об использовании специализированного инструмента для поиска достоверных, академических источников информации." } },
+
+            // Analysis Scenarios
+            { skill: "Analysis", text: { en: "Breaking down a complex science article into its main arguments and supporting evidence.", ru: "Разбор сложной научной статьи на основные аргументы и подтверждающие доказательства." }, explanation: { en: "This is Analysis because it involves deconstructing information to understand its parts and structure.", ru: "Это анализ, потому что он включает в себя деконструкцию информации для понимания ее частей и структуры." } },
+            { skill: "Analysis", text: { en: "Identifying patterns and trends in a set of climate change data.", ru: "Выявление закономерностей и тенденций в наборе данных об изменении климата." }, explanation: { en: "This is Analysis because it focuses on examining data to find relationships, patterns, or trends.", ru: "Это анализ, потому что он сосредоточен на изучении данных для выявления связей, закономерностей или тенденций." } },
+            { skill: "Analysis", text: { en: "Comparing and contrasting two different historical accounts of the same event.", ru: "Сравнение и сопоставление двух разных исторических описаний одного и того же события." }, explanation: { en: "This is Analysis as it requires examining two sources to identify their similarities and differences.", ru: "Это анализ, поскольку он требует изучения двух источников для выявления их сходств и различий." } },
+            { skill: "Analysis", text: { en: "Creating a timeline to see the order of events that led to a major historical conflict.", ru: "Создание временной шкалы для определения последовательности событий, приведших к крупному историческому конфликту." }, explanation: { en: "This is Analysis because a timeline helps organize information to understand cause-and-effect relationships over time.", ru: "Это анализ, потому что временная шкала помогает организовать информацию для понимания причинно-следственных связей во времени." } },
+            { skill: "Analysis", text: { en: "Looking at a map of global trade routes to identify the most important hubs.", ru: "Изучение карты мировых торговых путей для выявления наиболее важных центров." }, explanation: { en: "This is Analysis because it involves interpreting visual data (a map) to draw conclusions.", ru: "Это анализ, потому что он включает в себя интерпретацию визуальных данных (карты) для получения выводов." } },
+            { skill: "Analysis", text: { en: "Sorting a list of animal species into different categories based on their diet.", ru: "Сортировка списка видов животных по различным категориям в зависимости от их рациона." }, explanation: { en: "This is Analysis as it involves organizing information into groups based on specific criteria.", ru: "Это анализ, так как он включает в себя организацию информации по группам на основе определенных критериев." } },
+            { skill: "Analysis", text: { en: "Reading a novel and identifying the main themes and how the author uses symbolism.", ru: "Чтение романа и определение основных тем и того, как автор использует символизм." }, explanation: { en: "This is Analysis because it requires looking beyond the surface story to understand deeper meanings and literary techniques.", ru: "Это анализ, потому что он требует взгляда за пределы поверхностного сюжета для понимания более глубоких смыслов и литературных приемов." } },
+
+            // Evaluation Scenarios
+            { skill: "Evaluation", text: { en: "Judging the credibility of a news website by checking its author, sources, and date.", ru: "Оценка достоверности новостного веб-сайта путем проверки его автора, источников и даты." }, explanation: { en: "This is Evaluation because it involves making a judgment about the reliability and trustworthiness of a source.", ru: "Это оценка, потому что она включает в себя вынесение суждения о надежности и достоверности источника." } },
+            { skill: "Evaluation", text: { en: "Identifying potential bias in a politician's speech.", ru: "Выявление потенциальной предвзятости в речи политика." }, explanation: { en: "This is Evaluation because it's about assessing the information for fairness and objectivity.", ru: "Это оценка, потому что речь идет об оценке информации на предмет справедливости и объективности." } },
+            { skill: "Evaluation", text: { en: "Assessing the strengths and weaknesses of a proposed solution to a local community problem.", ru: "Оценка сильных и слабых сторон предложенного решения проблемы местного сообщества." }, explanation: { en: "This is Evaluation as it requires making a judgment about the effectiveness of a solution.", ru: "Это оценка, поскольку она требует вынесения суждения об эффективности решения." } },
+            { skill: "Evaluation", text: { en: "Deciding which of two smartphone apps is better by comparing their features, user reviews, and price.", ru: "Решение, какое из двух приложений для смартфона лучше, путем сравнения их функций, отзывов пользователей и цены." }, explanation: { en: "This is Evaluation because it involves weighing different factors to make a reasoned judgment on value.", ru: "Это оценка, потому что она включает взвешивание различных факторов для вынесения обоснованного суждения о ценности." } },
+            { skill: "Evaluation", text: { en: "Listening to two musical performances of the same song and deciding which one is more powerful, giving reasons.", ru: "Прослушивание двух музыкальных исполнений одной и той же песни и решение, какое из них более сильное, с приведением причин." }, explanation: { en: "This is Evaluation because you are making a subjective judgment and supporting it with evidence or criteria.", ru: "Это оценка, потому что вы выносите субъективное суждение и подкрепляете его доказательствами или критериями." } },
+            { skill: "Evaluation", text: { en: "Reviewing a classmate's essay and providing constructive feedback on its strengths and areas for improvement.", ru: "Рецензирование эссе одноклассника и предоставление конструктивной обратной связи о его сильных сторонах и областях для улучшения." }, explanation: { en: "This is Evaluation as it involves judging the quality of work against certain standards and offering feedback.", ru: "Это оценка, поскольку она включает в себя оценку качества работы по определенным стандартам и предоставление обратной связи." } },
+            { skill: "Evaluation", text: { en: "Determining if a new environmental law is fair by considering its impact on different groups of people.", ru: "Определение справедливости нового экологического закона путем рассмотрения его воздействия на различные группы людей." }, explanation: { en: "This is Evaluation as it involves judging the merit or fairness of an idea based on its consequences.", ru: "Это оценка, поскольку она включает в себя суждение о достоинствах или справедливости идеи на основе ее последствий." } },
+            
+            // Reflection Scenarios
+            { skill: "Reflection", text: { en: "Keeping a journal to think about what you learned after a field trip and how it changed your perspective.", ru: "Ведение дневника для размышлений о том, что вы узнали после экскурсии и как это изменило ваш взгляд." }, explanation: { en: "This is Reflection because it's about thinking back on an experience to understand your own learning and changes in perspective.", ru: "Это рефлексия, потому что речь идет об осмыслении опыта для понимания собственного обучения и изменений во взглядах." } },
+            { skill: "Reflection", text: { en: "Considering how your own beliefs might influence your interpretation of a global issue.", ru: "Размышление о том, как ваши собственные убеждения могут повлиять на вашу интерпретацию глобальной проблемы." }, explanation: { en: "This is Reflection as it involves looking inward to understand how your own biases and views shape your thinking.", ru: "Это рефлексия, поскольку она включает в себя взгляд внутрь себя, чтобы понять, как ваши собственные предубеждения и взгляды формируют ваше мышление." } },
+            { skill: "Reflection", text: { en: "After a group project, thinking about what your team did well and what could be improved next time.", ru: "После группового проекта размышление о том, что ваша команда сделала хорошо и что можно улучшить в следующий раз." }, explanation: { en: "This is Reflection as it involves assessing your own and your group's process and performance to improve in the future.", ru: "Это рефлексия, поскольку она включает в себя оценку своего собственного процесса и производительности группы для улучшения в будущем." } },
+            { skill: "Reflection", text: { en: "After receiving a grade on a test, thinking about which study methods worked well and which did not.", ru: "После получения оценки за тест, размышление о том, какие методы подготовки работали хорошо, а какие нет." }, explanation: { en: "This is Reflection because it's a personal review of your own strategies to improve future outcomes.", ru: "Это рефлексия, потому что это личный обзор ваших собственных стратегий для улучшения будущих результатов." } },
+            { skill: "Reflection", text: { en: "Writing a paragraph about how your understanding of another culture has changed after a class project.", ru: "Написание абзаца о том, как изменилось ваше понимание другой культуры после классного проекта." }, explanation: { en: "This is Reflection as it focuses on how your own knowledge and perspective have developed over time.", ru: "Это рефлексия, так как она фокусируется на том, как ваши собственные знания и взгляды развивались со временем." } },
+            { skill: "Reflection", text: { en: "Before a debate, considering your own biases on the topic and how they might affect your arguments.", ru: "Перед дебатами, размышление о собственных предубеждениях по теме и о том, как они могут повлиять на ваши аргументы." }, explanation: { en: "This is Reflection because it's about self-awareness and understanding your own internal viewpoint before engaging with others.", ru: "Это рефлексия, потому что речь идет о самосознании и понимании своей внутренней точки зрения перед взаимодействием с другими." } },
+            { skill: "Reflection", text: { en: "Thinking about how a character in a book is similar to you and what you would have done in their situation.", ru: "Размышление о том, чем персонаж в книге похож на вас, и что бы вы сделали на его месте." }, explanation: { en: "This is Reflection as it involves connecting personal experiences and perspectives to the material being studied.", ru: "Это рефлексия, поскольку она включает в себя связывание личного опыта и взглядов с изучаемым материалом." } },
+
+            // Collaboration Scenarios
+            { skill: "Collaboration", text: { en: "Working in a group, where each member takes on a different role to create a final presentation.", ru: "Работа в группе, где каждый участник берет на себя определенную роль для создания итоговой презентации." }, explanation: { en: "This is Collaboration because it describes a team working together with shared responsibility and distinct roles.", ru: "Это сотрудничество, потому что оно описывает команду, работающую вместе с общей ответственностью и различными ролями." } },
+            { skill: "Collaboration", text: { en: "Actively listening to a teammate's idea and building upon it, even if it's different from your own.", ru: "Активное выслушивание идеи товарища по команде и развитие ее, даже если она отличается от вашей собственной." }, explanation: { en: "This is Collaboration because it highlights the key teamwork skill of constructively developing ideas together.", ru: "Это сотрудничество, потому что оно подчеркивает ключевой навык командной работы — конструктивное совместное развитие идей." } },
+            { skill: "Collaboration", text: { en: "Sharing your part of a project on time so that your group members can do their parts.", ru: "Своевременная сдача своей части проекта, чтобы члены вашей группы могли выполнить свои задачи." }, explanation: { en: "This is Collaboration as it focuses on the responsibility and reliability required to work effectively in a team.", ru: "Это сотрудничество, поскольку оно фокусируется на ответственности и надежности, необходимых для эффективной работы в команде." } },
+            { skill: "Collaboration", text: { en: "Creating a shared online document where every team member can add their ideas for a group report.", ru: "Создание общего онлайн-документа, куда каждый член команды может добавлять свои идеи для группового отчета." }, explanation: { en: "This is Collaboration as it involves using a shared tool to combine the efforts and ideas of multiple people.", ru: "Это сотрудничество, поскольку оно включает использование общего инструмента для объединения усилий и идей нескольких человек." } },
+            { skill: "Collaboration", text: { en: "Dividing tasks for a science fair project based on each team member's strengths.", ru: "Разделение задач для научного проекта на ярмарке в зависимости от сильных сторон каждого члена команды." }, explanation: { en: "This is Collaboration because it shows strategic teamwork where tasks are assigned for the best overall result.", ru: "Это сотрудничество, потому что оно демонстрирует стратегическую командную работу, где задачи распределяются для достижения наилучшего общего результата." } },
+            { skill: "Collaboration", text: { en: "Holding a team meeting to resolve a disagreement about the direction of a project.", ru: "Проведение командного собрания для разрешения разногласий по поводу направления проекта." }, explanation: { en: "This is Collaboration as it involves direct communication and negotiation to ensure the team can move forward together.", ru: "Это сотрудничество, поскольку оно включает прямое общение и переговоры, чтобы команда могла двигаться вперед вместе." } },
+            { skill: "Collaboration", text: { en: "Combining different sections written by various team members into one cohesive final report.", ru: "Объединение различных разделов, написанных разными членами команды, в один целостный итоговый отчет." }, explanation: { en: "This is Collaboration as it's the process of integrating individual contributions into a single, unified group product.", ru: "Это сотрудничество, поскольку это процесс интеграции индивидуальных вкладов в единый, объединенный групповой продукт." } },
+
+            // Communication Scenarios
+            { skill: "Communication", text: { en: "Creating a clear and visually engaging poster to present your scientific findings.", ru: "Создание четкого и визуально привлекательного плаката для представления ваших научных результатов." }, explanation: { en: "This is Communication because the goal is to clearly convey information to an audience using a visual medium.", ru: "Это коммуникация, потому что цель состоит в том, чтобы четко передать информацию аудитории с помощью визуального средства." } },
+            { skill: "Communication", text: { en: "Writing a persuasive essay to convince the principal to start a new school club.", ru: "Написание убедительного эссе, чтобы убедить директора открыть новый школьный клуб." }, explanation: { en: "This is Communication because it's about structuring an argument in writing to persuade someone.", ru: "Это коммуникация, потому что речь идет о структурировании аргумента в письменной форме, чтобы убедить кого-то." } },
+            { skill: "Communication", text: { en: "Giving a well-structured oral presentation to the class, making eye contact and speaking clearly.", ru: "Проведение хорошо структурированной устной презентации перед классом, поддерживая зрительный контакт и говоря четко." }, explanation: { en: "This is Communication because it highlights the skills needed to effectively share information through public speaking.", ru: "Это коммуникация, потому что она подчеркивает навыки, необходимые для эффективного обмена информацией посредством публичных выступлений." } },
+            { skill: "Communication", text: { en: "Creating a short, informative video to explain a difficult math concept to classmates.", ru: "Создание короткого информативного видео для объяснения сложной математической концепции одноклассникам." }, explanation: { en: "This is Communication because it involves choosing an appropriate medium (video) to make complex information understandable.", ru: "Это коммуникация, потому что она включает выбор подходящего средства (видео), чтобы сделать сложную информацию понятной." } },
+            { skill: "Communication", text: { en: "Designing an infographic with charts and images to show the results of a class survey.", ru: "Разработка инфографики с диаграммами и изображениями для демонстрации результатов классного опроса." }, explanation: { en: "This is Communication as it focuses on presenting data visually so it is easy and quick to understand.", ru: "Это коммуникация, так как она сосредоточена на визуальном представлении данных, чтобы их было легко и быстро понять." } },
+            { skill: "Communication", text: { en: "Participating in a class debate, making clear points and respectfully responding to the opposing arguments.", ru: "Участие в классных дебатах, четкое изложение своих мыслей и уважительное реагирование на аргументы оппонентов." }, explanation: { en: "This is Communication as it involves the two-way exchange of ideas in a structured, formal discussion.", ru: "Это коммуникация, поскольку она включает двусторонний обмен идеями в структурированной, формальной дискуссии." } },
+            { skill: "Communication", text: { en: "Summarizing a long article into three key bullet points for a class presentation.", ru: "Краткое изложение длинной статьи в три ключевых пункта для презентации в классе." }, explanation: { en: "This is Communication because it's the skill of distilling information into its most essential parts for an audience.", ru: "Это коммуникация, потому что это навык извлечения информации в ее наиболее существенные части для аудитории." } },
+        ];
+        let availableScenarios = [];
+        let teams = [];
+        let currentScenario = null;
+        let isAnswerShown = true;
+
+        // --- Utility Functions ---
+        function showToast(message) {
+            const toast = document.getElementById('toast-notification');
+            toast.textContent = message;
+            toast.classList.remove('hidden');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+
+        // --- Setup Phase ---
+        function generateTeamConfigs(count) {
+            teamsConfigContainer.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const teamIndex = i;
+                const teamDiv = document.createElement('div');
+                teamDiv.className = 'p-4 border border-gray-200 rounded-lg bg-gray-50';
+                
+                const emojiGrid = EMOJIS.map((emoji) => `
+                    <div class="emoji-btn p-2 text-3xl" data-team="${teamIndex}" data-emoji="${emoji}">${emoji}</div>
+                `).join('');
+
+                teamDiv.innerHTML = `
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Team ${teamIndex + 1}</h3>
+                    <div class="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                        ${emojiGrid}
+                    </div>
+                `;
+                teamsConfigContainer.appendChild(teamDiv);
+            }
+            
+            document.querySelectorAll('.emoji-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const team = btn.dataset.team;
+                    document.querySelectorAll(`.emoji-btn[data-team="${team}"]`).forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                });
+            });
+            
+            let usedEmojis = [];
+            for (let i = 0; i < count; i++) {
+                const availableEmoji = EMOJIS.find(e => !usedEmojis.includes(e));
+                if (availableEmoji) {
+                    const btn = document.querySelector(`.emoji-btn[data-team="${i}"][data-emoji="${availableEmoji}"]`);
+                    if(btn) btn.classList.add('selected');
+                    usedEmojis.push(availableEmoji);
+                }
+            }
+        }
+
+        function startGame() {
+            const teamCount = parseInt(teamsCountSelect.value, 10);
+            teams = [];
+            let allTeamsConfigured = true;
+            for (let i = 0; i < teamCount; i++) {
+                const selectedEmojiEl = document.querySelector(`.emoji-btn[data-team="${i}"].selected`);
+                if (!selectedEmojiEl) {
+                    showToast(`Please select an emoji for Team ${i+1}.`)
+                    allTeamsConfigured = false;
+                    break;
+                }
+                teams.push({
+                    name: `Team ${i + 1}`,
+                    emoji: selectedEmojiEl.dataset.emoji,
+                    score: 0,
+                    selectedAnswer: null
+                });
+            }
+
+            if(allTeamsConfigured) {
+                setupScreen.classList.add('hidden');
+                gameScreen.classList.remove('hidden');
+                isAnswerShown = true;
+                updateButtons();
+                renderScoreboard();
+                answerContainer.style.visibility = 'hidden';
+            }
+        }
+        
+        // --- Game Phase ---
+        function renderScoreboard() {
+            scoreboardContainer.innerHTML = '';
+            teams.forEach((team, index) => {
+                const scoreCard = document.createElement('div');
+                scoreCard.className = 'card p-4 flex flex-col items-center text-center';
+
+                const lockInButtons = SKILLS.map(skill => `
+                    <button 
+                        class="lock-in-btn border rounded-md bg-white hover:bg-gray-100 ${team.selectedAnswer === skill ? 'selected' : ''}"
+                        data-team-index="${index}" 
+                        data-skill="${skill}"
+                        ${isAnswerShown ? 'disabled' : ''}>
+                        ${SKILL_ABBREVIATIONS[skill]}
+                    </button>
+                `).join('');
+
+                scoreCard.innerHTML = `
+                    <div class="text-6xl mb-2">${team.emoji}</div>
+                    <div class="text-xl font-bold text-gray-800">${team.name}</div>
+                    <div class="text-4xl font-extrabold text-blue-600 my-2" id="score-team-${index}">${team.score}</div>
+                     <div class="grid grid-cols-3 gap-1 my-2">
+                        ${lockInButtons}
+                    </div>
+                    <button class="point-btn w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg mt-2" data-team-index="${index}">
+                        +1 Point
+                    </button>
+                `;
+                scoreboardContainer.appendChild(scoreCard);
+            });
+            
+            // Re-add event listeners
+            document.querySelectorAll('.point-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => awardPoint(parseInt(e.target.dataset.teamIndex, 10)));
+            });
+            document.querySelectorAll('.lock-in-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const { teamIndex, skill } = e.target.dataset;
+                    lockInAnswer(parseInt(teamIndex), skill);
+                });
+            });
+        }
+        
+        function lockInAnswer(teamIndex, skill) {
+            teams[teamIndex].selectedAnswer = skill;
+            renderScoreboard();
+        }
+
+        function awardPoint(teamIndex) {
+            teams[teamIndex].score++;
+            // Just update the score text to avoid re-rendering everything
+            document.getElementById(`score-team-${teamIndex}`).textContent = teams[teamIndex].score;
+        }
+
+        function showNewScenario() {
+            if (availableScenarios.length === 0) {
+                availableScenarios = [...scenarios].sort(() => Math.random() - 0.5);
+            }
+            currentScenario = availableScenarios.pop();
+            scenarioText.innerHTML = `
+                <span class="block">${currentScenario.text.en}</span>
+                <span class="block text-base text-gray-500 mt-2">${currentScenario.text.ru}</span>
+            `;
+            
+            isAnswerShown = false;
+            teams.forEach(t => t.selectedAnswer = null);
+
+            answerContainer.style.visibility = 'hidden';
+            answerExplanation.innerHTML = '';
+            updateButtons();
+            renderScoreboard();
+        }
+
+        function revealAnswer() {
+            if (!currentScenario) return;
+
+            // Automatically award points to teams with the correct answer
+            teams.forEach(team => {
+                if (team.selectedAnswer === currentScenario.skill) {
+                    team.score++;
+                }
+            });
+
+            isAnswerShown = true;
+            correctAnswerText.textContent = currentScenario.skill;
+            answerExplanation.innerHTML = `
+                <span class="block mt-2">${currentScenario.explanation.en}</span>
+                <span class="block text-gray-500 mt-1">${currentScenario.explanation.ru}</span>
+            `;
+
+            answerContainer.style.visibility = 'visible';
+            updateButtons();
+            renderScoreboard(); // To disable the lock-in buttons and show new scores
+        }
+
+        function updateButtons() {
+            newScenarioBtn.disabled = !isAnswerShown;
+            showAnswerBtn.disabled = isAnswerShown;
+        }
+
+        function resetGame() {
+            teams = [];
+            availableScenarios = [];
+            currentScenario = null;
+            scenarioText.textContent = 'Click "New Scenario" to begin!';
+            correctAnswerText.textContent = '';
+            answerExplanation.innerHTML = '';
+            gameScreen.classList.add('hidden');
+            setupScreen.classList.remove('hidden');
+            teamsCountSelect.value = "2";
+            generateTeamConfigs(2);
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast("Fullscreen mode is not permitted in this view.");
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function updateFullscreenIcon() {
+            if (document.fullscreenElement) {
+                fullscreenIconOpen.classList.add('hidden');
+                fullscreenIconClose.classList.remove('hidden');
+            } else {
+                fullscreenIconOpen.classList.remove('hidden');
+                fullscreenIconClose.classList.add('hidden');
+            }
+        }
+
+        // --- Event Listeners ---
+        teamsCountSelect.addEventListener('change', (e) => generateTeamConfigs(parseInt(e.target.value, 10)));
+        startBtn.addEventListener('click', startGame);
+        newScenarioBtn.addEventListener('click', showNewScenario);
+        showAnswerBtn.addEventListener('click', revealAnswer);
+        resetGameBtn.addEventListener('click', resetGame);
+        fullscreenBtn.addEventListener('click', toggleFullScreen);
+        document.addEventListener('fullscreenchange', updateFullscreenIcon);
+
+        
+        // Initial setup
+        generateTeamConfigs(parseInt(teamsCountSelect.value, 10));
+    </script>
+</body>
+</html>
+
