@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source Sorter: Primary vs. Secondary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: none; /* Prevents scrolling on touch devices during drag */
+        }
+        .card {
+            cursor: grab;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+        .card:active {
+            cursor: grabbing;
+        }
+        .drop-zone {
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .drag-over {
+            background-color: #c7d2fe; /* Indigo-200 */
+            transform: scale(1.02);
+        }
+        .feedback-modal {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="setup-screen" class="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg text-center">
+        <h1 class="text-3xl font-bold text-slate-800 mb-2">Welcome to Source Sorter!</h1>
+        <p class="text-slate-600 mb-6">Enter your team names and choose a difficulty to begin.</p>
+        <div class="space-y-4">
+            <input type="text" id="team1-name" placeholder="Team 1 Name" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" value="Blue Team">
+            <input type="text" id="team2-name" placeholder="Team 2 Name" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" value="Red Team">
+        </div>
+        
+        <div class="mt-6">
+            <h3 class="text-slate-600 font-semibold mb-3">Select Difficulty</h3>
+            <div id="difficulty-selector" class="grid grid-cols-3 gap-2">
+                <button data-difficulty="easy" class="difficulty-btn bg-indigo-600 text-white ring-2 ring-indigo-600 font-semibold py-2 px-4 rounded-lg transition-colors">Easy</button>
+                <button data-difficulty="medium" class="difficulty-btn bg-white text-slate-700 hover:bg-slate-200 font-semibold py-2 px-4 rounded-lg transition-colors">Medium</button>
+                <button data-difficulty="hard" class="difficulty-btn bg-white text-slate-700 hover:bg-slate-200 font-semibold py-2 px-4 rounded-lg transition-colors">Hard</button>
+            </div>
+        </div>
+
+        <button id="start-game-btn" class="mt-6 w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors">Start Game</button>
+    </div>
+
+    <div id="game-screen" class="hidden w-full max-w-6xl mx-auto">
+        <!-- Header: Scores and Turn Indicator -->
+        <div class="grid grid-cols-3 items-center text-center mb-6 gap-4">
+            <div id="team1-display" class="bg-blue-500 text-white p-4 rounded-xl shadow-md">
+                <h2 id="team1-name-display" class="text-2xl font-bold"></h2>
+                <p id="team1-score" class="text-4xl font-bold">0</p>
+            </div>
+            <div id="turn-indicator" class="bg-white p-4 rounded-xl shadow-md">
+                <h3 class="text-xl font-bold text-slate-800">Turn</h3>
+                <p id="current-turn-display" class="text-2xl font-semibold text-indigo-600"></p>
+            </div>
+            <div id="team2-display" class="bg-red-500 text-white p-4 rounded-xl shadow-md">
+                <h2 id="team2-name-display" class="text-2xl font-bold"></h2>
+                <p id="team2-score" class="text-4xl font-bold">0</p>
+            </div>
+        </div>
+
+        <!-- Draggable Card Area -->
+        <div class="my-8 h-32 flex items-center justify-center">
+             <div id="item-card" draggable="true" class="card w-full max-w-lg bg-white p-6 rounded-xl shadow-lg text-center">
+                <p id="item-text" class="text-xl font-semibold text-slate-700"></p>
+             </div>
+        </div>
+
+        <!-- Drop Zones -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div id="primary-zone" data-type="primary" class="drop-zone bg-white p-6 rounded-2xl shadow-lg text-center border-4 border-dashed border-slate-300">
+                <h3 class="text-2xl font-bold text-slate-800 mb-2">Primary Sources</h3>
+                <p class="text-slate-500">First-hand accounts or original materials.</p>
+            </div>
+            <div id="secondary-zone" data-type="secondary" class="drop-zone bg-white p-6 rounded-2xl shadow-lg text-center border-4 border-dashed border-slate-300">
+                <h3 class="text-2xl font-bold text-slate-800 mb-2">Secondary Sources</h3>
+                <p class="text-slate-500">Analysis or interpretation of primary sources.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div class="feedback-modal-content bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full">
+            <h2 id="feedback-title" class="text-3xl font-bold mb-4"></h2>
+            <p id="feedback-explanation" class="text-slate-600 mb-6 text-lg"></p>
+            <button id="next-turn-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors">Continue</button>
+        </div>
+    </div>
+
+
+<script>
+    const easyItems = [
+        { text: "Your own drawing of a flower", type: "primary", explanation: "This is a primary source because you created it yourself. It's an original piece of work." },
+        { text: "A movie about a historical person", type: "secondary", explanation: "A movie is a secondary source because it's an interpretation of events, not the event itself." },
+        { text: "A newspaper from 1945", type: "primary", explanation: "A newspaper from the time is a primary source because it gives a direct view of events as they were reported." },
+        { text: "A book report you wrote about 'Harry Potter'", type: "secondary", explanation: "A book report analyzes or summarizes a book, making it a secondary source." },
+        { text: "A video of your family vacation", type: "primary", explanation: "A video you took yourself is a primary source because it's a direct record of an event." },
+        { text: "An article in a magazine telling you about the best video games", type: "secondary", explanation: "An article that gives opinions or reviews is a secondary source." }
+    ];
+
+    const mediumItems = [
+        { text: "A diary from a soldier in World War I", type: "primary", explanation: "A diary is a primary source because it's a first-hand account from someone who was there." },
+        { text: "A history textbook about Ancient Rome", type: "secondary", explanation: "A textbook is a secondary source because it analyzes and summarizes information from many sources." },
+        { text: "An original photograph of the first airplane", type: "primary", explanation: "An original photograph captures an event as it happened, making it a primary source." },
+        { text: "A biography of Martin Luther King Jr.", type: "secondary", explanation: "A biography is written by someone else studying a person's life, making it a secondary source." },
+        { text: "A letter written by Queen Elizabeth I", type: "primary", explanation: "A personal letter is a primary source because it's an original document from that time period." },
+        { text: "A documentary about the dinosaurs", type: "secondary", explanation: "A documentary explains a topic using research and analysis, making it a secondary source." },
+        { text: "An audio recording of an interview with an astronaut", type: "primary", explanation: "An interview is a primary source because you are hearing directly from the person involved." },
+        { text: "An encyclopedia article about the solar system", type: "secondary", explanation: "An encyclopedia article summarizes existing knowledge, making it a secondary source." },
+        { text: "The original U.S. Constitution document", type: "primary", explanation: "The Constitution is a primary source because it's the actual, original legal document." },
+        { text: "A magazine article reviewing a new movie about a historical event", type: "secondary", explanation: "A review analyzes or interprets another work, making it a secondary source." },
+        { text: "A birth certificate", type: "primary", explanation: "A birth certificate is an official record created at the time of an event, making it a primary source." },
+        { text: "A website that gathers and summarizes news stories", type: "secondary", explanation: "This website analyzes and compiles information from other sources, so it's a secondary source." }
+    ];
+
+    const hardItems = [
+        { text: "A research paper analyzing data from a new experiment", type: "secondary", explanation: "The raw data from the experiment is a primary source, but the paper analyzing that data is a secondary source." },
+        { text: "An autobiography written 50 years after the events happened", type: "primary", explanation: "Even though it was written later, an autobiography is a primary source because it's the person's own account of their life." },
+        { text: "A modern English translation of an ancient Greek play", type: "secondary", explanation: "The original play is primary, but a translation involves interpretation by the translator, making it a secondary source." },
+        { text: "A map created by a geographer based on satellite images", type: "secondary", explanation: "The satellite images are the primary source, while the map is a secondary source that interprets that data." },
+        { text: "A court case transcript", type: "primary", explanation: "A court transcript is a word-for-word record of what was said during a trial, making it a primary source." },
+        { text: "A scholarly article critiquing a famous novel", type: "secondary", explanation: "An article that analyzes, critiques, or reviews another work is a secondary source." },
+        { text: "Census data from the year 1880", type: "primary", explanation: "Raw data collected at a specific time, like census data, is a primary source." },
+        { text: "A Wikipedia page about World War II", type: "secondary", explanation: "Wikipedia articles are compilations and summaries of many other sources, making them secondary (or even tertiary) sources." }
+    ];
+
+    let items = [];
+    let currentItemIndex = 0;
+    let team1Score = 0;
+    let team2Score = 0;
+    let currentTurn = 'team1';
+    let team1Name = 'Blue Team';
+    let team2Name = 'Red Team';
+    let selectedDifficulty = 'easy';
+
+    // DOM Elements
+    const setupScreen = document.getElementById('setup-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const startGameBtn = document.getElementById('start-game-btn');
+    const difficultySelector = document.getElementById('difficulty-selector');
+    
+    const team1NameInput = document.getElementById('team1-name');
+    const team2NameInput = document.getElementById('team2-name');
+
+    const team1NameDisplay = document.getElementById('team1-name-display');
+    const team2NameDisplay = document.getElementById('team2-name-display');
+    const team1ScoreDisplay = document.getElementById('team1-score');
+    const team2ScoreDisplay = document.getElementById('team2-score');
+    
+    const currentTurnDisplay = document.getElementById('current-turn-display');
+    const turnIndicator = document.getElementById('turn-indicator');
+    
+    const itemCard = document.getElementById('item-card');
+    const itemText = document.getElementById('item-text');
+
+    const dropZones = document.querySelectorAll('.drop-zone');
+    
+    const feedbackModal = document.getElementById('feedback-modal');
+    const feedbackTitle = document.getElementById('feedback-title');
+    const feedbackExplanation = document.getElementById('feedback-explanation');
+    const nextTurnBtn = document.getElementById('next-turn-btn');
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function selectDifficulty(e) {
+        if (!e.target.matches('.difficulty-btn')) return;
+
+        selectedDifficulty = e.target.dataset.difficulty;
+        
+        // Update button styles
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.classList.remove('bg-indigo-600', 'text-white', 'ring-2', 'ring-indigo-600');
+            btn.classList.add('bg-white', 'text-slate-700', 'hover:bg-slate-200');
+        });
+
+        e.target.classList.add('bg-indigo-600', 'text-white', 'ring-2', 'ring-indigo-600');
+        e.target.classList.remove('bg-white', 'text-slate-700', 'hover:bg-slate-200');
+    }
+
+    function startGame() {
+        team1Name = team1NameInput.value || 'Blue Team';
+        team2Name = team2NameInput.value || 'Red Team';
+        
+        team1NameDisplay.textContent = team1Name;
+        team2NameDisplay.textContent = team2Name;
+        
+        switch(selectedDifficulty) {
+            case 'easy':
+                items = [...easyItems];
+                break;
+            case 'medium':
+                items = [...mediumItems];
+                break;
+            case 'hard':
+                items = [...hardItems];
+                break;
+            default:
+                items = [...easyItems];
+        }
+
+        shuffleArray(items);
+        currentItemIndex = 0;
+        team1Score = 0;
+        team2Score = 0;
+        currentTurn = 'team1';
+
+        setupScreen.classList.add('hidden');
+        gameScreen.classList.remove('hidden');
+
+        updateScores();
+        updateTurnIndicator();
+        displayNextItem();
+    }
+
+    function updateScores() {
+        team1ScoreDisplay.textContent = team1Score;
+        team2ScoreDisplay.textContent = team2Score;
+    }
+    
+    function updateTurnIndicator() {
+        if (currentTurn === 'team1') {
+            currentTurnDisplay.textContent = team1Name;
+            currentTurnDisplay.classList.remove('text-red-600');
+            currentTurnDisplay.classList.add('text-blue-600');
+        } else {
+            currentTurnDisplay.textContent = team2Name;
+            currentTurnDisplay.classList.remove('text-blue-600');
+            currentTurnDisplay.classList.add('text-red-600');
+        }
+    }
+
+    function displayNextItem() {
+        if (currentItemIndex < items.length) {
+            itemCard.classList.remove('hidden');
+            itemText.textContent = items[currentItemIndex].text;
+        } else {
+            endGame();
+        }
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        
+        const droppedItemType = items[currentItemIndex].type;
+        const dropZoneType = this.dataset.type;
+
+        if (droppedItemType === dropZoneType) {
+            // Correct
+            if (currentTurn === 'team1') {
+                team1Score += 10;
+            } else {
+                team2Score += 10;
+            }
+            showFeedback(true);
+        } else {
+            // Incorrect
+            showFeedback(false);
+        }
+        updateScores();
+    }
+    
+    function showFeedback(isCorrect) {
+        const item = items[currentItemIndex];
+        itemCard.classList.add('hidden');
+
+        if (isCorrect) {
+            feedbackTitle.textContent = "Correct!";
+            feedbackTitle.className = 'text-3xl font-bold mb-4 text-green-600';
+            feedbackExplanation.textContent = `Great job! That is a ${item.type} source.`;
+        } else {
+            feedbackTitle.textContent = "Not Quite!";
+            feedbackTitle.className = 'text-3xl font-bold mb-4 text-orange-600';
+            feedbackExplanation.textContent = item.explanation;
+        }
+
+        feedbackModal.classList.remove('hidden');
+        nextTurnBtn.textContent = (currentItemIndex >= items.length - 1) ? 'Finish Game' : 'Next Turn';
+    }
+
+    function nextTurn() {
+        feedbackModal.classList.add('hidden');
+        currentItemIndex++;
+        
+        if (currentItemIndex >= items.length) {
+            endGame();
+            return;
+        }
+
+        currentTurn = (currentTurn === 'team1') ? 'team2' : 'team1';
+        updateTurnIndicator();
+        displayNextItem();
+    }
+    
+    function endGame() {
+        itemCard.classList.add('hidden');
+        feedbackModal.classList.remove('hidden');
+
+        let winnerText = '';
+        if (team1Score > team2Score) {
+            winnerText = `${team1Name} wins!`;
+            feedbackTitle.className = 'text-3xl font-bold mb-4 text-blue-600';
+        } else if (team2Score > team1Score) {
+            winnerText = `${team2Name} wins!`;
+            feedbackTitle.className = 'text-3xl font-bold mb-4 text-red-600';
+        } else {
+            winnerText = "It's a tie!";
+            feedbackTitle.className = 'text-3xl font-bold mb-4 text-slate-800';
+        }
+
+        feedbackTitle.textContent = 'Game Over!';
+        feedbackExplanation.textContent = `Final Score: ${team1Name}: ${team1Score} - ${team2Name}: ${team2Score}. ${winnerText}`;
+        nextTurnBtn.textContent = 'Play Again?';
+        nextTurnBtn.onclick = () => {
+            location.reload(); // Simple way to reset the game
+        };
+    }
+
+    // Event Listeners
+    startGameBtn.addEventListener('click', startGame);
+    difficultySelector.addEventListener('click', selectDifficulty);
+    
+    itemCard.addEventListener('dragstart', (e) => {
+        // For compatibility
+        e.dataTransfer.setData('text/plain', null); 
+        setTimeout(() => {
+            e.target.classList.add('opacity-50');
+        }, 0);
+    });
+
+    itemCard.addEventListener('dragend', (e) => {
+        e.target.classList.remove('opacity-50');
+    });
+
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            zone.classList.add('drag-over');
+        });
+        zone.addEventListener('dragleave', () => {
+            zone.classList.remove('drag-over');
+        });
+        zone.addEventListener('drop', handleDrop);
+    });
+
+    nextTurnBtn.addEventListener('click', nextTurn);
+
+</script>
+</body>
+</html>
+
