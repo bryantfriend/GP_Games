@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GP Detective Agency</title>
+    <style>
+        /* Basic Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            transition: background-color 0.5s;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 20px 30px;
+            border: 1px solid #ddd;
+        }
+        h1, h2, h3 { color: #005a9c; }
+        h1 { font-size: 2.5em; margin-bottom: 10px; font-family: 'Garamond', serif; }
+        h2 { font-size: 1.8em; }
+
+        /* Buttons & Inputs */
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin: 10px 5px;
+        }
+        button:hover { background-color: #0056b3; transform: translateY(-2px); }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            font-size: 1.2em;
+            border-radius: 8px;
+            border: 2px solid #ccc;
+            margin: 10px 0;
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+        }
+        select { padding: 10px; font-size: 1em; border-radius: 8px; }
+
+        /* Screen Layouts */
+        .screen { display: none; }
+        .active { display: block; }
+        
+        /* Specific Elements */
+        #gameCodeDisplay, #teacherGameCode {
+            font-size: 3em;
+            font-weight: bold;
+            color: #d9534f;
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px dashed #d9534f;
+            display: inline-block;
+            margin: 20px 0;
+            letter-spacing: 5px;
+        }
+        .case-file {
+            border: 2px solid #e0e0e0;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 10px;
+            background-color: #fafafa;
+            cursor: pointer;
+        }
+        .case-file:hover { background-color: #eef8ff; border-color: #007bff; }
+        .case-file.selected { background-color: #d1e7dd; border-color: #198754; }
+
+        /* Teacher Dashboard */
+        .dashboard { display: flex; justify-content: space-around; gap: 20px; }
+        .team-status {
+            flex-basis: 45%;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .progress {
+            height: 25px;
+            background-color: #28a745;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            transition: width 0.5s;
+        }
+        .step-list li { list-style: none; padding: 5px; text-align: left; }
+        .step-list li.completed { text-decoration: line-through; color: #6c757d; }
+
+        /* Game Level Styling */
+        .game-level { padding: 20px; border: 2px solid #005a9c; border-radius: 10px; background-color: #fdfdfd; }
+        .evidence-locker, .clue-board {
+            min-height: 150px;
+            background-color: #fffbe6;
+            border: 1px dashed #d4b450;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 8px;
+        }
+        .clue-board { display: flex; gap: 10px; }
+        .category-bucket { flex: 1; border: 1px solid #ccc; padding: 10px; background-color: #f9f9f9; }
+        .sticky-note { background-color: #feff9c; padding: 8px; margin: 5px; cursor: grab; border: 1px solid #e1e28a; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="roleSelectionScreen" class="screen active">
+            <h1>Welcome to the</h1>
+            <img src="https://www.google.com/s2/favicons?domain=www.un.org" alt="GP icon" style="vertical-align: middle;"> 
+            <h1>Global Perspectives Detective Agency</h1>
+            <hr>
+            <h2>Are you the Chief Inspector or a Field Agent?</h2>
+            <button onclick="selectRole('teacher')">I am the Teacher (Projector)</button>
+            <button onclick="selectRole('team')">I am on a Team (Tablet)</button>
+        </div>
+
+        <div id="teacherSetupScreen" class="screen">
+            <h2>Chief Inspector's Desk</h2>
+            <p>Create a new game session. Your teams will use this code to join.</p>
+            <div id="teacherGameCode">------</div>
+            <button onclick="createNewGame()">Generate New Game Code</button>
+            <p><strong>Waiting for 2 teams to join...</strong></p>
+            <div id="joinedTeamsList"></div>
+            <button id="startGameBtn" onclick="startGame()" disabled>Start Game</button>
+        </div>
+        
+        <div id="teamJoinScreen" class="screen">
+            <h2>Agent, check in!</h2>
+            <p>Enter the Game Code from the projector.</p>
+            <input type="number" id="teamGameCodeInput" placeholder="6-Digit Code">
+            <p>Enter your Detective Agency's Name:</p>
+            <input type="text" id="teamNameInput" placeholder="e.g., The Fact Finders">
+            <button onclick="joinGame()">Join Game Session</button>
+        </div>
+
+        <div id="teamLobbyScreen" class="screen">
+            <h2 id="teamLobbyName"></h2>
+            <h3>You're in!</h3>
+            <p>Waiting for the Chief Inspector to start the game...</p>
+        </div>
+
+        <div id="teacherDashboardScreen" class="screen">
+            <h2>LIVE MISSION DASHBOARD</h2>
+            <div class="dashboard">
+                <div class="team-status">
+                    <h3 id="dashTeam1Name">Team 1</h3>
+                    <div class="progress-bar">
+                        <div id="dashTeam1Progress" class="progress" style="width: 0%;">0%</div>
+                    </div>
+                    <ul id="dashTeam1Steps" class="step-list"></ul>
+                </div>
+                <div class="team-status">
+                    <h3 id="dashTeam2Name">Team 2</h3>
+                    <div class="progress-bar">
+                        <div id="dashTeam2Progress" class="progress" style="width: 0%;">0%</div>
+                    </div>
+                    <ul id="dashTeam2Steps" class="step-list"></ul>
+                </div>
+            </div>
+            <button onclick="endGame()">End and Reset Game</button>
+        </div>
+        
+        <div id="teamGameScreen" class="screen">
+            <h2 id="gameTeamName">Team Name</h2>
+            <h3 id="gameLevelTitle">Level Title</h3>
+            <div id="gameLevelsContainer">
+                </div>
+            <button id="nextLevelBtn" onclick="advanceLevel()">Submit &amp; Proceed to Next Step</button>
+        </div>
+
+        <div id="endGameScreen" class="screen">
+            <h1>CASE CLOSED!</h1>
+            <h2 id="winningTeamText"></h2>
+            <p>A great investigation by all our detectives!</p>
+            <p>The mission is complete. Well done.</p>
+            <button onclick="resetApp()">Start a New Investigation</button>
+        </div>
+
+    </div>
+
+<script>
+    // --- APP STATE & CONFIGURATION ---
+    let userRole = null; // 'teacher' or 'team'
+    let teamId = null;   // 1 or 2
+    const totalSteps = 7;
+    const stepNames = [
+        "1: Identify the Question", "2: Plan the Research", "3: Gather Information",
+        "4: Evaluate Sources", "5: Organize and Analyze", "6: Communicate Findings", "7: Reflect"
+    ];
+
+    // --- REAL-TIME SIMULATION using LocalStorage ---
+    // In a real web app, this section would be replaced with a connection
+    // to a service like Firebase to sync data across devices.
+    function getGameState() {
+        const state = localStorage.getItem('gpdaGameState');
+        return state ? JSON.parse(state) : null;
+    }
+
+    function setGameState(newState) {
+        localStorage.setItem('gpdaGameState', JSON.stringify(newState));
+        // Manually trigger a refresh to simulate real-time updates
+        document.dispatchEvent(new Event('gameStateChange'));
+    }
+
+    // This listens for our manual event to update the UI
+    document.addEventListener('gameStateChange', () => {
+        if (userRole === 'teacher') updateTeacherDashboard();
+        if (userRole === 'team') updateTeamView();
+    });
+    // This allows different tabs of the same browser to communicate.
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'gpdaGameState') {
+            document.dispatchEvent(new Event('gameStateChange'));
+        }
+    });
+
+    // --- UI NAVIGATION ---
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function resetApp() {
+        localStorage.removeItem('gpdaGameState');
+        userRole = null;
+        teamId = null;
+        location.reload(); // Easiest way to reset everything
+    }
+
+    // --- ROLE SELECTION & INITIALIZATION ---
+    function selectRole(role) {
+        userRole = role;
+        if (role === 'teacher') {
+            showScreen('teacherSetupScreen');
+        } else {
+            showScreen('teamJoinScreen');
+        }
+    }
+
+    // --- TEACHER FUNCTIONS ---
+    function createNewGame() {
+        const gameCode = Math.floor(100000 + Math.random() * 900000);
+        document.getElementById('teacherGameCode').textContent = gameCode;
+        const initialState = {
+            gameCode: gameCode,
+            status: 'lobby', // 'lobby', 'active', 'finished'
+            teams: {
+                1: { joined: false, name: '', currentStep: 0, answers: {} },
+                2: { joined: false, name: '', currentStep: 0, answers: {} }
+            }
+        };
+        setGameState(initialState);
+    }
+
+    function updateTeacherDashboard() {
+        const state = getGameState();
+        if (!state) return;
+
+        // Update team join status in lobby
+        if (state.status === 'lobby') {
+            const list = document.getElementById('joinedTeamsList');
+            list.innerHTML = '';
+            if (state.teams[1].joined) list.innerHTML += `<p>✅ ${state.teams[1].name} has joined.</p>`;
+            if (state.teams[2].joined) list.innerHTML += `<p>✅ ${state.teams[2].name} has joined.</p>`;
+            
+            if (state.teams[1].joined && state.teams[2].joined) {
+                document.getElementById('startGameBtn').disabled = false;
+            }
+        }
+        
+        // Update live dashboard during game
+        if (state.status === 'active' || state.status === 'finished') {
+            showScreen('teacherDashboardScreen');
+            for (let i = 1; i <= 2; i++) {
+                const team = state.teams[i];
+                const progress = Math.round((team.currentStep / totalSteps) * 100);
+                document.getElementById(`dashTeam${i}Name`).textContent = team.name;
+                const progressBar = document.getElementById(`dashTeam${i}Progress`);
+                progressBar.style.width = `${progress}%`;
+                progressBar.textContent = `${progress}%`;
+
+                const stepsList = document.getElementById(`dashTeam${i}Steps`);
+                stepsList.innerHTML = '';
+                stepNames.forEach((name, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = name;
+                    if (index < team.currentStep) {
+                        li.classList.add('completed');
+                    }
+                    stepsList.appendChild(li);
+                });
+            }
+        }
+        if (state.status === 'finished') {
+            showEndGameScreen();
+        }
+    }
+
+    function startGame() {
+        let state = getGameState();
+        if (state.teams[1].joined && state.teams[2].joined) {
+            state.status = 'active';
+            setGameState(state);
+            showScreen('teacherDashboardScreen');
+        }
+    }
+    
+    function endGame() {
+        let state = getGameState();
+        state.status = 'finished';
+        setGameState(state);
+        showEndGameScreen();
+    }
+
+    function showEndGameScreen() {
+        const state = getGameState();
+        const score1 = state.teams[1].currentStep;
+        const score2 = state.teams[2].currentStep;
+        let winnerText = "It's a tie! Incredible work from both agencies.";
+        if (score1 > score2) {
+            winnerText = `Congratulations to ${state.teams[1].name}!`;
+        } else if (score2 > score1) {
+            winnerText = `Congratulations to ${state.teams[2].name}!`;
+        }
+        document.getElementById('winningTeamText').textContent = winnerText;
+        showScreen('endGameScreen');
+    }
+
+    // --- TEAM FUNCTIONS ---
+    function joinGame() {
+        const code = document.getElementById('teamGameCodeInput').value;
+        const name = document.getElementById('teamNameInput').value;
+        if (!code || !name) {
+            alert('Please enter both a code and a team name.');
+            return;
+        }
+
+        let state = getGameState();
+        if (!state || state.gameCode != code) {
+            alert('Invalid Game Code. Please check the projector.');
+            return;
+        }
+        
+        let assignedTeamId = null;
+        if (!state.teams[1].joined) {
+            assignedTeamId = 1;
+        } else if (!state.teams[2].joined) {
+            assignedTeamId = 2;
+        } else {
+            alert('This game is full.');
+            return;
+        }
+
+        teamId = assignedTeamId;
+        state.teams[teamId] = { ...state.teams[teamId], joined: true, name: name };
+        setGameState(state);
+        
+        document.getElementById('teamLobbyName').textContent = name;
+        showScreen('teamLobbyScreen');
+    }
+
+    function updateTeamView() {
+        const state = getGameState();
+        if (!state || !teamId) return;
+
+        if (state.status === 'active') {
+            const myTeamState = state.teams[teamId];
+            showScreen('teamGameScreen');
+            document.getElementById('gameTeamName').textContent = myTeamState.name;
+            renderCurrentLevel(myTeamState.currentStep);
+        } else if (state.status === 'finished') {
+             showEndGameScreen();
+        }
+    }
+
+    function renderCurrentLevel(step) {
+        if (step >= totalSteps) {
+            document.getElementById('gameLevelTitle').textContent = "Investigation Complete!";
+            document.getElementById('gameLevelsContainer').innerHTML = "<p>You have completed all steps. Well done, detectives!</p>";
+            document.getElementById('nextLevelBtn').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('gameLevelTitle').textContent = `Step ${stepNames[step]}`;
+        const container = document.getElementById('gameLevelsContainer');
+        let content = '';
+
+        switch(step) {
+            case 0: // Step 1: Identify the Question
+                content = `
+                <div class="game-level">
+                    <h4>Choose a Case File to Investigate:</h4>
+                    <div id="case1" class="case-file" onclick="selectCase(1)"><strong>The Puzzle of the Plastic Mountain</strong><p>Where does all the plastic waste in our city come from and what is its main impact?</p></div>
+                    <div id="case2" class="case-file" onclick="selectCase(2)"><strong>The Case of the Clogged Waterways</strong><p>How does pollution in our local river affect the community and the environment?</p></div>
+                    <h4>Formulate your Question:</h4>
+                    <select id="s1_q1"><option>How does</option><option>What is the impact of</option></select>
+                    <input type="text" id="s1_q2" placeholder="e.g., single-use plastics">
+                    <select id="s1_q3"><option>on our school</option><option>on local wildlife</option></select>
+                </div>`;
+                break;
+            case 1: // Step 2: Plan the Research
+                content = `
+                <div class="game-level">
+                    <h4>Brainstorm Keywords (list at least 5, separated by commas)</h4>
+                    <input type="text" id="s2_keywords" placeholder="plastic, waste, ocean, recycling...">
+                    <h4>Where will you search? (check all that apply)</h4>
+                    <input type="checkbox" id="s2_c1" value="internet"><label for="s2_c1"> Internet Databases</label><br>
+                    <input type="checkbox" id="s2_c2" value="library"><label for="s2_c2"> Library Books</label><br>
+                    <input type="checkbox" id="s2_c3" value="interviews"><label for="s2_c3"> Interviews with Experts</label>
+                </div>`;
+                break;
+            case 2: // Step 3: Gather Information
+                content = `
+                <div class="game-level">
+                    <h4>Review these clues and copy 2 key facts into your Evidence Locker.</h4>
+                    <p><strong>Clue 1 (Video):</strong> "Our city sanitation report shows over 50 tons of plastic are collected daily."</p>
+                    <p><strong>Clue 2 (Chart):</strong> A chart indicates that food packaging is the #1 source of plastic waste.</p>
+                    <p><strong>Clue 3 (Article):</strong> "Local birds are often found entangled in plastic bags."</p>
+                    <div class="evidence-locker">
+                        <textarea id="s3_evidence" rows="4" style="width: 95%;" placeholder="Fact 1: ...&#10;Fact 2: ..."></textarea>
+                    </div>
+                </div>`;
+                break;
+            case 3: // Step 4: Evaluate Sources
+                content = `
+                <div class="game-level">
+                    <h4>The Forensics Lab: Which source is more reliable for your report?</h4>
+                    <p><strong>Source A:</strong> A 2024 study by the National Oceanographic Institute on plastic pollution.</p>
+                    <p><strong>Source B:</strong> A personal blog post from 2015 titled "Why Plastic is Awesome".</p>
+                    <select id="s4_source">
+                        <option value="A">Source A is more reliable</option>
+                        <option value="B">Source B is more reliable</option>
+                    </select>
+                    <h4>Why?</h4>
+                    <input type="text" id="s4_reason" placeholder="Because it is recent and from an expert source...">
+                </div>`;
+                break;
+            case 4: // Step 5: Organize and Analyze
+                content = `
+                <div class="game-level">
+                    <h4>Organize Your Evidence on the Clue Board.</h4>
+                    <p>Drag the facts you've found into the correct categories.</p>
+                    <div class="clue-board">
+                        <div class="category-bucket"><strong>Causes</strong><div id="cat_causes" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+                        <div class="category-bucket"><strong>Effects</strong><div id="cat_effects" ondrop="drop(event)" ondragover="allowDrop(event)"></div></div>
+                    </div>
+                    <br>
+                    <div id="evidencePool">
+                        <div id="drag1" class="sticky-note" draggable="true" ondragstart="drag(event)">50 tons of plastic collected daily</div>
+                        <div id="drag2" class="sticky-note" draggable="true" ondragstart="drag(event)">Food packaging is #1 source</div>
+                        <div id="drag3" class="sticky-note" draggable="true" ondragstart="drag(event)">Birds entangled in bags</div>
+                    </div>
+                </div>`;
+                break;
+            case 5: // Step 6: Communicate Findings
+                content = `
+                <div class="game-level">
+                    <h4>Prepare Your Final Report for the Press Conference.</h4>
+                    <p>Our investigation revealed that the main cause of plastic waste is <input type="text" id="s6_cause" placeholder="e.g., food packaging">. 
+                    This has serious effects, such as <input type="text" id="s6_effect" placeholder="e.g., harming local wildlife">.
+                    A key piece of evidence is that <input type="text" id="s6_evidence" placeholder="e.g., 50 tons are collected daily">.</p>
+                </div>`;
+                break;
+            case 6: // Step 7: Reflect
+                content = `
+                <div class="game-level">
+                    <h4>Final Debrief: Reflect on your agency's work.</h4>
+                    <p>What was your team's biggest strength?</p>
+                    <select id="s7_strength">
+                        <option>Asking good questions</option>
+                        <option>Finding clues</option>
+                        <option>Evaluating sources</option>
+                        <option>Organizing our board</option>
+                    </select>
+                </div>`;
+                document.getElementById('nextLevelBtn').textContent = "Finish Investigation!";
+                break;
+        }
+        container.innerHTML = content;
+    }
+    
+    // Simple drag and drop functions for Level 5
+    function allowDrop(ev) { ev.preventDefault(); }
+    function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+    function drop(ev) {
+        ev.preventDefault();
+        var data = ev.dataTransfer.getData("text");
+        ev.target.appendChild(document.getElementById(data));
+    }
+
+
+    function advanceLevel() {
+        let state = getGameState();
+        // Here you would normally save the answers from the form elements to the state object.
+        // For this simulation, we just advance the step.
+        state.teams[teamId].currentStep += 1;
+        setGameState(state);
+    }
+    
+    function selectCase(caseNum) {
+        document.querySelectorAll('.case-file').forEach(c => c.classList.remove('selected'));
+        document.getElementById(`case${caseNum}`).classList.add('selected');
+    }
+
+</script>
+</body>
+</html>
