@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Process Adventure</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7fc;
+        }
+        .step-card {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+        .hidden-step {
+            opacity: 0;
+            transform: translateY(20px) scale(0.98);
+            position: absolute;
+            pointer-events: none;
+        }
+        .visible-step {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            position: static;
+            pointer-events: auto;
+        }
+        .feedback-message {
+            transition: all 0.3s ease-in-out;
+        }
+        /* Fun animation for the mascot */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(-5%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+            50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+        }
+        .mascot {
+            animation: bounce 2s infinite;
+        }
+        @keyframes shake {
+          10%, 90% { transform: translate3d(-1px, 0, 0); }
+          20%, 80% { transform: translate3d(2px, 0, 0); }
+          30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+          40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        .shake {
+          animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8 space-y-4 relative">
+        
+        <!-- Language Selector -->
+        <div class="absolute top-4 right-4">
+            <select id="languageSelector" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <header class="text-center space-y-4 pt-8">
+            <div class="flex justify-center items-center gap-3">
+                <!-- Mascot -->
+                <svg class="w-12 h-12 text-yellow-400 mascot" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.311a7.5 7.5 0 01-7.5 0c.887.67 2.012.984 3.25.984s2.363-.314 3.25-.984zM6.75 12.75a5.25 5.25 0 017.5 0 .75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.125 0 .25-.008.374-.024a.75.75 0 01.282.282A6.72 6.72 0 0012 21a8.25 8.25 0 01-8.25-8.25 8.25 8.25 0 018.25-8.25c4.545 0 8.25 3.705 8.25 8.25a6.72 6.72 0 00-.543 2.868.75.75 0 01.282-.282A8.962 8.962 0 0021 12c0-4.97-4.03-9-9-9z" />
+                </svg>
+                <h1 class="text-3xl font-bold text-indigo-600" data-lang-key="title">Research Process Adventure</h1>
+            </div>
+             <!-- Progress Bar -->
+            <div>
+                <div id="progressText" class="text-sm text-gray-600 font-medium mb-1" data-lang-key="progress_step1">Step 1 of 3: The Big Question</div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div id="progressBar" class="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full" style="width: 10%; transition: width 0.5s ease-in-out;"></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="relative">
+            <!-- Step 1: Identify the Question -->
+            <div id="step1" class="step-card visible-step">
+                <div class="p-6 bg-indigo-50 rounded-lg border-2 border-indigo-200">
+                    <h2 class="text-2xl font-semibold text-gray-800" data-lang-key="step1_heading">Step 1: Identify the Question</h2>
+                    <p class="text-gray-600 mt-2" data-lang-key="step1_subheading">Good research starts with a great question. Turn a broad topic into a focused one!</p>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700" data-lang-key="step1_topic_label">Here's a broad topic:</label>
+                        <p id="topicDisplay" class="mt-1 w-full p-3 bg-gray-100 rounded-md font-semibold text-lg text-gray-900"></p>
+                    </div>
+                    <div class="mt-4">
+                        <label for="researchQuestion" class="block text-sm font-medium text-gray-700" data-lang-key="step1_question_label">Now, make it a specific, researchable question:</label>
+                        <textarea id="researchQuestion" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" data-lang-key="step1_placeholder" placeholder="e.g., How does playing team-based video games affect teenage communication skills?"></textarea>
+                        <p id="questionError" class="text-red-500 text-sm mt-1 hidden" data-lang-key="step1_error">Please write a more specific question (at least 10 characters).</p>
+                    </div>
+                     <div class="mt-6 text-center">
+                        <button id="nextStepBtn" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105" data-lang-key="step1_button">
+                            Plan My Research &rarr;
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Plan the Research -->
+            <div id="step2" class="step-card hidden-step">
+                <div class="p-6 bg-teal-50 rounded-lg border-2 border-teal-200">
+                    <h2 class="text-2xl font-semibold text-gray-800" data-lang-key="step2_heading">Step 2: Plan the Research</h2>
+                    <p class="text-gray-600 mt-2" data-lang-key="step2_subheading">A great plan uses reliable sources. Which would you use to answer your question?</p>
+                    
+                    <div class="mt-4 p-3 bg-gray-100 rounded-md">
+                        <p class="text-sm font-medium text-gray-600" data-lang-key="step2_your_question">Your Question:</p>
+                        <p id="questionDisplay" class="font-semibold text-gray-800"></p>
+                    </div>
+
+                    <div id="sourceList" class="mt-4 space-y-3">
+                        <!-- Sources will be injected here by JS -->
+                    </div>
+
+                    <div id="feedback" class="mt-4 p-4 rounded-md text-sm feedback-message hidden"></div>
+
+                    <div class="mt-6 text-center">
+                        <button id="checkPlanBtn" class="bg-teal-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-transform transform hover:scale-105" data-lang-key="step2_button">
+                            Check My Plan
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completion Screen -->
+            <div id="completionScreen" class="step-card hidden-step text-center">
+                 <div class="p-6 bg-green-50 rounded-lg border-2 border-green-200">
+                    <svg class="mx-auto h-16 w-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2 id="finalTitle" class="text-2xl font-semibold text-gray-800 mt-4" data-lang-key="finish_excellent_title">Great Job!</h2>
+                    <p id="finalMessage" class="text-gray-600 mt-2" data-lang-key="finish_excellent_msg">You've completed the first two steps. You're on your way to becoming a research expert!</p>
+                    <p id="finalScore" class="text-xl font-bold text-indigo-600 mt-4"></p>
+                    <div class="mt-6">
+                        <button id="restartBtn" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105" data-lang-key="finish_button">
+                            Play Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // ... (DOM element selections remain the same) ...
+            const step1 = document.getElementById('step1');
+            const step2 = document.getElementById('step2');
+            const completionScreen = document.getElementById('completionScreen');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+
+            const topicDisplay = document.getElementById('topicDisplay');
+            const researchQuestionInput = document.getElementById('researchQuestion');
+            const questionDisplay = document.getElementById('questionDisplay');
+            const questionError = document.getElementById('questionError');
+
+            const nextStepBtn = document.getElementById('nextStepBtn');
+            const checkPlanBtn = document.getElementById('checkPlanBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            
+            const sourceListContainer = document.getElementById('sourceList');
+            const feedbackBox = document.getElementById('feedback');
+            
+            const finalTitle = document.getElementById('finalTitle');
+            const finalMessage = document.getElementById('finalMessage');
+            const finalScore = document.getElementById('finalScore');
+            const languageSelector = document.getElementById('languageSelector');
+
+            const lang = {
+                en: {
+                    title: "Research Process Adventure",
+                    progress_step1: "Step 1 of 3: The Big Question",
+                    progress_step2: "Step 2 of 3: The Master Plan",
+                    progress_step3: "Complete!",
+                    step1_heading: "Step 1: Identify the Question",
+                    step1_subheading: "Good research starts with a great question. Turn a broad topic into a focused one!",
+                    step1_topic_label: "Here's a broad topic:",
+                    step1_question_label: "Now, make it a specific, researchable question:",
+                    step1_placeholder: "e.g., How does playing team-based video games affect teenage communication skills?",
+                    step1_error: "Please write a more specific question (at least 10 characters).",
+                    step1_button: "Plan My Research &rarr;",
+                    step2_heading: "Step 2: Plan the Research",
+                    step2_subheading: "A great plan uses reliable sources. Which would you use to answer your question?",
+                    step2_your_question: "Your Question:",
+                    step2_sources_label: "Select your sources:",
+                    step2_button: "Check My Plan",
+                    step2_button_finish: "Finish! 🎉",
+                    feedback_reliable: "✔️ Reliable",
+                    feedback_unreliable: "❌ Unreliable",
+                    finish_excellent_title: "Excellent Work!",
+                    finish_excellent_msg: "You've crafted a fantastic research plan with solid sources. You're a natural!",
+                    finish_good_title: "Good Job!",
+                    finish_good_msg: "You've made a great start! Review the unreliable sources to make your next plan even better.",
+                    finish_try_again_title: "Nice Try!",
+                    finish_try_again_msg: "That's a start! The best researchers learn from every attempt. Let's try again!",
+                    finish_score_label: "Your Plan Score:",
+                    finish_button: "Play Again",
+                },
+                zh: {
+                    title: "研究过程大冒险",
+                    progress_step1: "第1步/共3步：提出重要问题",
+                    progress_step2: "第2步/共3步：制定大师计划",
+                    progress_step3: "完成！",
+                    step1_heading: "第1步：确定问题",
+                    step1_subheading: "好的研究始于一个好问题。把一个宽泛的话题变成一个有焦点的话题！",
+                    step1_topic_label: "这是一个宽泛的话题：",
+                    step1_question_label: "现在，把它变成一个具体、可研究的问题：",
+                    step1_placeholder: "例如，玩团队视频游戏如何影响青少年的沟通技巧？",
+                    step1_error: "请输入一个更具体的问题（至少10个字符）。",
+                    step1_button: "计划我的研究 &rarr;",
+                    step2_heading: "第2步：计划研究",
+                    step2_subheading: "一个好的计划需要使用可靠的来源。你会用哪些来源来回答你的问题？",
+                    step2_your_question: "你的问题：",
+                    step2_sources_label: "选择你的来源：",
+                    step2_button: "检查我的计划",
+                    step2_button_finish: "完成！🎉",
+                    feedback_reliable: "✔️ 可靠",
+                    feedback_unreliable: "❌ 不可靠",
+                    finish_excellent_title: "非常棒！",
+                    finish_excellent_msg: "你制定了一个很棒的研究计划，来源也很可靠。你真是个天生的研究员！",
+                    finish_good_title: "做得好！",
+                    finish_good_msg: "你开了个好头！再看看那些不可靠的来源，让你的下一个计划更完美。",
+                    finish_try_again_title: "不错的尝试！",
+                    finish_try_again_msg: "这是一个开始！最好的研究人员从每次尝试中学习。我们再试一次吧！",
+                    finish_score_label: "你的计划得分：",
+                    finish_button: "再玩一次",
+                },
+                ru: {
+                    title: "Приключение в мир исследований",
+                    progress_step1: "Шаг 1 из 3: Главный вопрос",
+                    progress_step2: "Шаг 2 из 3: Генеральный план",
+                    progress_step3: "Завершено!",
+                    step1_heading: "Шаг 1: Определите вопрос",
+                    step1_subheading: "Хорошее исследование начинается с отличного вопроса. Превратите широкую тему в конкретную!",
+                    step1_topic_label: "Вот широкая тема:",
+                    step1_question_label: "Теперь сделайте из этого конкретный, исследуемый вопрос:",
+                    step1_placeholder: "например, Как командные видеоигры влияют на коммуникативные навыки подростков?",
+                    step1_error: "Пожалуйста, напишите более конкретный вопрос (не менее 10 символов).",
+                    step1_button: "Планировать исследование &rarr;",
+                    step2_heading: "Шаг 2: Спланируйте исследование",
+                    step2_subheading: "В отличном плане используются надежные источники. Какие из них вы бы использовали для ответа на свой вопрос?",
+                    step2_your_question: "Ваш вопрос:",
+                    step2_sources_label: "Выберите источники:",
+                    step2_button: "Проверить мой план",
+                    step2_button_finish: "Завершить! 🎉",
+                    feedback_reliable: "✔️ Надежный",
+                    feedback_unreliable: "❌ Ненадежный",
+                    finish_excellent_title: "Отличная работа!",
+                    finish_excellent_msg: "Вы составили фантастический план исследования с надежными источниками. У вас талант!",
+                    finish_good_title: "Хорошая работа!",
+                    finish_good_msg: "Отличное начало! Просмотрите ненадежные источники, чтобы сделать следующий план еще лучше.",
+                    finish_try_again_title: "Неплохая попытка!",
+                    finish_try_again_msg: "Это только начало! Лучшие исследователи учатся на каждой попытке. Давайте попробуем еще раз!",
+                    finish_score_label: "Ваш счет за план:",
+                    finish_button: "Играть снова",
+                }
+            };
+
+            const topics = {
+                en: ["The impact of video games on teenagers", "Climate change and its effect on polar bears", "The history of the internet", "Healthy eating habits for students", "The rise of social media influencers"],
+                zh: ["电子游戏对青少年的影响", "气候变化及其对北极熊的影响", "互联网的历史", "学生的健康饮食习惯", "社交媒体影响者的崛起"],
+                ru: ["Влияние видеоигр на подростков", "Изменение климата и его влияние на белых медведей", "История Интернета", "Привычки здорового питания для студентов", "Рост влияния в социальных сетях"]
+            };
+
+            const sources = {
+                en: [{ name: "Scholarly Journals (e.g., JSTOR)", reliable: true }, { name: "Government Reports (e.g., NASA, WHO)", reliable: true }, { name: "Reputable News Organizations (e.g., BBC, AP)", reliable: true }, { name: "Books by recognized experts", reliable: true }, { name: "Wikipedia", reliable: false }, { name: "Personal Blogs", reliable: false }, { name: "Social Media Posts", reliable: false }],
+                zh: [{ name: "学术期刊 (例如, JSTOR)", reliable: true }, { name: "政府报告 (例如, NASA, WHO)", reliable: true }, { name: "信誉良好的新闻机构 (例如, BBC, AP)", reliable: true }, { name: "知名专家的书籍", reliable: true }, { name: "维基百科", reliable: false }, { name: "个人博客", reliable: false }, { name: "社交媒体帖子", reliable: false }],
+                ru: [{ name: "Научные журналы (например, JSTOR)", reliable: true }, { name: "Правительственные отчеты (например, NASA, WHO)", reliable: true }, { name: "Авторитетные новостные организации (например, BBC, AP)", reliable: true }, { name: "Книги признанных экспертов", reliable: true }, { name: "Википедия", reliable: false }, { name: "Личные блоги", reliable: false }, { name: "Посты в социальных сетях", reliable: false }]
+            };
+            
+            let currentLang = 'en';
+
+            function setLanguage(langCode) {
+                currentLang = langCode;
+                document.querySelectorAll('[data-lang-key]').forEach(el => {
+                    const key = el.getAttribute('data-lang-key');
+                    if (lang[langCode][key]) {
+                        if (el.tagName === 'TEXTAREA') {
+                           el.placeholder = lang[langCode][key];
+                        } else {
+                           el.innerHTML = lang[langCode][key];
+                        }
+                    }
+                });
+            }
+
+            languageSelector.addEventListener('change', (e) => {
+                setLanguage(e.target.value);
+                initializeGame(true); // Re-initialize to update topic and sources language
+            });
+
+
+            function updateProgress(step, textKey) {
+                const percentage = { 1: 10, 2: 50, 3: 100 };
+                progressBar.style.width = `${percentage[step]}%`;
+                progressText.textContent = lang[currentLang][textKey];
+            }
+
+            function initializeGame(languageChange = false) {
+                if (!languageChange) {
+                    updateProgress(1, 'progress_step1');
+                    switchStep(completionScreen, step1, true);
+                }
+
+                researchQuestionInput.value = '';
+                feedbackBox.classList.add('hidden');
+                checkPlanBtn.textContent = lang[currentLang].step2_button;
+                checkPlanBtn.disabled = false;
+                checkPlanBtn.onclick = handleCheckPlan;
+
+                const randomTopic = topics[currentLang][Math.floor(Math.random() * topics[currentLang].length)];
+                topicDisplay.textContent = randomTopic;
+
+                sourceListContainer.innerHTML = `<p class="font-medium text-gray-700" data-lang-key="step2_sources_label">${lang[currentLang].step2_sources_label}</p>`;
+                sources[currentLang].forEach((source, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-3 bg-white rounded-md border hover:border-indigo-300 transition-all';
+                    div.innerHTML = `
+                        <div class="flex items-center">
+                            <input id="source-${index}" name="sources" type="checkbox" data-reliable="${source.reliable}" class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <label for="source-${index}" class="ml-3 block text-sm font-medium text-gray-800">${source.name}</label>
+                        </div>
+                        <div id="feedback-${index}" class="text-sm font-bold ml-4 opacity-0 transition-opacity"></div>
+                    `;
+                    sourceListContainer.appendChild(div);
+                });
+            }
+            
+            function switchStep(from, to, isInstant = false) {
+                from.classList.remove('visible-step');
+                from.classList.add('hidden-step');
+                
+                const delay = isInstant ? 0 : 500;
+
+                setTimeout(() => {
+                    to.classList.remove('hidden-step');
+                    to.classList.add('visible-step');
+                }, delay);
+            }
+
+            nextStepBtn.addEventListener('click', () => {
+                const userQuestion = researchQuestionInput.value.trim();
+                questionError.classList.add('hidden');
+                researchQuestionInput.classList.remove('shake');
+
+                if (userQuestion.length < 10) {
+                    questionError.classList.remove('hidden');
+                    researchQuestionInput.classList.add('shake');
+                    return;
+                }
+                questionDisplay.textContent = userQuestion;
+                updateProgress(2, 'progress_step2');
+                switchStep(step1, step2);
+            });
+            
+            function handleCheckPlan() {
+                const checkboxes = sourceListContainer.querySelectorAll('input[type="checkbox"]');
+                let correctSelections = 0;
+                let incorrectSelections = 0;
+                let totalCorrect = sources[currentLang].filter(s => s.reliable).length;
+                
+                checkboxes.forEach((checkbox, index) => {
+                    const isReliable = checkbox.dataset.reliable === 'true';
+                    const feedbackEl = document.getElementById(`feedback-${index}`);
+                    
+                    if (checkbox.checked) {
+                        if (isReliable) {
+                            correctSelections++;
+                            feedbackEl.innerHTML = `<span class="text-green-600">${lang[currentLang].feedback_reliable}</span>`;
+                        } else {
+                            incorrectSelections++;
+                            feedbackEl.innerHTML = `<span class="text-red-600">${lang[currentLang].feedback_unreliable}</span>`;
+                        }
+                        feedbackEl.classList.remove('opacity-0');
+                    }
+                    checkbox.disabled = true; // Disable after checking
+                });
+
+                let score = Math.max(0, (correctSelections * 2) - incorrectSelections);
+                let scorePercentage = totalCorrect > 0 ? (correctSelections / totalCorrect) * 100 : 0;
+                
+                if(scorePercentage >= 75) {
+                    finalTitle.textContent = lang[currentLang].finish_excellent_title;
+                    finalMessage.textContent = lang[currentLang].finish_excellent_msg;
+                } else if (scorePercentage >= 50) {
+                    finalTitle.textContent = lang[currentLang].finish_good_title;
+                    finalMessage.textContent = lang[currentLang].finish_good_msg;
+                } else {
+                    finalTitle.textContent = lang[currentLang].finish_try_again_title;
+                    finalMessage.textContent = lang[currentLang].finish_try_again_msg;
+                }
+                
+                finalScore.textContent = `${lang[currentLang].finish_score_label} ${score}`;
+
+                checkPlanBtn.textContent = lang[currentLang].step2_button_finish;
+                checkPlanBtn.onclick = () => {
+                    updateProgress(3, 'progress_step3');
+                    switchStep(step2, completionScreen);
+                };
+            }
+
+            restartBtn.addEventListener('click', () => initializeGame());
+            
+            // Initial setup
+            setLanguage('en');
+            initializeGame();
+        });
+    </script>
+</body>
+</html>
+
