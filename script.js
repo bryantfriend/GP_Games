@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', function() {
             fileName: 'GP-Detectives.html',
             title: 'Global Perspecrtives Detective Agency'
         },
+        {
+            fileName: 'research-methods1.html',
+            title: 'Step 1 and 2 of research'
+        },
         // { fileName: 'your-next-game.html', title: 'The Title of Your Next Game' },
     ];
 
