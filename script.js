@@ -29,6 +29,10 @@ document.addEventListener('DOMContentLoaded', function() {
             fileName: 'research-methods1.html',
             title: 'Step 1 and 2 of research'
         },
+        {
+            fileName: 'source_surge.html',
+            title: 'Source Surge'
+        },        
         // { fileName: 'your-next-game.html', title: 'The Title of Your Next Game' },
     ];
 
