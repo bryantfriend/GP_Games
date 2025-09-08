@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
             title: 'Global Skills Navigator'
         },
         {
-            fileName: 'cultural-exchange.html',
-            title: 'Cultural Exchange Adventure'
+            fileName: 'GP-Detectives.html',
+            title: 'Global Perspecrtives Detective Agency'
         },
         // { fileName: 'your-next-game.html', title: 'The Title of Your Next Game' },
     ];
