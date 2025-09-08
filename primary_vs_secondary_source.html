@@ -84,7 +84,7 @@
         </div>
 
         <!-- Drop Zones -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-2 gap-6">
             <div id="primary-zone" data-type="primary" class="drop-zone bg-white p-6 rounded-2xl shadow-lg text-center border-4 border-dashed border-slate-300">
                 <h3 class="text-2xl font-bold text-slate-800 mb-2">Primary Sources</h3>
                 <p class="text-slate-500">First-hand accounts or original materials.</p>
@@ -150,6 +150,11 @@
     let team1Name = 'Blue Team';
     let team2Name = 'Red Team';
     let selectedDifficulty = 'easy';
+
+    // Variables for touch dragging
+    let draggedElement = null;
+    let offsetX = 0;
+    let offsetY = 0;
 
     // DOM Elements
     const setupScreen = document.getElementById('setup-screen');
@@ -261,12 +266,12 @@
         }
     }
 
-    function handleDrop(e) {
-        e.preventDefault();
-        this.classList.remove('drag-over');
+    // Combined logic for processing a drop
+    function processDrop(dropZone) {
+        dropZone.classList.remove('drag-over');
         
         const droppedItemType = items[currentItemIndex].type;
-        const dropZoneType = this.dataset.type;
+        const dropZoneType = dropZone.dataset.type;
 
         if (droppedItemType === dropZoneType) {
             // Correct
@@ -282,7 +287,18 @@
         }
         updateScores();
     }
+
+    // Handler for MOUSE drop event
+    function handleDrop(e) {
+        e.preventDefault();
+        processDrop(this);
+    }
     
+    // Handler for TOUCH drop event
+    function handleDropTouch(dropZone) {
+        processDrop(dropZone);
+    }
+
     function showFeedback(isCorrect) {
         const item = items[currentItemIndex];
         itemCard.classList.add('hidden');
@@ -339,16 +355,15 @@
         };
     }
 
-    // Event Listeners
+    // --- Event Listeners ---
     startGameBtn.addEventListener('click', startGame);
     difficultySelector.addEventListener('click', selectDifficulty);
+    nextTurnBtn.addEventListener('click', nextTurn);
     
+    // -- MOUSE Drag and Drop Events --
     itemCard.addEventListener('dragstart', (e) => {
-        // For compatibility
         e.dataTransfer.setData('text/plain', null); 
-        setTimeout(() => {
-            e.target.classList.add('opacity-50');
-        }, 0);
+        setTimeout(() => e.target.classList.add('opacity-50'), 0);
     });
 
     itemCard.addEventListener('dragend', (e) => {
@@ -360,15 +375,78 @@
             e.preventDefault();
             zone.classList.add('drag-over');
         });
-        zone.addEventListener('dragleave', () => {
-            zone.classList.remove('drag-over');
-        });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
         zone.addEventListener('drop', handleDrop);
     });
 
-    nextTurnBtn.addEventListener('click', nextTurn);
+    // -- TOUCH Drag and Drop Events --
+    itemCard.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            const touch = e.touches[0];
+            const rect = itemCard.getBoundingClientRect();
+            
+            offsetX = touch.clientX - rect.left;
+            offsetY = touch.clientY - rect.top;
+
+            draggedElement = itemCard.cloneNode(true);
+            draggedElement.id = 'dragged-ghost';
+            Object.assign(draggedElement.style, {
+                position: 'absolute',
+                left: `${rect.left}px`,
+                top: `${rect.top}px`,
+                width: `${rect.width}px`,
+                height: `${rect.height}px`,
+                pointerEvents: 'none',
+                opacity: '0.8',
+                zIndex: '1000'
+            });
+
+            document.body.appendChild(draggedElement);
+            itemCard.classList.add('opacity-50');
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+        if (draggedElement && e.touches.length === 1) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            
+            draggedElement.style.left = `${touch.clientX - offsetX}px`;
+            draggedElement.style.top = `${touch.clientY - offsetY}px`;
+            
+            draggedElement.style.display = 'none';
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            draggedElement.style.display = 'block';
+            
+            const dropZoneBelow = elementBelow ? elementBelow.closest('.drop-zone') : null;
+            dropZones.forEach(zone => {
+                zone.classList.toggle('drag-over', zone === dropZoneBelow);
+            });
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchend', (e) => {
+        if (draggedElement) {
+            const touch = e.changedTouches[0];
+            
+            draggedElement.style.display = 'none';
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            draggedElement.style.display = 'block';
+
+            const dropZoneTarget = elementBelow ? elementBelow.closest('.drop-zone') : null;
+            if (dropZoneTarget) {
+                handleDropTouch(dropZoneTarget);
+            }
+            
+            document.body.removeChild(draggedElement);
+            draggedElement = null;
+            itemCard.classList.remove('opacity-50');
+            dropZones.forEach(zone => zone.classList.remove('drag-over'));
+        }
+    });
 
 </script>
 </body>
 </html>
+
 
