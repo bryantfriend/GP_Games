@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source Sleuth: A Credibility Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            touch-action: manipulation; /* Prevents double-tap zoom on touch devices */
+        }
+        .card {
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+        .timer-bar-inner {
+            transition: width 0.25s linear;
+        }
+        .bubble-button {
+            transition: transform 0.1s ease-out;
+        }
+        .bubble-button:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 flex items-center justify-center min-h-screen p-4">
+    <div id="game-container" class="w-full max-w-2xl mx-auto text-center">
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl">
+            <div class="flex justify-center items-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500"><path d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"></path><path d="m21 21-4.3-4.3"></path><path d="M8 12h8"></path><path d="M12 8v8"></path></svg>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">Source Sleuth</h1>
+            <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">Can you tell a good source from a bad one? Let's find out!</p>
+            <p class="mb-8 text-gray-500 dark:text-gray-400">Each round has 10 sources to evaluate. Read each card and decide if it's credible or not. Good luck, detective!</p>
+            <button id="start-button" class="bubble-button w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl text-2xl shadow-lg focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+                Start Game
+            </button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6 p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
+                <div class="text-left">
+                    <div class="text-sm font-semibold text-gray-500">SCORE</div>
+                    <div id="score" class="text-3xl font-bold text-indigo-500">0</div>
+                </div>
+                 <div class="text-right">
+                    <div class="text-sm font-semibold text-gray-500">PROGRESS</div>
+                    <div id="progress" class="text-3xl font-bold text-indigo-500">1 / 10</div>
+                </div>
+            </div>
+            
+            <!-- Source Card -->
+            <div id="source-card-container" class="perspective-[1000px]">
+                <div id="source-card" class="card w-full min-h-[350px] relative">
+                    <!-- Front of Card -->
+                    <div id="card-front" class="card-face absolute w-full h-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col justify-between">
+                       <div>
+                         <div id="source-publication" class="text-sm font-semibold text-indigo-400 mb-2"></div>
+                         <h2 id="source-headline" class="text-2xl md:text-3xl font-bold mb-4"></h2>
+                         <p id="source-text" class="text-gray-600 dark:text-gray-300 text-base"></p>
+                       </div>
+                       <div id="source-author" class="text-sm text-gray-400 dark:text-gray-500 mt-4 self-start"></div>
+                    </div>
+                    <!-- Back of Card (Feedback) -->
+                    <div id="card-back" class="card-face card-back absolute w-full h-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col items-center justify-center">
+                        <div id="feedback-icon" class="mb-4"></div>
+                        <h3 id="feedback-title" class="text-3xl font-bold mb-2"></h3>
+                        <p id="feedback-explanation" class="text-gray-600 dark:text-gray-300"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div id="action-buttons" class="mt-6 grid grid-cols-2 gap-4">
+                <button id="not-credible-button" class="bubble-button bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl text-xl shadow-md">
+                    Not Credible
+                </button>
+                <button id="credible-button" class="bubble-button bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl text-xl shadow-md">
+                    Credible
+                </button>
+            </div>
+            
+            <div id="next-button-container" class="mt-6 hidden">
+                <button id="next-button" class="bubble-button w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl text-xl shadow-lg">
+                    Next Source
+                </button>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="hidden bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl">
+            <h2 class="text-3xl font-bold mb-2">Round Complete!</h2>
+            <p class="text-lg mb-4 text-gray-600 dark:text-gray-300">Your final score is:</p>
+            <div id="final-score" class="text-7xl font-bold text-indigo-500 mb-6">0</div>
+            <div id="final-message" class="text-md mb-8 text-gray-500 dark:text-gray-400"></div>
+            <button id="play-again-button" class="bubble-button w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl text-2xl shadow-lg focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        const startButton = document.getElementById('start-button');
+        const playAgainButton = document.getElementById('play-again-button');
+        const scoreEl = document.getElementById('score');
+        const sourceCard = document.getElementById('source-card');
+        const sourcePublicationEl = document.getElementById('source-publication');
+        const sourceHeadlineEl = document.getElementById('source-headline');
+        const sourceTextEl = document.getElementById('source-text');
+        const sourceAuthorEl = document.getElementById('source-author');
+        const credibleButton = document.getElementById('credible-button');
+        const notCredibleButton = document.getElementById('not-credible-button');
+        const actionButtons = document.getElementById('action-buttons');
+        const nextButtonContainer = document.getElementById('next-button-container');
+        const nextButton = document.getElementById('next-button');
+        const cardBack = document.getElementById('card-back');
+        const feedbackIcon = document.getElementById('feedback-icon');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackExplanation = document.getElementById('feedback-explanation');
+        const finalScoreEl = document.getElementById('final-score');
+        const finalMessageEl = document.getElementById('final-message');
+        const progressEl = document.getElementById('progress');
+
+        // --- Game Data ---
+        // Add more sources here to expand the pool to 100+
+        const sources = [
+            {
+                publication: "ScienceToday.com",
+                headline: "Study Finds Daily Chocolate Intake Boosts Brain Power",
+                text: "A new, groundbreaking study published by the Institute of Confectionery Research suggests that eating at least 200g of chocolate daily can significantly improve cognitive function and memory recall in adults.",
+                author: "By Dr. Coco Puff",
+                isCredible: false,
+                explanation: "This source is likely not credible. The 'Institute of Confectionery Research' and 'Dr. Coco Puff' sound made-up, and the claim is extraordinary without linking to a real scientific paper."
+            },
+            {
+                publication: "The Associated Press (AP)",
+                headline: "UN Releases Annual World Climate Report",
+                text: "The United Nations today released its comprehensive annual report on the state of the global climate, compiling data from over 100 countries. The report highlights a continued rise in global temperatures.",
+                author: "By Reuters Staff",
+                isCredible: true,
+                explanation: "This is a credible source. The Associated Press is a reputable news agency, and they are reporting on an official report from a major international organization (the UN)."
+            },
+            {
+                publication: "health-gurus.blog.net",
+                headline: "YOU WONT BELIEVE THIS ONE WEIRD TRICK TO LOSE BELLY FAT!",
+                text: "Doctors are stunned by this simple home remedy that melts away fat overnight. Forget diet and exercise, all you need is this special blend of lemon water and cinnamon.",
+                author: "Posted by Admin",
+                isCredible: false,
+                explanation: "This is not credible. The sensational, all-caps headline, vague author ('Admin'), and promise of a miracle cure are all major red flags of misinformation."
+            },
+            {
+                publication: "Journal of the American Medical Association (JAMA)",
+                headline: "Efficacy of New Statin Drug in Reducing LDL Cholesterol: A Randomized Clinical Trial",
+                text: "This double-blind, randomized clinical trial involving 5,800 participants demonstrates that the new drug, 'Rosuvastatin-B', reduced LDL cholesterol levels by an average of 25% compared to placebo...",
+                author: "By A. Patel, MD; L. Chen, PhD; et al.",
+                isCredible: true,
+                explanation: "This is a credible source. JAMA is a prestigious, peer-reviewed medical journal. The language is scientific, and it describes a rigorous study methodology (randomized clinical trial)."
+            },
+             {
+                publication: "The Daily Planet - A 2008 Archive",
+                headline: "Social Media Platform 'MySpace' Hits 100 Million Users",
+                text: "The popular social networking site MySpace has announced a major milestone, reaching 100 million active users this month, cementing its place as the king of social media.",
+                author: "By Tom Anderson",
+                isCredible: false,
+                explanation: "While the information was true in 2008, it's not credible *now*. Using outdated sources is a common mistake. Always check the publication date for relevance!"
+            },
+            {
+                publication: "Random Comment on a YouTube Video",
+                headline: "They're putting microchips in our water!!!",
+                text: "My cousin's friend who works for the city said they have a secret program to put tracking microchips in the tap water. Wake up people!!!",
+                author: "By AnonymousUser_8472",
+                isCredible: false,
+                explanation: "This is not credible. It's an anonymous comment citing a 'friend of a cousin' (hearsay) with no evidence. Anecdotal evidence from unknown sources is unreliable."
+            },
+            {
+                publication: "nasa.gov",
+                headline: "Perseverance Rover Successfully Collects First Mars Rock Sample",
+                text: "NASA's Perseverance rover has successfully drilled and collected its first rock core sample on Mars. The science team confirmed the collection via data sent back from the rover.",
+                author: "From the NASA Jet Propulsion Laboratory",
+                isCredible: true,
+                explanation: "This is a credible source. The '.gov' domain indicates it's an official U.S. government website. NASA is the primary source for this information."
+            },
+            {
+                publication: "The Onion",
+                headline: "Scientists Discover A New, More Annoying Bird",
+                text: "Ornithologists at the American Birding Association have announced the discovery of the 'Perpetual Screecher,' a species of finch whose call is indistinguishable from a car alarm.",
+                author: "Staff Writer",
+                isCredible: false,
+                explanation: "This is not credible because 'The Onion' is a well-known satirical publication. While funny, it's not a source of factual news."
+            },
+            {
+                publication: "Stanford University Study",
+                headline: "Link Between Sleep and Memory Consolidation Confirmed",
+                text: "Researchers at Stanford's Center for Sleep Sciences and Medicine published findings in 'Neuron' demonstrating a causal link between Rapid Eye Movement (REM) sleep and the brain's ability to consolidate spatial memories.",
+                author: "By Stanford News Service",
+                isCredible: true,
+                explanation: "This is credible. It cites a specific university, a research center, and a scientific journal ('Neuron'). This indicates a high level of academic rigor."
+            },
+            {
+                publication: "AwakenedPatriot1776.info",
+                headline: "Proof the Earth is Hollow and Run By Lizard People",
+                text: "Declassified documents I found on the internet prove that world leaders are secretly shape-shifting lizards who live in a society in the Earth's core. The evidence is undeniable.",
+                author: "By A Concerned Citizen",
+                isCredible: false,
+                explanation: "This is a classic example of a conspiracy theory website. The claims are extraordinary, the 'evidence' is vague, and the author is anonymous, all of which are major red flags."
+            },
+            {
+                publication: "World Health Organization (who.int)",
+                headline: "WHO Guidelines on Physical Activity and Sedentary Behaviour",
+                text: "The World Health Organization has issued updated global guidelines, recommending adults aged 18–64 years should do at least 150–300 minutes of moderate-intensity aerobic physical activity per week.",
+                author: "WHO Communications",
+                isCredible: true,
+                explanation: "This is a credible source. The WHO is the leading global authority on public health, and these are official guidelines based on extensive research."
+            },
+            {
+                publication: "Sponsored Content on a News Website",
+                headline: "This New 'Super-Pill' from NeuroCorp is Changing Lives",
+                text: "Feeling tired? Forgetful? NeuroCorp's amazing new supplement, CerebraBoost, is clinically proven to enhance focus and memory by 300%. (Note: This is an advertisement.)",
+                author: "Paid for by NeuroCorp",
+                isCredible: false,
+                explanation: "This is not a credible source of information, it's an advertisement. Sponsored content is designed to sell a product, not provide objective facts."
+            },
+            {
+                publication: "A personal blog from 2011",
+                headline: "Why the iPhone 4 is the pinnacle of smartphone technology",
+                text: "Apple has truly perfected the mobile phone with the iPhone 4. Its 'retina' display and glass back design are years ahead of the competition and will likely never be surpassed.",
+                author: "By TechieGuy23",
+                isCredible: false,
+                explanation: "This is not credible in the present day. Technology articles become outdated very quickly. What was true in 2011 is no longer relevant."
+            },
+            {
+                publication: "National Geographic",
+                headline: "Deepest-Ever Fish Discovered in the Mariana Trench",
+                text: "An international team of scientists has documented the deepest-living fish ever found, a new species of snailfish, swimming at a depth of 8,178 meters in the Mariana Trench.",
+                author: "By Jane J. Lee",
+                isCredible: true,
+                explanation: "National Geographic is a highly respected organization known for its scientific and nature reporting. This is a credible source."
+            },
+            {
+                publication: "Facebook Post from your Aunt",
+                headline: "Putting onions in your socks can cure the flu!",
+                text: "I saw a post that said if you put sliced onions in your socks overnight, they draw out toxins and cure the flu. I tried it and felt better the next day! It works!",
+                author: "Your Aunt Carol",
+                isCredible: false,
+                explanation: "This is anecdotal evidence and a common folk remedy with no scientific basis. Personal testimonials on social media are not a substitute for medical advice."
+            },
+            {
+                publication: "U.S. Bureau of Labor Statistics (bls.gov)",
+                headline: "Consumer Price Index Summary - August 2025",
+                text: "The Consumer Price Index for All Urban Consumers (CPI-U) rose 0.3 percent in August on a seasonally adjusted basis after being unchanged in July, the U.S. Bureau of Labor Statistics reported today.",
+                author: "Bureau of Labor Statistics",
+                isCredible: true,
+                explanation: "This is a credible source. The BLS is the official government agency responsible for tracking and reporting this economic data."
+            },
+            {
+                publication: "HistoryChannel.co",
+                headline: "Ancient Aliens Built the Pyramids",
+                text: "There is no way ancient humans could have built the great pyramids of Giza with their primitive tools. The only logical explanation is that they had help from technologically advanced extraterrestrial visitors.",
+                author: "From our 'Ancient Mysteries' Series",
+                isCredible: false,
+                explanation: "This is speculation and pseudoscience. While entertaining, it contradicts the consensus of archaeologists and historians. Note the '.co' domain, which might be trying to impersonate the real History Channel."
+            },
+            {
+                publication: "The New York Times",
+                headline: "Federal Reserve Chair Announces Interest Rate Decision",
+                text: "In a press conference today, the chair of the Federal Reserve announced that the central bank would hold interest rates steady, citing signs of a cooling inflation rate and a stable labor market.",
+                author: "By Jeanna Smialek",
+isCredible: true,
+                explanation: "The New York Times is a reputable, long-standing news organization with high journalistic standards, making this a credible source for financial news."
+            },
+            {
+                publication: "Top10Lists.net",
+                headline: "10 Vegetables That Are Actually Unhealthy For You",
+                text: "You might think you're eating healthy, but some vegetables, like tomatoes and eggplants, contain 'lectins' that can cause inflammation and digestive issues. It's best to avoid them entirely.",
+                author: "Admin",
+                isCredible: false,
+                explanation: "This is misleading. While some foods contain lectins, they are not harmful to most people in normal amounts and the health benefits of eating vegetables far outweigh any risk. This is a form of clickbait that oversimplifies a complex topic."
+            },
+            {
+                publication: "Wikipedia Article with [citation needed] tags",
+                headline: "History of the Bicycle",
+                text: "The first bicycle was invented in 1817 by Baron Karl von Drais. However, some claim an earlier, two-wheeled device was sketched by Leonardo da Vinci. [citation needed] Bicycles became popular in the late 19th century.",
+                author: "Contributed by various editors",
+                isCredible: false,
+                explanation: "This is not fully credible. While Wikipedia can be a good starting point, the '[citation needed]' tag indicates a claim that is not backed up by a source. The information should be verified elsewhere."
+            }
+        ];
+        
+        // --- Game State ---
+        let score = 0;
+        let questionsAnswered = 0;
+        let currentRoundSources = [];
+
+        const QUESTIONS_PER_ROUND = 10;
+
+        // --- Game Logic ---
+        function startGame() {
+            score = 0;
+            questionsAnswered = 0;
+            scoreEl.textContent = score;
+
+            // Select 10 random questions for the round
+            const shuffled = [...sources].sort(() => 0.5 - Math.random());
+            currentRoundSources = shuffled.slice(0, QUESTIONS_PER_ROUND);
+
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+
+            displaySource();
+        }
+
+        function displaySource() {
+            progressEl.textContent = `${questionsAnswered + 1} / ${QUESTIONS_PER_ROUND}`;
+            
+            const source = currentRoundSources[questionsAnswered];
+            sourcePublicationEl.textContent = source.publication;
+            sourceHeadlineEl.textContent = source.headline;
+            sourceTextEl.textContent = source.text;
+            sourceAuthorEl.textContent = source.author;
+
+            sourceCard.classList.remove('flipped');
+            actionButtons.classList.remove('hidden');
+            nextButtonContainer.classList.add('hidden');
+        }
+
+        function handleAnswer(userChoice) {
+            const source = currentRoundSources[questionsAnswered];
+            const isCorrect = userChoice === source.isCredible;
+
+            let resultTitle = '';
+            let iconSvg = '';
+            
+            if (isCorrect) {
+                score++;
+                resultTitle = 'Correct!';
+                feedbackTitle.className = "text-3xl font-bold mb-2 text-green-500";
+                iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+            } else {
+                resultTitle = 'Incorrect!';
+                feedbackTitle.className = "text-3xl font-bold mb-2 text-red-500";
+                iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+            }
+            
+            scoreEl.textContent = score;
+
+            feedbackIcon.innerHTML = iconSvg;
+            feedbackTitle.textContent = resultTitle;
+            feedbackExplanation.textContent = source.explanation;
+
+            sourceCard.classList.add('flipped');
+            actionButtons.classList.add('hidden');
+            nextButtonContainer.classList.remove('hidden');
+        }
+
+        function nextSource() {
+            questionsAnswered++;
+            if (questionsAnswered < QUESTIONS_PER_ROUND) {
+                displaySource();
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            gameScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+            finalScoreEl.textContent = score;
+            
+            let message = `You got ${score} out of ${QUESTIONS_PER_ROUND} correct. Good job!`;
+            if (score >= 9) {
+                 message = `You got ${score} out of ${QUESTIONS_PER_ROUND}! Excellent work, detective! You've got a sharp eye for sources.`;
+            } else if (score <= 5) {
+                message = `You got ${score} out of ${QUESTIONS_PER_ROUND}. A good start! The more you practice, the better you'll get.`;
+            }
+            finalMessageEl.textContent = message;
+        }
+
+        // --- Event Listeners ---
+        startButton.addEventListener('click', startGame);
+        playAgainButton.addEventListener('click', startGame);
+
+        credibleButton.addEventListener('click', () => handleAnswer(true));
+        notCredibleButton.addEventListener('click', () => handleAnswer(false));
+        nextButton.addEventListener('click', nextSource);
+
+    </script>
+</body>
+</html>
+
