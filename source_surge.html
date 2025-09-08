@@ -291,15 +291,47 @@
 
         // --- Event Listeners ---
         window.addEventListener('resize', resizeCanvas);
-        canvas.addEventListener('mousemove', e => {
+
+        function handlePlayerMove(e) {
             const rect = canvas.getBoundingClientRect();
-            player.x = e.clientX - rect.left - player.width / 2;
+            let clientX;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                // Prevent page scrolling on tablet when dragging the paddle
+                e.preventDefault();
+            } else {
+                // For mouse events
+                clientX = e.clientX;
+            }
+
+            player.x = clientX - rect.left - player.width / 2;
+
+            // Boundary detection
             if (player.x < 0) player.x = 0;
-            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-        });
-        canvas.addEventListener('click', () => {
-            if (heldSource) dropSource();
-        });
+            if (player.x + player.width > canvas.width) {
+                player.x = canvas.width - player.width;
+            }
+        }
+
+        function handleDrop(e) {
+            // Prevent the browser from also processing a click event after a touch
+            if (e.type === 'touchstart') {
+                e.preventDefault();
+            }
+            if (heldSource) {
+                dropSource();
+            }
+        }
+
+        // Mouse Controls
+        canvas.addEventListener('mousemove', handlePlayerMove);
+        canvas.addEventListener('click', handleDrop);
+
+        // Touch Controls for Tablets
+        canvas.addEventListener('touchmove', handlePlayerMove, { passive: false });
+        canvas.addEventListener('touchstart', handleDrop, { passive: false });
+
 
         // --- Drawing Functions ---
         function drawPlayer() {
