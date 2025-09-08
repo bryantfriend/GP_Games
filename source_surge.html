@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source Surge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #111827; /* Tailwind gray-900 */
+            color: #F3F4F6; /* Tailwind gray-100 */
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 1000px;
+            height: 100%;
+            max-height: 800px;
+            background: #1F2937; /* Tailwind gray-800 */
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(74, 222, 128, 0.4);
+            border: 2px solid #4ADF80;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            border-bottom: 2px solid #4ADF80;
+            background-image:
+                radial-gradient(circle at 25px 25px, rgba(74, 222, 128, 0.2) 2%, transparent 0%),
+                radial-gradient(circle at 75px 75px, rgba(74, 222, 128, 0.2) 2%, transparent 0%);
+            background-size: 100px 100px;
+            background-position: 0 0;
+            animation: move-background 10s linear infinite;
+            cursor: none; /* Hide the default cursor over the game area */
+        }
+
+        @keyframes move-background {
+            from {
+                background-position: 0 0;
+            }
+            to {
+                background-position: 100px 100px;
+            }
+        }
+
+
+        #ui-bar {
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 2px;
+        }
+        
+        #round-objective {
+            text-shadow: 0 0 10px #4ADF80;
+        }
+
+        #game-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(17, 24, 39, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            flex-direction: column;
+            padding: 2rem;
+            z-index: 10;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .overlay-button {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #4ADF80;
+            color: #111827;
+            padding: 0.75rem 2rem;
+            border-radius: 10px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.6);
+            transition: all 0.2s ease-in-out;
+            margin-top: 2rem;
+        }
+
+        .overlay-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(74, 222, 128, 0.8);
+        }
+        
+        .feedback-animation {
+            animation: flash 0.5s ease-out;
+        }
+        
+        @keyframes flash {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .penalty-flash {
+             animation: red-flash 0.4s ease-out;
+        }
+
+        @keyframes red-flash {
+            from { background-color: #EF4444; }
+            to { background-color: transparent; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container" class="shadow-2xl">
+        <!-- Game Overlay for Start/End Screens -->
+        <div id="game-overlay">
+            <div>
+                <h1 id="overlay-title" class="text-6xl font-bold text-green-400" style="font-family: 'Orbitron', sans-serif; text-shadow: 0 0 15px #4ADF80;">SOURCE SURGE</h1>
+                <p id="overlay-instructions" class="mt-4 text-xl text-gray-300 max-w-2xl">A game of historical evidence. Get ready to sort the sources!</p>
+                <button id="start-button" class="overlay-button">START MISSION</button>
+            </div>
+        </div>
+
+        <!-- UI Bar -->
+        <div id="ui-bar" class="w-full bg-gray-900 p-4 grid grid-cols-3 items-center text-2xl text-center">
+            <div>Score: <span id="score">0</span></div>
+            <div id="round-objective" class="text-green-400"></div>
+            <div>Time: <span id="timer">45</span>s</div>
+        </div>
+
+        <!-- Game Canvas -->
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameContainer = document.getElementById('game-container');
+        const scoreEl = document.getElementById('score');
+        const timerEl = document.getElementById('timer');
+        const roundObjectiveEl = document.getElementById('round-objective');
+
+        // Overlay elements
+        const gameOverlay = document.getElementById('game-overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayInstructions = document.getElementById('overlay-instructions');
+        let startButton = document.getElementById('start-button');
+
+        let gameLoop;
+        let countdown;
+        let score = 0;
+        let timeLeft = 45;
+        let fallSpeed = 2;
+        let spawnRate = 2000;
+
+        // Game State
+        let currentRound = 0;
+        const ROUNDS = [
+            { number: 1, type: 'primary', title: 'ROUND 1: PRIMARY SOURCES', instructions: 'Catch and sort ONLY the Primary sources. Avoid the secondary ones!' },
+            { number: 2, type: 'secondary', title: 'ROUND 2: SECONDARY SOURCES', instructions: 'Now, catch and sort ONLY the Secondary sources. Avoid the primary ones!' }
+        ];
+
+        // Game data with Emojis
+        const sources = [
+            { text: '✍️ A diary entry from a WWII soldier', type: 'primary' },
+            { text: '📷 An original photograph from the 1920s', type: 'primary' },
+            { text: '📜 The U.S. Constitution document', type: 'primary' },
+            { text: '🗣️ An interview with an eyewitness', type: 'primary' },
+            { text: '🔬 An original scientific research paper', type: 'primary' },
+            { text: '✉️ Letters written by a historical figure', type: 'primary' },
+            { text: '🏺 An ancient artifact from an excavation', type: 'primary' },
+            { text: '🎤 An audio recording of a speech', type: 'primary' },
+            { text: '📄 A birth certificate', type: 'primary' },
+            { text: '📈 Raw data from a scientific experiment', type: 'primary' },
+            { text: '📚 A textbook chapter about WWII', type: 'secondary' },
+            { text: '👤 A biography of Abraham Lincoln', type: 'secondary' },
+            { text: '🎬 A documentary about ancient Egypt', type: 'secondary' },
+            { text: '📰 A book review in a newspaper', type: 'secondary' },
+            { text: '🔎 An article analyzing a scientific study', type: 'secondary' },
+            { text: '📖 A history encyclopedia entry', type: 'secondary' },
+            { text: '🗞️ A magazine article about a past event', type: 'secondary' },
+            { text: '🖋️ A literary critique of a novel', type: 'secondary' },
+            { text: '🌐 A Wikipedia article', type: 'secondary' },
+            { text: '📑 A report summarizing multiple studies', type: 'secondary' },
+        ];
+
+        let fallingSources = [];
+        let lastSpawn = -1;
+        let heldSource = null;
+
+        const player = { x: 0, y: 0, width: 120, height: 20, color: '#4ADF80' };
+        const bins = {
+            primary: { x: 0, y: 0, width: 0, height: 80, color: '#3B82F6', label: 'PRIMARY' },
+            secondary: { x: 0, y: 0, width: 0, height: 80, color: '#EF4444', label: 'SECONDARY' }
+        };
+
+        function resizeCanvas() {
+            canvas.width = gameContainer.clientWidth;
+            canvas.height = gameContainer.clientHeight - document.getElementById('ui-bar').offsetHeight;
+            player.x = canvas.width / 2 - player.width / 2;
+            player.y = canvas.height - bins.primary.height - player.height - 10;
+            bins.primary.width = canvas.width / 2;
+            bins.primary.x = 0;
+            bins.primary.y = canvas.height - bins.primary.height;
+            bins.secondary.width = canvas.width / 2;
+            bins.secondary.x = canvas.width / 2;
+            bins.secondary.y = canvas.height - bins.secondary.height;
+        }
+
+        function fullGameReset() {
+            score = 0;
+            currentRound = 0;
+            scoreEl.textContent = '0';
+            showOverlay('SOURCE SURGE', 'A game of historical evidence. Get ready to sort the sources!', 'START MISSION', startGame);
+        }
+        
+        function showOverlay(title, instructions, buttonText, onButtonClick) {
+            gameOverlay.style.display = 'flex';
+            overlayTitle.textContent = title;
+            overlayInstructions.textContent = instructions;
+            startButton.textContent = buttonText;
+            // Clone and replace to remove old event listeners
+            const newButton = startButton.cloneNode(true);
+            startButton.parentNode.replaceChild(newButton, startButton);
+            startButton = newButton; // Re-assign the variable to the new button
+            startButton.addEventListener('click', onButtonClick);
+        }
+
+        function startGame() {
+            currentRound = 0;
+            score = 0;
+            scoreEl.textContent = '0';
+            startNextRound();
+        }
+
+        function startNextRound() {
+            const roundData = ROUNDS[currentRound];
+            if (!roundData) {
+                endGame();
+                return;
+            }
+            showOverlay(roundData.title, roundData.instructions, `START ROUND ${roundData.number}`, () => {
+                gameOverlay.style.display = 'none';
+                setupRound(roundData);
+            });
+        }
+        
+        function setupRound(roundData) {
+            timeLeft = 45;
+            fallSpeed = 2 + (currentRound * 0.5); // Slightly faster in round 2
+            spawnRate = 2000 - (currentRound * 200); // Spawn faster
+            fallingSources = [];
+            heldSource = null;
+            timerEl.textContent = timeLeft;
+            roundObjectiveEl.textContent = `COLLECT: ${roundData.type.toUpperCase()}`;
+            
+            countdown = setInterval(handleTimer, 1000);
+            gameLoop = requestAnimationFrame(mainLoop);
+        }
+
+        function handleTimer() {
+             timeLeft--;
+             timerEl.textContent = timeLeft;
+             if (timeLeft <= 0) {
+                 clearInterval(countdown);
+                 cancelAnimationFrame(gameLoop);
+                 currentRound++;
+                 startNextRound();
+             }
+        }
+
+        function endGame() {
+            showOverlay('MISSION COMPLETE', `Your final score is ${score}. Great work, analyst!`, 'PLAY AGAIN', fullGameReset);
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('resize', resizeCanvas);
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            player.x = e.clientX - rect.left - player.width / 2;
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+        });
+        canvas.addEventListener('click', () => {
+            if (heldSource) dropSource();
+        });
+
+        // --- Drawing Functions ---
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.shadowBlur = 0;
+        }
+
+        function drawBins() {
+            ctx.fillStyle = bins.primary.color;
+            ctx.fillRect(bins.primary.x, bins.primary.y, bins.primary.width, bins.primary.height);
+            ctx.fillStyle = '#fff';
+            ctx.font = "bold 24px 'Orbitron'";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(bins.primary.label, bins.primary.x + bins.primary.width / 2, bins.primary.y + bins.primary.height / 2);
+
+            ctx.fillStyle = bins.secondary.color;
+            ctx.fillRect(bins.secondary.x, bins.secondary.y, bins.secondary.width, bins.secondary.height);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(bins.secondary.label, bins.secondary.x + bins.secondary.width / 2, bins.secondary.y + bins.secondary.height / 2);
+        }
+        
+        function drawSource(source) {
+            const padding = 10;
+            ctx.font = "16px 'Roboto'";
+            source.width = ctx.measureText(source.text).width + padding * 2;
+
+            ctx.fillStyle = '#111827';
+            ctx.strokeStyle = source.type === 'primary' ? bins.primary.color : bins.secondary.color;
+            ctx.lineWidth = 3;
+            
+            ctx.beginPath();
+            ctx.roundRect(source.x, source.y, source.width, source.height, [8]);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#F3F4F6';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(source.text, source.x + source.width / 2, source.y + source.height / 2);
+        }
+        
+        function drawHeldSource() {
+             if (heldSource) {
+                heldSource.x = player.x + (player.width / 2) - (heldSource.width / 2);
+                heldSource.y = player.y - heldSource.height - 5;
+                drawSource(heldSource);
+             }
+        }
+
+        // --- Game Logic ---
+        function spawnSource() {
+            const randomSource = { ...sources[Math.floor(Math.random() * sources.length)] };
+            ctx.font = "16px 'Roboto'";
+            const textWidth = ctx.measureText(randomSource.text).width;
+            fallingSources.push({
+                x: Math.random() * (canvas.width - (textWidth + 20)),
+                y: -50, height: 40, ...randomSource
+            });
+        }
+
+        function updateSources() {
+            const roundType = ROUNDS[currentRound].type;
+            for (let i = fallingSources.length - 1; i >= 0; i--) {
+                const source = fallingSources[i];
+                source.y += fallSpeed;
+
+                if (!heldSource && source.y + source.height > player.y && source.y < player.y + player.height && source.x + source.width > player.x && source.x < player.x + player.width) {
+                    // CATCH LOGIC
+                    if (source.type === roundType) {
+                        heldSource = source; // Correct catch
+                    } else {
+                        updateScore(-15); // Penalty for catching wrong type
+                        gameContainer.classList.add('penalty-flash');
+                        setTimeout(() => gameContainer.classList.remove('penalty-flash'), 400);
+                    }
+                    fallingSources.splice(i, 1);
+                } else if (source.y > canvas.height) {
+                    // MISS LOGIC
+                    if(source.type === roundType) {
+                        updateScore(-5); // Penalty for missing a correct source
+                    }
+                    fallingSources.splice(i, 1);
+                }
+            }
+        }
+        
+        function dropSource() {
+            const playerCenterX = player.x + player.width / 2;
+            const droppedInPrimary = playerCenterX < bins.primary.width;
+            let correctDrop = (droppedInPrimary && heldSource.type === 'primary') || (!droppedInPrimary && heldSource.type === 'secondary');
+
+            if (correctDrop) {
+                updateScore(10);
+                scoreEl.classList.add('feedback-animation');
+                setTimeout(() => scoreEl.classList.remove('feedback-animation'), 500);
+            } else {
+                updateScore(-10);
+                timerEl.classList.add('feedback-animation');
+                setTimeout(() => timerEl.classList.remove('feedback-animation'), 500);
+            }
+            heldSource = null;
+        }
+
+        function updateScore(amount) {
+            score += amount;
+            if (score < 0) score = 0;
+            scoreEl.textContent = score;
+        }
+
+        // --- Main Loop ---
+        function mainLoop(timestamp) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            updateSources();
+            
+            if (timestamp - lastSpawn > spawnRate) {
+                lastSpawn = timestamp;
+                spawnSource();
+            }
+
+            drawBins();
+            fallingSources.forEach(drawSource);
+            drawPlayer();
+            drawHeldSource();
+
+            gameLoop = requestAnimationFrame(mainLoop);
+        }
+
+        // --- Initial setup ---
+        resizeCanvas();
+        fullGameReset();
+        
+    </script>
+</body>
+</html>
+
