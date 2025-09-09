@@ -37,6 +37,10 @@ document.addEventListener('DOMContentLoaded', function() {
             fileName: 'source_sleuth.html',
             title: 'Source Sleuth'
         },         
+         {
+            fileName: 'code_sorter.html',
+            title: 'Question Sorter'
+        },  
         // { fileName: 'your-next-game.html', title: 'The Title of Your Next Game' },
     ];
 
