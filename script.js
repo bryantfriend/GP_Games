@@ -13,6 +13,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Make sure each line ends with a comma (,) except for the last one.
 
     const games = [
+
+        {
+            fileName: 'questionstorming.html',
+            title: 'Question Storming'
+        }, 
+        {
+            fileName: 'questionbuilderchallenge.html',
+            title: 'Question Builder Challenge'
+        },  
+        {
+            fileName: 'code_sorter.html',
+            title: 'Question Sorter'
+        },  
         {
             fileName: 'primary_vs_secondary_source.html',
             title: 'Primary vs. Secondary Sources'
@@ -37,10 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fileName: 'source_sleuth.html',
             title: 'Source Sleuth'
         },         
-         {
-            fileName: 'code_sorter.html',
-            title: 'Question Sorter'
-        },  
+
         // { fileName: 'your-next-game.html', title: 'The Title of Your Next Game' },
     ];
 
