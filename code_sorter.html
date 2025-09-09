@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Question Sorter</title>
+<style>
+  :root{
+    --bg:#f6fbff;
+    --ink:#16324f;
+    --accent:#2fbf71;
+    --bad:#ff5c5c;
+    --gold:#ffbf3f;
+    --sky:#7dd3fc;
+    --panel:#ffffff;
+    --shadow:0 10px 20px rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#eaf6ff)}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;color:var(--ink);display:flex;flex-direction:column}
+
+  header{
+    padding:.75rem 1rem;
+    display:grid;
+    grid-template-columns:auto 1fr auto;
+    align-items:center;
+    gap:1rem;
+  }
+  .title{
+    font-weight:800; letter-spacing:.3px;
+    text-transform:uppercase; font-size:clamp(.9rem,2.2vw,1rem);
+  }
+  .settings-container {
+    display: flex;
+    justify-self: start;
+    align-items: center;
+    gap: 1rem;
+  }
+  .lang-switcher, .difficulty-switcher {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    background: #eaf6ff;
+    padding: .25rem;
+    border-radius: 10px;
+  }
+  .lang-btn, .diff-btn {
+    appearance: none; border: 2px solid transparent; background: transparent;
+    border-radius: 8px; padding: .3rem .6rem;
+    font-weight: 700; color: var(--ink); opacity: .7;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .lang-btn.active, .diff-btn.active {
+    background: #fff;
+    border-color: var(--sky);
+    opacity: 1;
+    box-shadow: 0 2px 5px rgba(0,0,0,.08);
+  }
+  .hud{
+    display:flex; gap:12px; align-items:center; justify-content:center;
+    background:var(--panel); padding:.5rem .75rem; border-radius:999px; box-shadow:var(--shadow);
+  }
+  .hud span{display:inline-flex; align-items:center; gap:.35rem; font-weight:700}
+  .pill{padding:.2rem .55rem;border-radius:999px;background:#eef7ff;font-weight:700}
+  .btn{
+    appearance:none; border:0; border-radius:10px; padding:.6rem .9rem;
+    font-weight:800; background:var(--accent); color:#fff; box-shadow:var(--shadow); cursor:pointer;
+  }
+  .btn.secondary{background:#6b7b8d}
+  .btn:active{transform:translateY(1px)}
+
+  /* Game stage */
+  .stage-wrap{
+    flex:1; display:flex; justify-content:center; align-items:center; padding:10px;
+  }
+  .stage{
+    position:relative; width:min(100vw,900px); height:min(68vh,540px);
+    background:linear-gradient(180deg,#dff4ff 0 65%, #c2f0c2 65%); border-radius:16px;
+    overflow:hidden; box-shadow:var(--shadow);
+  }
+  .ground{
+    position:absolute; left:0; right:0; bottom:0; height:35%;
+    background:
+      radial-gradient(20px 12px at 20% 40%, rgba(255,255,255,.5), transparent 60%),
+      radial-gradient(24px 14px at 60% 70%, rgba(255,255,255,.5), transparent 60%),
+      linear-gradient(0deg,#9be49b,#b8f1b8 50%, #c7f6c7 100%);
+  }
+
+  /* Bins */
+  .bin{
+    position:absolute; bottom:8%; width:130px; height:110px; border-radius:14px;
+    display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900;
+    text-align:center; padding:.5rem;
+    box-shadow:0 8px 16px rgba(0,0,0,.18), inset 0 -10px 0 rgba(0,0,0,.08);
+  }
+  .bin.good{left:4%; background:linear-gradient(180deg,#2fd37b,#20b466)}
+  .bin.bad{right:4%; background:linear-gradient(180deg,#ff6a6a,#e94545)}
+  .bin .icon{font-size:1.5rem; display:block; opacity:.95}
+
+  /* Player */
+  .player{
+    position:absolute; bottom:30%; left:0; transform:translateX(var(--px, 45%)); width:64px; height:96px;
+  }
+  /* Simple character made of CSS blocks */
+  .p-body{
+    position:absolute; inset:0; transform:translateZ(0);
+  }
+  .p-head{
+    width:42px; height:42px; border-radius:50%;
+    background:#ffd8b1; position:absolute; left:11px; top:0;
+    box-shadow:inset 0 -6px 0 rgba(0,0,0,.08);
+  }
+  .p-face::before,.p-face::after{
+    content:""; position:absolute; top:16px; width:6px; height:6px; border-radius:50%; background:#263238;
+  }
+  .p-face::before{left:14px} .p-face::after{right:14px}
+  .p-smile{
+    position:absolute; top:27px; left:16px; width:10px; height:6px; border-bottom:3px solid #263238; border-radius:0 0 10px 10px;
+  }
+  .p-torso{
+    position:absolute; top:38px; left:6px; width:52px; height:40px; border-radius:10px;
+    background:linear-gradient(180deg,#3b82f6,#2563eb);
+  }
+  .p-hand{
+    position:absolute; top:42px; width:14px; height:34px; border-radius:10px;
+    background:#ffd8b1;
+  }
+  .p-hand.left{left:-4px} .p-hand.right{right:-4px}
+  .p-legs{
+    position:absolute; top:74px; left:10px; width:44px; height:24px; display:flex; gap:6px;
+  }
+  .p-leg{flex:1; background:linear-gradient(180deg,#0f172a,#1f2937); border-radius:6px}
+  .carry .p-hand.right{transform:translateY(-4px)} /* lift hand when carrying */
+
+  /* Question bubble */
+  .question{
+    position:absolute; min-width:180px; max-width:280px; padding:.6rem .7rem; border-radius:14px;
+    background:var(--panel); box-shadow:var(--shadow); border:2px solid #e5f0ff;
+    line-height:1.25; font-weight:600;
+    transition: border-color .2s, box-shadow .2s; /* Add transition for highlighting */
+  }
+  .question.highlight {
+    border-color: var(--gold);
+    box-shadow: 0 0 15px rgba(255, 191, 63, 0.7);
+  }
+  .question::after{
+    content:""; position:absolute; bottom:-10px; left:24px; width:18px; height:18px;
+    background:var(--panel); border-left:2px solid #e5f0ff; border-bottom:2px solid #e5f0ff; transform:rotate(-45deg);
+  }
+  .tag{
+    display:inline-block; margin-top:.35rem; font-size:.75rem; font-weight:800; padding:.1rem .45rem; border-radius:999px;
+  }
+  .goodtag{background:#e9fbf2; color:#0d7a48; border:1px solid #b9f2d3}
+  .badtag{background:#fff1f1; color:#9b1111; border:1px solid #ffd0d0}
+  .neutraltag{background:#f3f4f6; color:#4b5563; border:1px solid #d1d5db;}
+
+  /* Controls */
+  .controls{
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; padding:10px;
+  }
+  .padbtn{
+    background:var(--panel); border:0; border-radius:16px; padding:14px; box-shadow:var(--shadow);
+    font-weight:900; font-size:1rem; min-height:54px; cursor:pointer;
+  }
+
+  /* Toast / feedback */
+  .toast{
+    position:absolute; top:10px; left:50%; transform:translateX(-50%);
+    background:#000; color:#fff; padding:.45rem .7rem; border-radius:999px; opacity:0; pointer-events:none;
+    transition:opacity .25s;
+  }
+  .toast.show{opacity:.8}
+
+  /* Overlay screens */
+  .overlay{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(10,20,30,.5);
+    z-index: 100;
+  }
+  .card{
+    background:#fff; border-radius:16px; padding:1.2rem 1.5rem; width:min(92vw,520px); box-shadow:var(--shadow); text-align:center;
+  }
+  .card h2{margin:.2rem 0 1rem 0}
+  .statrow{display:flex; gap:10px; justify-content:center; margin:.5rem 0 1rem 0; flex-wrap:wrap;}
+  .stat{background:#f6f9ff; padding:.5rem .8rem; border-radius:10px; font-weight:800}
+  .small{font-weight:600; color:#41556b}
+  .kbr{font-size:.9rem; opacity:.8}
+
+  /* Start Screen Specifics */
+  .start-settings {
+    margin: 1.5rem 0; display: flex; flex-direction: column; gap: 1rem;
+  }
+  .setting-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem; text-align: left;
+  }
+  .setting-row label {
+    font-weight: 700; font-size:1.1rem;
+  }
+  #startGameBtn {
+    padding: .8rem 1.5rem; font-size: 1.2rem; margin-top: 1rem; width: 100%;
+  }
+  #modal { display: none; } /* Hide end-game modal by default */
+
+
+  @media (max-height: 560px){
+    .stage{height:60vh}
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="settings-container">
+      <div class="lang-switcher" id="headerLangSwitcher">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="tr">TR</button>
+        <button class="lang-btn" data-lang="zh">中文</button>
+      </div>
+      <div class="difficulty-switcher" id="headerDiffSwitcher">
+        <button class="diff-btn" data-difficulty="easy" data-key="easy">Easy</button>
+        <button class="diff-btn active" data-difficulty="medium" data-key="medium">Medium</button>
+        <button class="diff-btn" data-difficulty="hard" data-key="hard">Hard</button>
+      </div>
+    </div>
+    <div class="hud" aria-live="polite">
+      <span>⏱️ <b id="time">50</b>s</span>
+      <span><span data-key="scoreLabel">Score</span> <b id="score">0</b></span>
+      <span><span data-key="streakLabel">Streak</span> <b id="streak">0</b></span>
+    </div>
+    <div style="text-align:right">
+      <button class="btn secondary" id="howtoBtn" data-key="howToPlay" aria-haspopup="dialog">How to Play</button>
+      <button class="btn" id="restartBtn" data-key="restart">Restart</button>
+    </div>
+  </header>
+
+  <div class="stage-wrap">
+    <div class="stage" id="stage" role="application" aria-label="Game stage">
+      <div class="ground"></div>
+
+      <div class="bin good" id="binGood" aria-label="Good Question Bin">
+        <div>
+          <div class="icon">✅</div>
+          <span data-key="goodBin">Good<br/>Question</span>
+        </div>
+      </div>
+      <div class="bin bad" id="binBad" aria-label="Needs Work Bin">
+        <div>
+          <div class="icon">❌</div>
+          <span data-key="badBin">Needs<br/>Work</span>
+        </div>
+      </div>
+
+      <div class="player" id="player" aria-label="Player">
+        <div class="p-body">
+          <div class="p-head">
+            <div class="p-face"></div>
+            <div class="p-smile"></div>
+          </div>
+          <div class="p-torso"></div>
+          <div class="p-hand left"></div>
+          <div class="p-hand right"></div>
+          <div class="p-legs">
+            <div class="p-leg"></div>
+            <div class="p-leg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast" role="status"></div>
+    </div>
+  </div>
+
+  <div class="controls" aria-label="Controls">
+    <button class="padbtn" id="leftBtn" aria-label="Move left"><span data-key="leftBtn">⬅️ Left</span></button>
+    <button class="padbtn" id="pickupBtn" aria-label="Pick up or drop"><span data-key="pickupBtn">👐 Pick / Drop</span></button>
+    <button class="padbtn" id="rightBtn" aria-label="Move right"><span data-key="rightBtn">Right ➡️</span></button>
+  </div>
+
+  <!-- Start Screen Modal -->
+  <div class="overlay" id="startScreen" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+    <div class="card">
+        <h2 id="startTitle" data-key="gameTitle">Question Sorter</h2>
+        <div class="start-settings">
+            <div class="setting-row">
+                <label data-key="languageLabel">Language</label>
+                <div class="lang-switcher" id="startLangSwitcher">
+                    <button class="lang-btn active" data-lang="en">EN</button>
+                    <button class="lang-btn" data-lang="tr">TR</button>
+                    <button class="lang-btn" data-lang="zh">中文</button>
+                </div>
+            </div>
+            <div class="setting-row">
+                <label data-key="difficultyLabel">Difficulty</label>
+                <div class="difficulty-switcher" id="startDiffSwitcher">
+                     <button class="diff-btn" data-difficulty="easy" data-key="easy">Easy</button>
+                     <button class="diff-btn active" data-difficulty="medium" data-key="medium">Medium</button>
+                     <button class="diff-btn" data-difficulty="hard" data-key="hard">Hard</button>
+                </div>
+            </div>
+        </div>
+        <button class="btn" id="startGameBtn" data-key="startGame">Start Game</button>
+    </div>
+  </div>
+
+  <!-- End Game/Info Modal -->
+  <div class="overlay" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="card">
+      <h2 id="modalTitle"></h2>
+      <div id="modalContent"></div>
+      <button class="btn" id="modalBtn"></button>
+    </div>
+  </div>
+
+<script>
+(()=> {
+  // --- Questions ---
+  const allQuestions = {
+    en: {
+      easy: { good: ["What color is the sky on a clear day?", "How many legs does a spider have?", "What sound does a cow make?", "What is the capital of France?", "What do plants need to grow?", "What is 2 + 2?", "Which planet is known as the Red Planet?", "What is the main ingredient in bread?", "What do you use to write on a blackboard?", "Which animal is known as 'man's best friend'?"], weak: ["Blue?", "Pizza.", "Is it fast?", "Table.", "Running.", "Happy.", "Book.", "Why?", "Is it big?", "Yes."] },
+      medium: { good: ["How does photosynthesis work?", "What are the three main states of matter?", "Why is it important to recycle?", "What is the difference between a city and a town?", "Explain the water cycle.", "How do vaccines protect us from diseases?", "What are the benefits of a balanced diet?", "Why do we have different seasons?", "What causes an earthquake?", "How has the internet changed communication?"], weak: ["What about science?", "Is history important?", "Explain everything.", "Are computers good?", "Tell me about weather.", "Why sleep?", "Is reading beneficial?", "Food is nice.", "Space.", "Thoughts on politics."] },
+      hard: { good: ["Analyze the main causes of the Industrial Revolution.", "What are the ethical implications of artificial intelligence?", "Explain the concept of supply and demand in economics.", "How does the greenhouse effect contribute to climate change?", "What is the significance of the Magna Carta in legal history?", "Compare and contrast the political systems of two different countries.", "What are the challenges of space exploration?", "How does DNA replication work?", "Discuss the impact of globalization on local cultures.", "What is quantum computing and how might it change technology?"], weak: ["Is philosophy real?", "Why is the economy?", "Can science solve all problems?", "What is the meaning of it all?", "Is progress always good?", "Are humans logical?", "Tell me the future.", "Why do we exist?", "Is art objective?", "The universe is big."] }
+    },
+    tr: {
+      easy: { good: ["Açık bir günde gökyüzü ne renktir?", "Bir örümceğin kaç bacağı vardır?", "İnek ne sesi çıkarır?", "Fransa'nın başkenti neresidir?", "Bitkilerin büyümesi için neye ihtiyacı vardır?", "2 + 2 kaç eder?", "Hangi gezegen Kızıl Gezegen olarak bilinir?", "Ekmeğin ana maddesi nedir?", "Kara tahtaya yazı yazmak için ne kullanırsınız?", "Hangi hayvan 'insanın en iyi dostu' olarak bilinir?"], weak: ["Mavi mi?", "Pizza.", "Hızlı mı?", "Masa.", "Koşmak.", "Mutlu.", "Kitap.", "Neden?", "Büyük mü?", "Evet."] },
+      medium: { good: ["Fotosentez nasıl çalışır?", "Maddenin üç ana hali nedir?", "Geri dönüşüm neden önemlidir?", "Şehir ve kasaba arasındaki fark nedir?", "Su döngüsünü açıklayın.", "Aşılar bizi hastalıklardan nasıl korur?", "Dengeli beslenmenin faydaları nelerdir?", "Neden farklı mevsimler yaşarız?", "Depreme ne sebep olur?", "İnternet iletişimi nasıl değiştirdi?"], weak: ["Peki ya bilim?", "Tarih önemli mi?", "Her şeyi açıkla.", "Bilgisayarlar iyi mi?", "Bana havadan bahset.", "Neden uyuruz?", "Okumak faydalı mı?", "Yemek güzeldir.", "Uzay.", "Siyaset üzerine düşünceler."] },
+      hard: { good: ["Sanayi Devrimi'nin ana nedenlerini analiz edin.", "Yapay zekanın etik sonuçları nelerdir?", "Ekonomide arz ve talep kavramını açıklayın.", "Sera etkisi iklim değişikliğine nasıl katkıda bulunur?", "Magna Carta'nın hukuk tarihindeki önemi nedir?", "İki farklı ülkenin siyasi sistemlerini karşılaştırın.", "Uzay araştırmalarının zorlukları nelerdir?", "DNA replikasyonu nasıl çalışır?", "Küreselleşmenin yerel kültürler üzerindeki etkisini tartışın.", "Kuantum bilgisayar nedir ve teknolojiyi nasıl değiştirebilir?"], weak: ["Felsefe gerçek mi?", "Ekonomi neden var?", "Bilim tüm sorunları çözebilir mi?", "Her şeyin anlamı ne?", "İlerleme her zaman iyi midir?", "İnsanlar mantıklı mıdır?", "Bana geleceği söyle.", "Neden varız?", "Sanat nesnel midir?", "Evren büyüktür."] }
+    },
+    zh: {
+      easy: { good: ["晴天时天空是什么颜色的？", "蜘蛛有几条腿？", "牛发出什么声音？", "法国的首都是哪里？", "植物生长需要什么？", "2 + 2 等于几？", "哪个行星被称为红色星球？", "面包的主要成分是什么？", "你用什么在黑板上写字？", "哪种动物被称为“人类最好的朋友”？"], weak: ["蓝色吗？", "披萨。", "它快吗？", "桌子。", "跑步。", "开心。", "书。", "为什么？", "它大吗？", "是的。"] },
+      medium: { good: ["光合作用是如何进行的？", "物质的三种主要状态是什么？", "为什么回收很重要？", "城市和城镇有什么区别？", "解释一下水循环。", "疫苗如何保护我们免受疾病侵害？", "均衡饮食有什么好处？", "我们为什么有不同的季节？", "是什么导致了地震？", "互联网如何改变了通讯？"], weak: ["科学呢？", "历史重要吗？", "解释一切。", "电脑好吗？", "跟我谈谈天气。", "为什么要睡觉？", "阅读有益吗？", "食物很好。", "太空。", "关于政治的看法。"] },
+      hard: { good: ["分析工业革命的主要原因。", "人工智能的伦理影响是什么？", "解释经济学中的供求概念。", "温室效应如何导致气候变化？", "《大宪章》在法律史上的意义是什么？", "比较两个不同国家的政治制度。", "太空探索的挑战是什么？", "DNA复制是如何工作的？", "讨论全球化对地方文化的影响。", "什么是量子计算，它可能如何改变技术？"], weak: ["哲学是真的吗？", "经济为什么存在？", "科学能解决所有问题吗？", "这一切的意义是什么？", "进步总是好的吗？", "人类是理性的吗？", "告诉我未来。", "我们为什么存在？", "艺术是客观的吗？", "宇宙很大。"] }
+    }
+  };
+  
+  const translations = {
+    en: {
+      gameTitle: "Question Sorter", languageLabel: "Language", difficultyLabel: "Difficulty", startGame: "Start Game",
+      scoreLabel: "Score", streakLabel: "Streak", howToPlay: "How to Play", restart: "Restart",
+      goodBin: "Good<br/>Question", badBin: "Needs<br/>Work", leftBtn: "⬅️ Left",
+      rightBtn: "Right ➡️", pickupBtn: "👐 Pick / Drop", statement: "Statement",
+      easy: "Easy", medium: "Medium", hard: "Hard",
+      roundOver: "Round Over!", playAgain: "Play Again", howToPlayTitle: "How to Play", gotIt: "Got it!",
+      toastNoQuestion: "No question nearby", toastMoveToPick: "Move onto the question to pick it up",
+      toastCarrying: "Carrying question…", toastStandOnBin: "Stand over a bin to drop",
+      toastGreat: "Great job! ✅", toastOops: "Oops — needs more work ❌",
+      toastMoveCloser: "Move closer to a question.",
+      howToPlayContent: `<div style="text-align:left; line-height:1.5; margin-bottom:1rem;"><p>1) Move with the <b>Left/Right buttons</b> or <b>arrow keys</b>.</p><p>2) Stand on a question and press <b>Pick/Drop</b> or <b>SPACE</b> to grab it.</p><p>3) Carry it to the correct bin and press the button again to drop it.</p></div><p class="small">Score <b>+100</b> for correct sorts, <b>-50</b> for mistakes!</p>`,
+      endRoundTip: `Carry the question to the correct bin. Use ⬅️➡️ keys and SPACE to pick/drop.`
+    },
+    tr: {
+      gameTitle: "Soru Ayıklama", languageLabel: "Dil", difficultyLabel: "Zorluk", startGame: "Oyuna Başla",
+      scoreLabel: "Puan", streakLabel: "Seri", howToPlay: "Nasıl Oynanır", restart: "Yeniden Başlat",
+      goodBin: "İyi<br/>Soru", badBin: "Geliştirilmeli", leftBtn: "⬅️ Sol",
+      rightBtn: "Sağ ➡️", pickupBtn: "👐 Al / Bırak", statement: "İfade",
+      easy: "Kolay", medium: "Orta", hard: "Zor",
+      roundOver: "Tur Bitti!", playAgain: "Tekrar Oyna", howToPlayTitle: "Nasıl Oynanır", gotIt: "Anladım!",
+      toastNoQuestion: "Yakında soru yok", toastMoveToPick: "Almak için sorunun üzerine gelin",
+      toastCarrying: "Soru taşınıyor...", toastStandOnBin: "Bırakmak için bir kutunun üzerinde durun",
+      toastGreat: "Harika iş! ✅", toastOops: "Eyvah — geliştirilmeli ❌",
+      toastMoveCloser: "Bir soruya yaklaşın.",
+      howToPlayContent: `<div style="text-align:left; line-height:1.5; margin-bottom:1rem;"><p>1) <b>Sol/Sağ düğmeleriyle</b> veya <b>ok tuşlarıyla</b> hareket edin.</p><p>2) Bir sorunun üzerinde durun ve onu almak için <b>Al/Bırak</b>'a veya <b>BOŞLUK</b> tuşuna basın.</p><p>3) Onu doğru kutuya taşıyın ve bırakmak için düğmeye tekrar basın.</p></div><p class="small">Doğru sıralama için <b>+100</b>, hatalar için <b>-50</b> puan!</p>`,
+      endRoundTip: `Soruyu doğru kutuya taşıyın. ⬅️➡️ tuşlarını ve almak/bırakmak için BOŞLUK tuşunu kullanın.`
+    },
+    zh: {
+      gameTitle: "问题分类器", languageLabel: "语言", difficultyLabel: "难度", startGame: "开始游戏",
+      scoreLabel: "分数", streakLabel: "连胜", howToPlay: "怎么玩", restart: "重新开始",
+      goodBin: "好问题", badBin: "待改进", leftBtn: "⬅️ 左",
+      rightBtn: "右 ➡️", pickupBtn: "👐 拾取 / 放下", statement: "陈述",
+      easy: "简单", medium: "中等", hard: "困难",
+      roundOver: "回合结束!", playAgain: "再玩一次", howToPlayTitle: "怎么玩", gotIt: "知道了!",
+      toastNoQuestion: "附近没有问题", toastMoveToPick: "移动到问题上才能拾取",
+      toastCarrying: "正在搬运问题...", toastStandOnBin: "站在箱子上方放下",
+      toastGreat: "太棒了! ✅", toastOops: "哎呀 — 待改进 ❌",
+      toastMoveCloser: "靠近一个问题。",
+      howToPlayContent: `<div style="text-align:left; line-height:1.5; margin-bottom:1rem;"><p>1) 使用<b>左/右按钮</b>或<b>箭头键</b>移动。</p><p>2) 站在问题上，按<b>拾取/放下</b>或<b>空格键</b>来抓住它。</p><p>3) 将其运到正确的箱子，然后再次按按钮放下它。</p></div><p class="small">正确分类得<b>+100</b>分，错误分类得<b>-50</b>分！</p>`,
+      endRoundTip: `将问题带到正确的垃圾箱。使用 ⬅️➡️ 键和空格键来拾取/放下。`
+    }
+  };
+
+  let GOOD_QUESTIONS, WEAK_QUESTIONS;
+
+  // --- DOM refs ---
+  const stage = document.getElementById('stage');
+  const playerEl = document.getElementById('player');
+  const timeEl = document.getElementById('time');
+  const scoreEl = document.getElementById('score');
+  const streakEl = document.getElementById('streak');
+  const toast = document.getElementById('toast');
+  const leftBtn = document.getElementById('leftBtn');
+  const rightBtn= document.getElementById('rightBtn');
+  const pickupBtn= document.getElementById('pickupBtn');
+  const restartBtn= document.getElementById('restartBtn');
+  const howtoBtn= document.getElementById('howtoBtn');
+  
+  // Modals
+  const startScreen = document.getElementById('startScreen');
+  const startGameBtn = document.getElementById('startGameBtn');
+  const modal = document.getElementById('modal');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalContent = document.getElementById('modalContent');
+  const modalBtn = document.getElementById('modalBtn');
+  let modalBtnHandler = null;
+
+  // --- Game state ---
+  let stageRect;
+  let px = 380, speed = 4.2, dir = 0;
+  let carrying = false, carriedEl = null, carriedIsGood = false, highlightedQuestion = null;
+  const pickupThreshold = 80;
+  
+  let currentLang = 'en';
+  let currentDifficulty = 'medium';
+  const TIME_LIMITS = { easy: 60, medium: 50, hard: 45 };
+
+  let timeLeft = TIME_LIMITS[currentDifficulty];
+  let score = 0, correct = 0, wrong = 0, streak = 0, topStreak = 0;
+  let timerId = null;
+  let roundOver = true; // Game is "over" until started
+  let gameStarted = false;
+
+  // Simple sound using WebAudio
+  let audioCtx = null;
+  function beep(freq=900, dur=80, type='sine', vol=0.05){ try{ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = type; o.frequency.value = freq; g.gain.value = vol; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>{o.stop()}, dur); }catch(e){ console.error("Could not play sound", e); }}
+  function successSound(){ beep(880,90,'triangle',0.04); setTimeout(()=>beep(1200,90,'triangle',0.035),80); }
+  function failSound(){ beep(220,130,'sawtooth',0.05); }
+  
+  function showToast(msgKey){
+    const msg = translations[currentLang][msgKey] || msgKey;
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=>toast.classList.remove('show'), 700);
+  }
+
+  function rand(min,max){return Math.random()*(max-min)+min}
+  function choose(arr){return arr[Math.floor(Math.random()*arr.length)]}
+  
+  // --- Settings Logic ---
+  function updateQuestionSource() {
+    GOOD_QUESTIONS = allQuestions[currentLang][currentDifficulty].good;
+    WEAK_QUESTIONS = allQuestions[currentLang][currentDifficulty].weak;
+  }
+
+  function setLanguage(lang) {
+    if (!translations[lang]) return;
+    currentLang = lang;
+    updateQuestionSource();
+    document.querySelectorAll('[data-key]').forEach(el => {
+      const key = el.dataset.key;
+      if (translations[lang][key]) el.innerHTML = translations[lang][key];
+    });
+    document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
+    if (gameStarted && !roundOver) spawnQuestion();
+  }
+
+  function setDifficulty(difficulty, restart = false) {
+    if (!TIME_LIMITS[difficulty]) return;
+    currentDifficulty = difficulty;
+    updateQuestionSource();
+    document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.difficulty === difficulty));
+    if (restart && gameStarted) startGame();
+  }
+
+  // --- Modal Logic ---
+  function showInfoModal(titleKey, contentHTML, btnKey, btnAction) {
+      modalTitle.textContent = translations[currentLang][titleKey] || titleKey;
+      modalContent.innerHTML = contentHTML;
+      modalBtn.textContent = translations[currentLang][btnKey] || btnKey;
+      if (modalBtnHandler) modalBtn.removeEventListener('click', modalBtnHandler);
+      modalBtnHandler = btnAction;
+      modalBtn.addEventListener('click', modalBtnHandler);
+      modal.style.display = 'flex';
+  }
+  function hideInfoModal() {
+      modal.style.display = 'none';
+      if (modalBtnHandler) modalBtn.removeEventListener('click', modalBtnHandler);
+  }
+
+  // --- Game Setup & Flow ---
+  function layoutBins(){ stageRect = stage.getBoundingClientRect(); }
+  function placePlayer(x=null){
+    if(x!==null) px = x;
+    const maxX = stage.clientWidth - playerEl.clientWidth - 6;
+    px = Math.max(6, Math.min(maxX, px));
+    playerEl.style.transform = `translateX(${px}px)`;
+  }
+
+  function spawnQuestion(){
+    [...stage.querySelectorAll('.question')].forEach(q=> { if(q !== carriedEl) q.remove(); });
+    const isGood = Math.random() < 0.5;
+    const text = isGood ? choose(GOOD_QUESTIONS) : choose(WEAK_QUESTIONS);
+    const q = document.createElement('div');
+    q.className = 'question';
+    q.setAttribute('role','note');
+    q.dataset.correct = isGood ? 'good' : 'bad';
+    q.innerHTML = `<div>${text}</div><span class="tag neutraltag">${translations[currentLang].statement}</span>`;
+    const safeLeft = 160, safeRight = stage.clientWidth - 160 - 220;
+    const x = Math.max(20, Math.min(stage.clientWidth-220, rand(safeLeft, safeRight)));
+    q.style.left = `${x}px`;
+    q.style.top = `${stage.clientHeight*0.30}px`;
+    stage.appendChild(q);
+  }
+  function rect(el){ const r = el.getBoundingClientRect(); return { left: r.left - stageRect.left, right: r.right - stageRect.left, top: r.top - stageRect.top, bottom: r.bottom - stageRect.top, width: r.width, height: r.height }; }
+  function overlap(a,b){ return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom); }
+  function playerRect(){ return rect(playerEl); }
+
+  function nearestQuestion(){
+    const qs = [...stage.querySelectorAll('.question')];
+    if(!qs.length) return null;
+    let best = null, bestDist = Infinity;
+    const p = playerRect();
+    for(const q of qs){
+      const rr = rect(q);
+      const cx = (rr.left+rr.right)/2;
+      const pxCenter = (p.left+p.right)/2;
+      const dist = Math.abs(cx - pxCenter);
+      if(dist < bestDist){bestDist = dist; best = q;}
+    }
+    return {el: best, dist: bestDist};
+  }
+
+  function pickOrDrop(){
+    if(roundOver) return;
+    if(!carrying){
+      const qToPick = highlightedQuestion;
+      if(!qToPick) { showToast("toastMoveCloser"); return; }
+      carrying = true; carriedEl = qToPick;
+      highlightedQuestion.classList.remove('highlight');
+      highlightedQuestion = null;
+      carriedIsGood = (qToPick.dataset.correct === 'good');
+      playerEl.classList.add('carry');
+      qToPick.style.transition = 'transform .1s';
+      showToast("toastCarrying"); beep(700,80,'triangle',0.035);
+    } else {
+      const pr = playerRect();
+      const inGood = overlap(pr, rect(document.getElementById('binGood')));
+      const inBad  = overlap(pr, rect(document.getElementById('binBad')));
+      if(!inGood && !inBad){ showToast("toastStandOnBin"); return; }
+      
+      const droppedToGood = inGood;
+      const correctDrop = (droppedToGood && carriedIsGood) || (!droppedToGood && !carriedIsGood);
+      
+      if(correctDrop){ score += 100; correct += 1; streak += 1; topStreak = Math.max(topStreak, streak); successSound(); playerCelebration(); showToast("toastGreat"); }
+      else { score = Math.max(0, score - 50); wrong += 1; streak = 0; failSound(); showToast("toastOops"); }
+      updateHUD();
+      if(carriedEl){carriedEl.remove(); carriedEl=null;}
+      carrying = false; playerEl.classList.remove('carry');
+      spawnQuestion();
+    }
+  }
+
+  function playerCelebration(){ playerEl.style.transform = `translateX(${px}px) translateY(-6px)`; setTimeout(()=>{ playerEl.style.transform = `translateX(${px}px)`; }, 120); }
+  function updateHUD(){ scoreEl.textContent = score; streakEl.textContent = streak; }
+
+  function endRound(){
+    roundOver = true;
+    clearInterval(timerId);
+    const content = `<div class="statrow"><div class="stat">⭐ ${translations[currentLang].scoreLabel}: <span>${score}</span></div><div class="stat">✅ Correct: <span>${correct}</span></div><div class="stat">❌ Mistakes: <span>${wrong}</span></div></div><p class="small">${translations[currentLang].streakLabel}: <b>${topStreak}</b></p><p class="kbr">${translations[currentLang].endRoundTip}</p>`;
+    showInfoModal('roundOver', content, 'playAgain', startGame);
+  }
+
+  function reset(){
+    hideInfoModal();
+    roundOver = false;
+    timeLeft = TIME_LIMITS[currentDifficulty];
+    score = 0; correct = 0; wrong = 0; streak = 0; topStreak = 0;
+    timeEl.textContent = timeLeft;
+    updateHUD();
+    [...stage.querySelectorAll('.question')].forEach(q=>q.remove());
+    if(carrying && carriedEl) carriedEl.remove();
+    if(highlightedQuestion) highlightedQuestion.classList.remove('highlight');
+    highlightedQuestion = null;
+    carrying = false; carriedEl=null; playerEl.classList.remove('carry');
+    layoutBins();
+    placePlayer(stage.clientWidth * 0.45);
+    spawnQuestion();
+  }
+  
+  function startGame() {
+    gameStarted = true;
+    startScreen.style.display = 'none';
+    reset();
+    clearInterval(timerId);
+    timerId = setInterval(()=>{
+      timeLeft -= 1;
+      timeEl.textContent = timeLeft;
+      if(timeLeft <= 0){ timeLeft = 0; endRound(); }
+    }, 1000);
+  }
+
+  function loop(){
+    if(gameStarted && !roundOver){
+      if(dir !== 0){ px += dir*speed; placePlayer(); }
+      if (highlightedQuestion) { highlightedQuestion.classList.remove('highlight'); highlightedQuestion = null; }
+      if (!carrying) {
+        const nearest = nearestQuestion();
+        if (nearest && nearest.el && nearest.dist < pickupThreshold) {
+          highlightedQuestion = nearest.el;
+          highlightedQuestion.classList.add('highlight');
+        }
+      }
+      if(carrying && carriedEl){
+        const offX = px + (playerEl.clientWidth/2) - (carriedEl.clientWidth/2);
+        const offY = playerEl.offsetTop - carriedEl.clientHeight - 10;
+        carriedEl.style.left = `${offX}px`;
+        carriedEl.style.top  = `${offY}px`;
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // --- Initialize Event Listeners ---
+  function init() {
+    const stopMove = ()=>{dir=0};
+    leftBtn.addEventListener('mousedown', ()=>dir=-1);
+    leftBtn.addEventListener('touchstart', (e)=>{e.preventDefault(); dir=-1;}, {passive:false});
+    rightBtn.addEventListener('mousedown', ()=>dir=1);
+    rightBtn.addEventListener('touchstart', (e)=>{e.preventDefault(); dir=1;}, {passive:false});
+    leftBtn.addEventListener('mouseup', stopMove); leftBtn.addEventListener('mouseleave', stopMove); leftBtn.addEventListener('touchend', stopMove);
+    rightBtn.addEventListener('mouseup', stopMove); rightBtn.addEventListener('mouseleave', stopMove); rightBtn.addEventListener('touchend', stopMove);
+
+    pickupBtn.addEventListener('click', pickOrDrop);
+    restartBtn.addEventListener('click', startGame);
+    howtoBtn.addEventListener('click', ()=>{ showInfoModal('howToPlayTitle', translations[currentLang].howToPlayContent, 'gotIt', hideInfoModal); });
+    
+    document.querySelectorAll('#startLangSwitcher .lang-btn, #headerLangSwitcher .lang-btn').forEach(btn => { btn.addEventListener('click', () => setLanguage(btn.dataset.lang)); });
+    document.querySelectorAll('#startDiffSwitcher .diff-btn').forEach(btn => { btn.addEventListener('click', () => setDifficulty(btn.dataset.difficulty, false)); });
+    document.querySelectorAll('#headerDiffSwitcher .diff-btn').forEach(btn => { btn.addEventListener('click', () => setDifficulty(btn.dataset.difficulty, true)); });
+    
+    startGameBtn.addEventListener('click', startGame);
+
+    window.addEventListener('resize', ()=>{ layoutBins(); placePlayer(); });
+    window.addEventListener('keydown',(e)=>{ if(e.key==='ArrowLeft') dir=-1; else if(e.key==='ArrowRight') dir=1; else if(e.key===' ' || e.key==='Spacebar'){ e.preventDefault(); pickOrDrop(); } });
+    window.addEventListener('keyup',(e)=>{ if(e.key==='ArrowLeft' && dir<0) dir=0; if(e.key==='ArrowRight' && dir>0) dir=0; });
+    
+    // Initial setup
+    layoutBins();
+    placePlayer(stage.clientWidth * 0.45);
+    setLanguage('en');
+    setDifficulty('medium');
+    requestAnimationFrame(loop);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
+
