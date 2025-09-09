@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Builder Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Baloo+2:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+        .game-title {
+            font-family: 'Baloo 2', cursive;
+        }
+        .drop-zone {
+            transition: background-color 0.3s, transform 0.3s;
+            min-height: 90px; /* Ensure drop zones have a minimum height for touch */
+        }
+        .drop-zone.drag-over {
+            background-color: #a7f3d0; /* Light green on drag over */
+            transform: scale(1.05);
+            border-style: dashed;
+        }
+        .draggable-tile {
+            cursor: grab;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.3s;
+        }
+        .draggable-tile:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .draggable-tile.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        .message-box {
+            transition: opacity 0.5s, transform 0.5s;
+        }
+        .hide {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+        }
+        /* Style for leaderboard list */
+        #leaderboard-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+        #leaderboard-list li:nth-child(odd) {
+            background-color: #f3f4f6; /* light gray */
+        }
+        #leaderboard-list li .leaderboard-name {
+            font-weight: 600;
+        }
+        #leaderboard-list li .leaderboard-score {
+            font-weight: 700;
+            color: #4f46e5; /* indigo-600 */
+        }
+        .lang-btn {
+            opacity: 0.6;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .lang-btn.active {
+            opacity: 1;
+            transform: scale(1.1);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+        
+        <!-- Language Selector -->
+        <div class="flex justify-end gap-4 mb-4">
+            <button id="lang-en" class="lang-btn active" data-lang="en">English</button>
+            <button id="lang-tr" class="lang-btn" data-lang="tr">Türkçe</button>
+            <button id="lang-zh" class="lang-btn" data-lang="zh">中文</button>
+        </div>
+
+        <!-- Header -->
+        <header class="text-center border-b-2 border-gray-200 pb-4 mb-6">
+            <h1 class="game-title text-4xl md:text-5xl font-bold text-indigo-600" data-translate-key="title">Question Builder Challenge</h1>
+            <p class="text-gray-600 mt-2 text-lg" data-translate-key="subtitle">Turn weak questions into research superstars!</p>
+        </header>
+
+        <!-- Score and Level -->
+        <div class="flex justify-between items-center mb-6 bg-indigo-50 p-4 rounded-lg">
+            <div>
+                <span class="text-gray-500 font-semibold" data-translate-key="question_label">Question:</span>
+                <span id="level-counter" class="font-bold text-indigo-700 text-xl">1 / 5</span>
+            </div>
+            <div>
+                <span class="text-gray-500 font-semibold" data-translate-key="score_label">Score:</span>
+                <span id="score" class="font-bold text-indigo-700 text-xl">0</span>
+            </div>
+        </div>
+
+        <!-- Vague Question -->
+        <div class="mb-6 text-center">
+            <h2 class="text-xl font-semibold text-gray-700 mb-2" data-translate-key="vague_question_label">The Vague Question:</h2>
+            <p id="vague-question" class="text-2xl font-light bg-yellow-100 text-yellow-800 p-4 rounded-lg">Is school important?</p>
+        </div>
+
+        <!-- Drop Zones -->
+        <div class="grid md:grid-cols-3 gap-4 md:gap-6 mb-6 text-center">
+            <div>
+                <h3 class="font-bold text-lg text-teal-600 mb-2" data-translate-key="specificity_label">1. Add Specificity</h3>
+                <div id="specificity" data-type="specificity" class="drop-zone border-2 border-teal-400 bg-teal-50 rounded-lg p-4 md:p-6 flex items-center justify-center">
+                    <span class="text-gray-400 italic md:text-lg" data-translate-key="drop_zone_placeholder">Drag a phrase here</span>
+                </div>
+            </div>
+            <div>
+                <h3 class="font-bold text-lg text-sky-600 mb-2" data-translate-key="keywords_label">2. Add Keywords</h3>
+                <div id="keywords" data-type="keywords" class="drop-zone border-2 border-sky-400 bg-sky-50 rounded-lg p-4 md:p-6 flex items-center justify-center">
+                    <span class="text-gray-400 italic md:text-lg" data-translate-key="drop_zone_placeholder">Drag a keyword here</span>
+                </div>
+            </div>
+            <div>
+                <h3 class="font-bold text-lg text-amber-600 mb-2" data-translate-key="context_label">3. Add Context</h3>
+                <div id="context" data-type="context" class="drop-zone border-2 border-amber-400 bg-amber-50 rounded-lg p-4 md:p-6 flex items-center justify-center">
+                    <span class="text-gray-400 italic md:text-lg" data-translate-key="drop_zone_placeholder">Drag a context here</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Draggable Tiles Bank -->
+        <div class="bg-gray-100 p-4 rounded-lg">
+            <h3 class="text-center font-semibold text-gray-700 mb-3 text-lg" data-translate-key="tile_bank_label">Improvement Tiles</h3>
+            <div id="tile-bank" class="flex flex-wrap gap-4 justify-center">
+                <!-- Tiles will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-6 flex justify-center space-x-4">
+            <button id="check-btn" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-indigo-700 transition transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed" data-translate-key="check_btn">Check My Question!</button>
+            <button id="next-btn" class="hidden bg-green-500 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-green-600 transition transform hover:scale-105" data-translate-key="next_btn">Next Question</button>
+        </div>
+
+        <!-- Result Display -->
+        <div id="result-container" class="mt-6 text-center opacity-0 transition-opacity duration-500">
+             <h2 class="text-xl font-semibold text-gray-700 mb-2" data-translate-key="new_question_label">Your New & Improved Question:</h2>
+             <p id="new-question" class="text-xl font-medium bg-green-100 text-green-800 p-4 rounded-lg"></p>
+        </div>
+
+        <!-- Feedback Display -->
+        <div id="feedback-container" class="mt-4 text-left opacity-0 transition-opacity duration-500 space-y-2">
+            <!-- Detailed feedback will be inserted here -->
+        </div>
+
+        <!-- Message Box -->
+        <div id="message-box" class="hide fixed bottom-5 right-5 bg-red-500 text-white p-4 rounded-lg shadow-lg">
+            <p id="message-text"></p>
+        </div>
+        
+        <!-- Final Score Modal -->
+        <div id="final-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl p-8 text-center transform transition-transform scale-95 w-full max-w-md">
+                <h2 class="game-title text-4xl font-bold text-indigo-600" data-translate-key="modal_title">Great Work!</h2>
+                <p class="text-gray-600 mt-4 text-lg" data-translate-key="modal_subtitle">You've completed the challenge!</p>
+                <p class="text-2xl mt-4" data-translate-key="modal_final_score_label">Your Final Score:</p>
+                <p id="final-score" class="text-6xl font-bold text-indigo-700 my-4">0</p>
+                
+                <div class="mt-6 text-left">
+                    <h3 class="game-title text-3xl font-bold text-gray-800 mb-4 text-center" data-translate-key="leaderboard_label">Leaderboard</h3>
+                    <div id="leaderboard-entry" class="flex items-center space-x-2 mb-4">
+                        <input type="text" id="player-name" placeholder="Enter your name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" data-translate-key="player_name_placeholder">
+                        <button id="save-score-btn" class="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition disabled:bg-gray-400" data-translate-key="save_btn">Save</button>
+                    </div>
+                    <ul id="leaderboard-list" class="space-y-2 h-40 overflow-y-auto p-2 bg-gray-50 rounded-lg">
+                        <!-- Scores will be dynamically inserted here -->
+                    </ul>
+                </div>
+
+                <button id="restart-btn" class="mt-6 bg-indigo-600 text-white font-bold py-3 px-10 rounded-lg shadow-md hover:bg-indigo-700 transition transform hover:scale-105" data-translate-key="restart_btn">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // IMPORTANT: These are placeholders. In a real environment, these would be provided.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "AIza...", authDomain: "...", projectId: "..." };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'question-builder-challenge';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userId = null;
+        let unsubscribeLeaderboard = null;
+        let currentLanguage = 'en';
+
+        const translations = {
+            en: {
+                title: "Question Builder Challenge",
+                subtitle: "Turn weak questions into research superstars!",
+                question_label: "Question:",
+                score_label: "Score:",
+                vague_question_label: "The Vague Question:",
+                specificity_label: "1. Add Specificity",
+                keywords_label: "2. Add Keywords",
+                context_label: "3. Add Context",
+                drop_zone_placeholder: "Drag a phrase here",
+                tile_bank_label: "Improvement Tiles",
+                check_btn: "Check My Question!",
+                next_btn: "Next Question",
+                new_question_label: "Your New & Improved Question:",
+                modal_title: "Great Work!",
+                modal_subtitle: "You've completed the challenge!",
+                modal_final_score_label: "Your Final Score:",
+                leaderboard_label: "Leaderboard",
+                player_name_placeholder: "Enter your name",
+                save_btn: "Save",
+                restart_btn: "Play Again",
+                gameData: [
+                    { vagueQuestion: "Is social media bad?", basePhrase: "social media", improvements: { specificity: [{ text: "How does", feedback: "Excellent! 'How does' seeks to understand a process or relationship, which is key for research.", isCorrect: true },{ text: "To what extent does", feedback: "Great choice! This phrase avoids a simple yes/no answer and encourages deep analysis.", isCorrect: true },{ text: "Is it true that", feedback: "This leads to a simple 'yes' or 'no' answer, which isn't ideal for deep research.", isCorrect: false },{ text: "Why is", feedback: "'Why' questions can be very broad. Good research questions are more specific and focused.", isCorrect: false }], keywords: [{ text: "affect the mental health of", feedback: "Very focused! 'Mental health' is a specific topic, and 'affect' is a neutral research verb.", isCorrect: true },{ text: "impact the academic performance of", feedback: "Good keyword phrase! This makes the question measurable and relevant to school.", isCorrect: true },{ text: "make sad", feedback: "This is too vague. 'Sad' is an emotion, not a measurable term for research.", isCorrect: false },{ text: "waste time for", feedback: "This is an opinion, not a neutral, researchable action.", isCorrect: false }], context: [{ text: "6th graders", feedback: "Perfect context! Specifying an age group makes your research much more manageable.", isCorrect: true },{ text: "students in our school", feedback: "Nice! A specific location makes the research practical and easy to study.", isCorrect: true },{ text: "the world", feedback: "This context is too broad. Research needs a more limited scope to be effective.", isCorrect: false },{ text: "everyone", feedback: "'Everyone' is too general. A strong research question focuses on a specific group.", isCorrect: false }]}},
+                    { vagueQuestion: "Is video gaming a waste of time?", basePhrase: "video gaming", improvements: { specificity: [{ text: "How does", feedback: "A strong start! This pushes you to look for a process or connection.", isCorrect: true },{ text: "In what ways does", feedback: "Creative! This frames the question to look for multiple effects or applications.", isCorrect: true },{ text: "Do you think", feedback: "This asks for an opinion, not research-based evidence.", isCorrect: false },{ text: "Is", feedback: "This usually leads to a 'yes/no' answer. Try to ask questions that are more open-ended.", isCorrect: false }], keywords: [{ text: "develop the problem-solving skills of", feedback: "Excellent! 'Problem-solving skills' is a measurable cognitive ability.", isCorrect: true },{ text: "contribute to the learning of", feedback: "Fantastic angle! This keyword opens up research into educational gaming.", isCorrect: true },{ text: "addict", feedback: "This is a loaded term. A more neutral keyword phrase would be better for unbiased research.", isCorrect: false },{ text: "provide fun for", feedback: "'Fun' is subjective and difficult to measure scientifically.", isCorrect: false }], context: [{ text: "students under 12", feedback: "Good focus! Targeting a specific age demographic is a smart research strategy.", isCorrect: true },{ text: "students in science class", feedback: "Very specific! This context narrows the research to a particular subject.", isCorrect: true },{ text: "people at home", feedback: "A bit vague. 'At home' could mean many different things. Be more specific!", isCorrect: false },{ text: "kids on weekends", feedback: "While this narrows the time, it doesn't narrow the group. Who are we studying?", isCorrect: false }]}},
+                    { vagueQuestion: "Should we have homework?", basePhrase: "homework", improvements: { specificity: [{ text: "To what extent does", feedback: "This is a high-level research phrase! It avoids a simple yes/no answer.", isCorrect: true },{ text: "How does", feedback: "Perfect! This looks for a cause-and-effect relationship.", isCorrect: true },{ text: "Isn't it true that", feedback: "This shows bias. A good research question is neutral.", isCorrect: false },{ text: "Why should", feedback: "This implies a pre-existing opinion. Start from a neutral standpoint.", isCorrect: false }], keywords: [{ text: "affect the well-being of", feedback: "Important keyword! It considers the emotional and mental impact.", isCorrect: true },{ text: "impact the test scores of", feedback: "A classic research variable! Test scores are a clear, measurable outcome.", isCorrect: true },{ text: "cause stress for", feedback: "'Stress' is good, but 'cause' implies a direct link. 'Affect' or 'impact' is more scientific.", isCorrect: false },{ text: "get banned for", feedback: "This is a call for action, not a neutral topic for research.", isCorrect: false }], context: [{ text: "middle school math students", feedback: "Very precise! This narrows the subject and the age group effectively.", isCorrect: true },{ text: "English language learners", feedback: "Excellent! This considers a specific student population, adding depth.", isCorrect: true },{ text: "all students", feedback: "This is too broad. Research is stronger when it focuses on a specific group.", isCorrect: false },{ text: "students in America", feedback: "A whole country is too large for a small research project. Start local!", isCorrect: false }]}},
+                    { vagueQuestion: "Are sports good for kids?", basePhrase: "team sports", improvements: { specificity: [{ text: "How do", feedback: "Great! Using 'do' for a plural subject is grammatically correct and encourages investigation.", isCorrect: true },{ text: "In what ways do", feedback: "A solid choice that directs you to find multiple positive outcomes.", isCorrect: true },{ text: "Are there any", feedback: "This can be answered with a simple 'yes' or 'no'. Aim for more open questions.", isCorrect: false },{ text: "Prove that", feedback: "Research aims to find evidence, not 'prove' a pre-determined belief.", isCorrect: false }], keywords: [{ text: "impact the social skills of", feedback: "A key area of child development! This makes for a strong research focus.", isCorrect: true },{ text: "benefit the physical health of", feedback: "Good choice! This is a direct and easily researchable benefit of sports.", isCorrect: true },{ text: "build character in", feedback: "'Character' is a very broad and hard-to-define concept for research.", isCorrect: false },{ text: "help make friends for", feedback: "This is an outcome, but 'impact social skills' is a more formal, researchable phrase.", isCorrect: false }], context: [{ text: "elementary school children", feedback: "Specific and clear! Focusing on this age group is a great research strategy.", isCorrect: true },{ text: "children outside of school hours", feedback: "Interesting context! This separates school sports from club sports.", isCorrect: true },{ text: "kids in life", feedback: "'In life' is far too broad. A good question has clear boundaries.", isCorrect: false },{ text: "boys vs. girls", feedback: "While interesting, this adds two variables. A great first research question focuses on just one group.", isCorrect: false }]}},
+                    { vagueQuestion: "Is climate change real?", basePhrase: "climate change", improvements: { specificity: [{ text: "How does", feedback: "This moves from 'if' to 'how,' looking at the specific effects of the phenomenon.", isCorrect: true },{ text: "In what ways does", feedback: "This prompts a search for multiple pieces of evidence or effects.", isCorrect: true },{ text: "Why don't people believe", feedback: "This is a question about psychology, not the science of climate change itself.", isCorrect: false },{ text: "Is", feedback: "This is the most basic yes/no question. Research needs to go deeper.", isCorrect: false }], keywords: [{ text: "affect local weather patterns in", feedback: "Relevant and focused! This makes a global issue personal and observable.", isCorrect: true },{ text: "impact rising sea levels in", feedback: "A critical keyword phrase! It points to one of the most significant consequences.", isCorrect: true },{ text: "threaten the economy of", feedback: "'The economy' is massive. You'd need to focus on a tiny piece, like a specific industry.", isCorrect: false },{ text: "harm polar bears in", feedback: "While affected, focusing on a single species can be limiting. 'Ecosystems' might be better.", isCorrect: false }], context: [{ text: "our state", feedback: "Excellent context. It makes the research local and more tangible.", isCorrect: true },{ text: "coastal regions", feedback: "Great! This specifies a type of geographic area that is directly affected.", isCorrect: true },{ text: "the future", feedback: "Predictions are hard. Research is strongest when it's based on existing data from the past.", isCorrect: false },{ text: "the Arctic", feedback: "While this is a location, the keyword 'harm polar bears' already implies it. A good context adds a new layer.", isCorrect: false }]}},
+                ]
+            },
+            tr: {
+                title: "Soru Oluşturma Meydan Okuması",
+                subtitle: "Zayıf soruları araştırma süperstarlarına dönüştürün!",
+                question_label: "Soru:",
+                score_label: "Puan:",
+                vague_question_label: "Belirsiz Soru:",
+                specificity_label: "1. Özgünlük Ekle",
+                keywords_label: "2. Anahtar Kelime Ekle",
+                context_label: "3. Bağlam Ekle",
+                drop_zone_placeholder: "Bir ifadeyi buraya sürükle",
+                tile_bank_label: "Geliştirme Kutucukları",
+                check_btn: "Sorumu Kontrol Et!",
+                next_btn: "Sonraki Soru",
+                new_question_label: "Yeni ve Geliştirilmiş Sorunuz:",
+                modal_title: "Harika İş!",
+                modal_subtitle: "Meydan okumayı tamamladınız!",
+                modal_final_score_label: "Nihai Puanınız:",
+                leaderboard_label: "Lider Tablosu",
+                player_name_placeholder: "Adınızı girin",
+                save_btn: "Kaydet",
+                restart_btn: "Tekrar Oyna",
+                gameData: [
+                    { vagueQuestion: "Sosyal medya kötü mü?", basePhrase: "sosyal medya", improvements: { specificity: [{ text: "Nasıl", feedback: "Mükemmel! 'Nasıl' bir süreci veya ilişkiyi anlamaya çalışır, bu da araştırma için anahtardır.", isCorrect: true },{ text: "Ne ölçüde", feedback: "Harika seçim! Bu ifade basit bir evet/hayır cevabından kaçınır ve derin analizi teşvik eder.", isCorrect: true },{ text: "Doğru mu ki", feedback: "Bu, basit bir 'evet' veya 'hayır' cevabına yol açar, bu da derin araştırma için ideal değildir.", isCorrect: false },{ text: "Neden", feedback: "'Neden' soruları çok geniş olabilir. İyi araştırma soruları daha spesifik ve odaklıdır.", isCorrect: false }], keywords: [{ text: "zihinsel sağlığını etkiler", feedback: "Çok odaklı! 'Zihinsel sağlık' belirli bir konudur ve 'etkilemek' nötr bir araştırma fiilidir.", isCorrect: true },{ text: "akademik performansını etkiler", feedback: "İyi anahtar kelime öbeği! Bu, soruyu ölçülebilir ve okulla ilgili hale getirir.", isCorrect: true },{ text: "üzgün yapar", feedback: "Bu çok belirsiz. 'Üzgün' bir duygudur, araştırma için ölçülebilir bir terim değildir.", isCorrect: false },{ text: "için zaman kaybıdır", feedback: "Bu bir görüştür, nötr, araştırılabilir bir eylem değildir.", isCorrect: false }], context: [{ text: "6. sınıf öğrencilerinin", feedback: "Mükemmel bağlam! Bir yaş grubu belirtmek, araştırmanızı çok daha yönetilebilir hale getirir.", isCorrect: true },{ text: "okulumuzdaki öğrencilerin", feedback: "Güzel! Belirli bir konum, araştırmayı pratik ve incelenmesi kolay hale getirir.", isCorrect: true },{ text: "dünyadaki", feedback: "Bu bağlam çok geniştir. Araştırmanın etkili olabilmesi için daha sınırlı bir kapsama ihtiyacı vardır.", isCorrect: false },{ text: "herkesin", feedback: "'Herkes' çok geneldir. Güçlü bir araştırma sorusu belirli bir gruba odaklanır.", isCorrect: false }]}},
+                    { vagueQuestion: "Video oyunları zaman kaybı mıdır?", basePhrase: "video oyunları", improvements: { specificity: [{ text: "Nasıl", feedback: "Güçlü bir başlangıç! Bu sizi bir süreci veya bağlantıyı aramaya iter.", isCorrect: true },{ text: "Hangi yollarla", feedback: "Yaratıcı! Bu, soruyu birden fazla etki veya uygulama arayacak şekilde çerçeveler.", isCorrect: true },{ text: "Sence", feedback: "Bu, araştırmaya dayalı kanıt değil, bir görüş sorar.", isCorrect: false },{ text: "Mı", feedback: "Bu genellikle 'evet/hayır' cevabına yol açar. Daha açık uçlu sorular sormaya çalışın.", isCorrect: false }], keywords: [{ text: "problem çözme becerilerini geliştirir", feedback: "Mükemmel! 'Problem çözme becerileri' ölçülebilir bir bilişsel yetenektir.", isCorrect: true },{ text: "öğrenmeye katkıda bulunur", feedback: "Harika bir bakış açısı! Bu anahtar kelime, eğitici oyunlar üzerine araştırmalar açar.", isCorrect: true },{ text: "bağımlılık yapar", feedback: "Bu yanlı bir terimdir. Tarafsız araştırma için daha nötr bir anahtar kelime öbeği daha iyi olurdu.", isCorrect: false },{ text: "eğlence sağlar", feedback: "'Eğlence' özneldir ve bilimsel olarak ölçülmesi zordur.", isCorrect: false }], context: [{ text: "12 yaşından küçük öğrencilerin", feedback: "İyi odaklanma! Belirli bir yaş demografisini hedeflemek akıllı bir araştırma stratejisidir.", isCorrect: true },{ text: "fen dersindeki öğrencilerin", feedback: "Çok spesifik! Bu bağlam, araştırmayı belirli bir konuyla daraltır.", isCorrect: true },{ text: "evdeki insanların", feedback: "Biraz belirsiz. 'Evde' birçok farklı anlama gelebilir. Daha spesifik ol!", isCorrect: false },{ text: "hafta sonları çocukların", feedback: "Bu zamanı daraltsa da, grubu daraltmaz. Kimi inceliyoruz?", isCorrect: false }]}},
+                ]
+            },
+            zh: {
+                title: "问题构建挑战",
+                subtitle: "将模糊问题变成研究超级明星！",
+                question_label: "问题:",
+                score_label: "分数:",
+                vague_question_label: "模糊的问题:",
+                specificity_label: "1. 增加特异性",
+                keywords_label: "2. 添加关键词",
+                context_label: "3. 添加背景",
+                drop_zone_placeholder: "将短语拖到此处",
+                tile_bank_label: "改进板块",
+                check_btn: "检查我的问题！",
+                next_btn: "下一个问题",
+                new_question_label: "您改进后的新问题:",
+                modal_title: "干得漂亮！",
+                modal_subtitle: "您已完成挑战！",
+                modal_final_score_label: "您的最终得分:",
+                leaderboard_label: "排行榜",
+                player_name_placeholder: "输入你的名字",
+                save_btn: "保存",
+                restart_btn: "再玩一次",
+                gameData: [
+                    { vagueQuestion: "社交媒体有害吗？", basePhrase: "社交媒体", improvements: { specificity: [{ text: "如何", feedback: "太棒了！ ‘如何’旨在理解一个过程或关系，这是研究的关键。", isCorrect: true },{ text: "在何种程度上", feedback: "很好的选择！这个短语避免了简单的“是/否”回答，并鼓励进行深入分析。", isCorrect: true },{ text: "是不是真的", feedback: "这会导致一个简单的“是”或“否”的答案，对于深入研究来说并不理想。", isCorrect: false },{ text: "为什么", feedback: "“为什么”类型的问题可能范围非常广泛。好的研究问题更具体、更集中。", isCorrect: false }], keywords: [{ text: "影响心理健康", feedback: "非常集中！ ‘心理健康’是一个特定的话题，而‘影响’是一个中性的研究动词。", isCorrect: true },{ text: "影响学习成绩", feedback: "很好的关键词短语！这使得问题可衡量且与学校相关。", isCorrect: true },{ text: "让人伤心", feedback: "这太模糊了。“伤心”是一种情绪，不是一个可衡量的研究术语。", isCorrect: false },{ text: "浪费时间", feedback: "这是一种观点，而不是一个中性的、可研究的行为。", isCorrect: false }], context: [{ text: "六年级学生", feedback: "完美的背景！指定一个年龄组使您的研究更容易管理。", isCorrect: true },{ text: "我们学校的学生", feedback: "不错！一个特定的地点使研究变得实用且易于进行。", isCorrect: true },{ text: "世界", feedback: "这个背景太宽泛了。研究需要一个更有限的范围才能有效。", isCorrect: false },{ text: "每个人", feedback: "“每个人”太笼统了。一个好的研究问题应该聚焦于一个特定的群体。", isCorrect: false }]}},
+                    { vagueQuestion: "玩电子游戏是浪费时间吗？", basePhrase: "电子游戏", improvements: { specificity: [{ text: "如何", feedback: "一个好的开始！这促使您寻找一个过程或联系。", isCorrect: true },{ text: "以何种方式", feedback: "有创意！这为问题设定了框架，以寻找多种效果或应用。", isCorrect: true },{ text: "你认为", feedback: "这问的是观点，而不是基于研究的证据。", isCorrect: false },{ text: "是", feedback: "这通常会导致“是/否”的答案。尝试提出更开放式的问题。", isCorrect: false }], keywords: [{ text: "培养解决问题的能力", feedback: "太棒了！ ‘解决问题的能力’是一种可衡量的认知能力。", isCorrect: true },{ text: "有助于学习", feedback: "绝佳的角度！这个关键词开启了对教育游戏的研究。", isCorrect: true },{ text: "使人上瘾", feedback: "这是一个带有偏见的术语。对于无偏见的研究，使用更中性的关键词短语会更好。", isCorrect: false },{ text: "提供乐趣", feedback: "“乐趣”是主观的，难以科学地衡量。", isCorrect: false }], context: [{ text: "12岁以下的学生", feedback: "重点突出！针对特定的年龄人群是一个明智的研究策略。", isCorrect: true },{ text: "科学课上的学生", feedback: "非常具体！这个背景将研究范围缩小到特定的学科。", isCorrect: true },{ text: "在家里的人", feedback: "有点模糊。“在家里”可能意味着很多不同的事情。说得更具体些！", isCorrect: false },{ text: "周末的孩子们", feedback: "虽然这缩小了时间范围，但没有缩小群体。我们在研究谁？", isCorrect: false }]}},
+                ]
+            }
+        };
+
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                console.log("User is signed in with UID:", userId);
+                setupLeaderboardListener();
+            } else {
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Error signing in:", error);
+                }
+            }
+        });
+
+        // DOM Elements
+        const scoreEl = document.getElementById('score');
+        const levelCounterEl = document.getElementById('level-counter');
+        const vagueQuestionEl = document.getElementById('vague-question');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const tileBank = document.getElementById('tile-bank');
+        const checkBtn = document.getElementById('check-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const resultContainer = document.getElementById('result-container');
+        const newQuestionEl = document.getElementById('new-question');
+        const feedbackContainer = document.getElementById('feedback-container');
+        const finalModal = document.getElementById('final-modal');
+        const finalScoreEl = document.getElementById('final-score');
+        const restartBtn = document.getElementById('restart-btn');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+        const playerNameInput = document.getElementById('player-name');
+        const saveScoreBtn = document.getElementById('save-score-btn');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const langBtns = document.querySelectorAll('.lang-btn');
+
+        let currentLevel = 0;
+        let score = 0;
+        let draggedTile = null;
+
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            
+            langBtns.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.lang === lang) {
+                    btn.classList.add('active');
+                }
+            });
+
+            document.querySelectorAll('[data-translate-key]').forEach(el => {
+                const key = el.dataset.translateKey;
+                const translation = translations[lang][key];
+                if (translation) {
+                     if(el.tagName === 'INPUT' && el.placeholder) {
+                        el.placeholder = translation;
+                    } else {
+                        el.textContent = translation;
+                    }
+                }
+            });
+            
+            // Handle drop zone placeholders which are inside other elements
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                if (zone.children.length === 1 && zone.children[0].tagName === 'SPAN') {
+                    zone.children[0].textContent = translations[lang].drop_zone_placeholder;
+                }
+            });
+
+            loadLevel(currentLevel);
+        }
+
+        langBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                setLanguage(btn.dataset.lang);
+            });
+        });
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function showMessage(text) {
+            messageText.textContent = text;
+            messageBox.classList.remove('hide');
+            setTimeout(() => {
+                messageBox.classList.add('hide');
+            }, 3000);
+        }
+        
+        function loadLevel(level) {
+            const langData = translations[currentLanguage];
+            const levelData = langData.gameData[level % langData.gameData.length]; // Use modulo to avoid errors if lang has fewer questions
+            
+            vagueQuestionEl.textContent = levelData.vagueQuestion;
+            levelCounterEl.textContent = `${(level % langData.gameData.length) + 1} / ${langData.gameData.length}`;
+            tileBank.innerHTML = '';
+            
+            dropZones.forEach(zone => {
+                zone.innerHTML = `<span class="text-gray-400 italic md:text-lg">${langData.drop_zone_placeholder}</span>`;
+                const child = zone.children[0];
+                if(child && child.classList.contains('draggable-tile')) {
+                    child.classList.remove('border-green-500', 'border-red-500', 'border-4');
+                }
+            });
+
+            let allTiles = [
+                ...levelData.improvements.specificity,
+                ...levelData.improvements.keywords,
+                ...levelData.improvements.context
+            ];
+            
+            allTiles.forEach(tile => {
+                if(levelData.improvements.specificity.includes(tile)) {
+                    tile.type = 'specificity';
+                    tile.color = 'teal';
+                } else if (levelData.improvements.keywords.includes(tile)) {
+                    tile.type = 'keywords';
+                    tile.color = 'sky';
+                } else {
+                    tile.type = 'context';
+                    tile.color = 'amber';
+                }
+            });
+
+            allTiles = shuffleArray(allTiles);
+
+            allTiles.forEach(tileData => {
+                const tile = document.createElement('div');
+                tile.textContent = tileData.text;
+                tile.draggable = true;
+                tile.dataset.type = tileData.type;
+                tile.dataset.feedback = tileData.feedback;
+                tile.dataset.isCorrect = tileData.isCorrect;
+                tile.classList.add('draggable-tile', `bg-${tileData.color}-200`, `text-${tileData.color}-800`, 'font-semibold', 'py-3', 'px-5', 'text-base', 'md:text-lg', 'rounded-lg', 'shadow-sm');
+                tileBank.appendChild(tile);
+            });
+            
+            addDragListeners();
+            resultContainer.style.opacity = '0';
+            feedbackContainer.style.opacity = '0';
+            feedbackContainer.innerHTML = '';
+            checkBtn.classList.remove('hidden');
+            checkBtn.disabled = false;
+            nextBtn.classList.add('hidden');
+        }
+
+        function addDragListeners() {
+            const tiles = document.querySelectorAll('.draggable-tile');
+            tiles.forEach(tile => {
+                tile.addEventListener('dragstart', (e) => {
+                    draggedTile = e.target;
+                    setTimeout(() => e.target.classList.add('dragging'), 0);
+                });
+
+                tile.addEventListener('dragend', (e) => {
+                    draggedTile.classList.remove('dragging');
+                    draggedTile = null;
+                });
+            });
+        }
+        
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => e.preventDefault());
+            zone.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                if (draggedTile && draggedTile.dataset.type === zone.dataset.type) {
+                    zone.classList.add('drag-over');
+                }
+            });
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                
+                if (draggedTile && draggedTile.dataset.type === zone.dataset.type) {
+                    if (zone.children.length > 0 && zone.children[0].classList.contains('draggable-tile')) {
+                        const existingTile = zone.children[0];
+                        existingTile.classList.remove('border-green-500', 'border-red-500', 'border-4');
+                        tileBank.appendChild(existingTile);
+                    }
+                    zone.innerHTML = '';
+                    zone.appendChild(draggedTile);
+                } else {
+                    showMessage("Oops! That tile doesn't fit here. Match the category.");
+                }
+            });
+        });
+
+        checkBtn.addEventListener('click', () => {
+            let filledZones = 0;
+            let correctTiles = 0;
+            const newQuestionParts = {};
+            const feedbackParts = [];
+
+            dropZones.forEach(zone => {
+                const child = zone.children[0];
+                if (child && child.classList.contains('draggable-tile')) {
+                    filledZones++;
+                    newQuestionParts[zone.dataset.type] = child.textContent;
+                    feedbackParts.push({type: zone.dataset.type, feedback: child.dataset.feedback, isCorrect: child.dataset.isCorrect});
+                    
+                    if (child.dataset.isCorrect === 'true') {
+                        correctTiles++;
+                        child.classList.add('border-green-500', 'border-4');
+                    } else {
+                        child.classList.add('border-red-500', 'border-4');
+                    }
+                }
+            });
+
+            if (filledZones < 3) {
+                showMessage("Make sure you fill all three boxes to build the best question!");
+                dropZones.forEach(zone => {
+                    const child = zone.children[0];
+                    if (child && child.classList.contains('draggable-tile')) {
+                         child.classList.remove('border-green-500', 'border-red-500', 'border-4');
+                    }
+                });
+                return;
+            }
+
+            let pointsThisRound = correctTiles * 15;
+            if (correctTiles === 3) {
+                pointsThisRound += 5; // Bonus for a perfect question!
+            }
+            score += pointsThisRound;
+            scoreEl.textContent = score;
+            
+            const langData = translations[currentLanguage];
+            const gameData = langData.gameData[currentLevel % langData.gameData.length];
+            const base = gameData.basePhrase;
+            
+            const finalQuestion = `${newQuestionParts.specificity || "___"} ${base} ${newQuestionParts.keywords || "___"} ${newQuestionParts.context || "___"}?`;
+            newQuestionEl.textContent = finalQuestion.charAt(0).toUpperCase() + finalQuestion.slice(1);
+            
+            const typeLabels = {
+                specificity: langData.specificity_label.replace('1. ',''),
+                keywords: langData.keywords_label.replace('2. ',''),
+                context: langData.context_label.replace('3. ',''),
+            };
+
+            feedbackContainer.innerHTML = feedbackParts.map(fb => `
+                <div class="bg-gray-100 p-3 rounded-lg flex items-start space-x-3">
+                    <span class="font-bold text-sm ${fb.isCorrect === 'true' ? 'text-green-600' : 'text-red-600'} capitalize">${typeLabels[fb.type]}:</span>
+                    <p class="text-gray-700">${fb.feedback}</p>
+                </div>
+            `).join('');
+
+            resultContainer.style.opacity = '1';
+            feedbackContainer.style.opacity = '1';
+            checkBtn.classList.add('hidden');
+            nextBtn.classList.remove('hidden');
+            checkBtn.disabled = true;
+        });
+
+        nextBtn.addEventListener('click', () => {
+            currentLevel++;
+            const totalLevels = translations[currentLanguage].gameData.length;
+            if (currentLevel < totalLevels) {
+                loadLevel(currentLevel);
+            } else {
+                finalScoreEl.textContent = score;
+                finalModal.classList.remove('hidden');
+                setTimeout(() => finalModal.querySelector('div').classList.add('scale-100'), 10);
+            }
+        });
+        
+        restartBtn.addEventListener('click', () => {
+            score = 0;
+            currentLevel = 0;
+            scoreEl.textContent = score;
+            finalModal.classList.add('hidden');
+            finalModal.querySelector('div').classList.remove('scale-100');
+            saveScoreBtn.disabled = false;
+            playerNameInput.value = '';
+            setLanguage(currentLanguage); // Reloads level 0 with current language
+        });
+        
+        saveScoreBtn.addEventListener('click', async () => {
+            const playerName = playerNameInput.value.trim();
+            if (playerName.length < 2) {
+                showMessage("Please enter a name with at least 2 characters.");
+                return;
+            }
+            if (!userId) {
+                showMessage("Cannot save score. User not authenticated.");
+                return;
+            }
+            
+            saveScoreBtn.disabled = true;
+            try {
+                const scoresCollection = collection(db, `artifacts/${appId}/public/data/scores`);
+                await addDoc(scoresCollection, {
+                    name: playerName,
+                    score: score,
+                    createdAt: new Date()
+                });
+                showMessage("Score saved successfully!");
+                playerNameInput.value = '';
+            } catch (error) {
+                console.error("Error saving score: ", error);
+                showMessage("Could not save score. Please try again.");
+                saveScoreBtn.disabled = false;
+            }
+        });
+
+        function setupLeaderboardListener() {
+            if (unsubscribeLeaderboard) unsubscribeLeaderboard();
+            const scoresQuery = query(collection(db, `artifacts/${appId}/public/data/scores`), limit(10));
+            
+            unsubscribeLeaderboard = onSnapshot(scoresQuery, (snapshot) => {
+                const scores = [];
+                snapshot.forEach(doc => {
+                    scores.push(doc.data());
+                });
+                scores.sort((a, b) => b.score - a.score);
+
+                leaderboardList.innerHTML = scores.map(s => `
+                    <li>
+                        <span class="leaderboard-name">${s.name}</span>
+                        <span class="leaderboard-score">${s.score}</span>
+                    </li>
+                `).join('');
+            }, (error) => {
+                console.error("Error fetching leaderboard: ", error);
+            });
+        }
+        
+        // Initial load
+        setLanguage('en');
+    </script>
+</body>
+</html>
+
