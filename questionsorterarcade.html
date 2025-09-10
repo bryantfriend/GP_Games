@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Question Sorter Arcade</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f8ff;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      text-align: center;
+    }
+    button {
+      padding: 15px 25px;
+      margin: 10px;
+      font-size: 18px;
+      border: none;
+      border-radius: 12px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    button:hover {
+      background: #0056b3;
+      transform: scale(1.05);
+    }
+    button.selected {
+      background: #003f7f;
+      box-shadow: 0 0 12px rgba(0,0,0,0.5), inset 0 2px 6px rgba(0,0,0,0.4);
+      transform: scale(1.05);
+    }
+    #startScreen, #learnScreen, #gameArea, #gameOverScreen {
+      display: none;
+      width: 100%;
+      height: 100vh;
+      position: relative;
+    }
+    #startScreen, #learnScreen, #gameOverScreen {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: #e6f2ff;
+    }
+    #gameArea {
+      background: #e6f2ff;
+      overflow: hidden;
+      border-bottom: 4px solid #333;
+    }
+    .question {
+      position: absolute;
+      background: #ffd966;
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: grab;
+      width: 200px;
+      text-align: center;
+      font-size: 16px;
+    }
+#bins {
+  display: none;
+  justify-content: space-around;
+  align-items: center;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 20vh;
+  background: linear-gradient(to top, #2c3e50, #34495e); /* dark gradient strip */
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+
+.bin {
+  width: 160px;
+  height: 90px;
+  border-radius: 12px;
+  text-align: center;
+  line-height: 90px;
+  font-weight: bold;
+  font-size: 18px;
+  color: #fff;  /* ✅ make text white */
+  background: linear-gradient(to bottom, #4caf50, #388e3c); /* nice green */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  transition: transform 0.2s, background 0.3s;
+  cursor: pointer;
+}
+
+.bin.correct { background: linear-gradient(to bottom, #8bc34a, #558b2f); }
+.bin.wrong   { background: linear-gradient(to bottom, #e57373, #c62828); }
+/* On hover, bins pop a bit */
+.bin:hover {
+  transform: scale(1.05);
+}
+    #scoreboard {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    #lives {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    #learnScreen {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;  /* enable vertical scrolling */
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    #learnText {
+      flex: 1;
+      overflow-y: auto;   /* make just the text scrollable */
+      max-height: 80vh;   /* limit so header/footer don't push it off screen */
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- START SCREEN -->
+  <div id="startScreen">
+    <h1>Question Sorter Arcade</h1>
+    <h2>Select Language</h2>
+    <div>
+      <button id="btn-en" onclick="selectLanguage('en')">English</button>
+      <button id="btn-tr" onclick="selectLanguage('tr')">Türkçe</button>
+      <button id="btn-zh" onclick="selectLanguage('zh')">中文</button>
+    </div>
+    <h2>Select Difficulty</h2>
+    <div>
+      <button id="btn-easy" onclick="selectDifficulty('easy')">Easy</button>
+      <button id="btn-medium" onclick="selectDifficulty('medium')">Medium</button>
+      <button id="btn-hard" onclick="selectDifficulty('hard')">Hard</button>
+    </div>
+    <button onclick="showLearn()">Learn About Questions</button>
+    <button id="btn-start">Start Game</button>
+  </div>
+
+  <!-- LEARN SCREEN -->
+  <div id="learnScreen">
+    <h2 id="learnTitle">Learn About Question Types</h2>
+    <div id="learnText"></div>
+    <button onclick="backToStart()">Back</button>
+  </div>
+  <!-- GAME AREA -->
+  <div id="gameArea">
+    <div id="scoreboard">Score: 0 | Streak: 0</div>
+    <div id="lives">Lives: 3</div>
+
+    <div id="bins">   <!-- ✅ now inside -->
+      <div class="bin" data-type="open">Open-Ended</div>
+      <div class="bin" data-type="closed">Closed</div>
+      <div class="bin" data-type="probing">Probing</div>
+      <div class="bin" data-type="clarifying">Clarifying</div>
+    </div>
+  </div>
+
+
+  <!-- GAME OVER -->
+  <div id="gameOverScreen">
+    <h1>Game Over</h1>
+    <p id="finalScore"></p>
+    <button onclick="restartGame()">Restart</button>
+  </div>
+
+<script>
+  // LANGUAGES
+const texts = {
+  en: {
+    learn: `
+      <h3>Open-Ended Questions ✨</h3>
+      <p>Open-ended questions are powerful because they invite detailed responses 🌱. Instead of answering with just “yes” or “no,” the other person has to think, explain, and share their ideas. For example: “What do you think about teamwork?” or “How would you solve this challenge in class?” These questions open the door to deeper conversations.</p>
+      <p>They are very useful in school, at home, and even with friends 👫. When you ask someone an open-ended question, you are showing respect for their thoughts and experiences. This makes the other person feel valued and important, which helps to build trust and stronger relationships.</p>
+      <p>Open-ended questions also encourage creativity 🎨. They allow people to express unique perspectives and think in new ways. For example, instead of asking “Did you like the story?” (closed), you could ask “What part of the story was your favorite and why?” This encourages richer discussion.</p>
+      <p>Finally, using open-ended questions helps you learn more about others and yourself 🧠. You can discover what people feel, what they believe, and how they solve problems. These questions turn an ordinary talk into a meaningful conversation that can even change how people see the world.</p>
+
+      <h3>Closed Questions 🚪</h3>
+      <p>Closed questions usually need only a short answer, such as “yes,” “no,” or a fact 📊. They often begin with words like “Did,” “Is,” “Are,” or “Can.” For example: “Did you do your homework?” or “Is it raining outside?” These are simple and efficient when you just need quick facts.</p>
+      <p>Closed questions are very useful in certain situations ⏱️. Teachers use them to check understanding, doctors use them to confirm symptoms, and parents use them to check if chores are done. They are great when you need clear and fast answers.</p>
+      <p>However, closed questions don’t give much space for detailed thinking 💭. If you ask only closed questions, the conversation might feel short or boring. For example, “Did you like the trip?” may only get a “yes” or “no,” while an open-ended question would give you a full story.</p>
+      <p>Good communicators balance closed and open-ended questions ⚖️. Closed ones help gather facts, while open ones invite discussion. When you mix them, you can have both efficiency and depth in your conversations.</p>
+
+      <h3>Probing Questions 🔎</h3>
+      <p>Probing questions are designed to dig deeper into someone’s answer 🌍. They usually follow another question and ask the person to explain more. For example: “Why do you think that happened?” or “Can you tell me more about what you mean?” These help uncover details that are not clear at first.</p>
+      <p>They are important because they show that you are truly listening 👂. By asking a probing question, you encourage the speaker to reflect and give more information. Teachers, interviewers, and scientists use them to get beyond surface-level answers.</p>
+      <p>Probing questions can also reveal hidden feelings or assumptions 🤔. For example, if someone says, “I didn’t like the project,” a probing question like “What part didn’t you like?” can help you understand the real issue. This helps solve problems and build empathy.</p>
+      <p>But probing questions should be asked politely and respectfully 🙏. If they are too pushy, the person might feel uncomfortable. When used with kindness, they make people feel heard and understood, creating stronger connections.</p>
+
+      <h3>Clarifying Questions 💡</h3>
+      <p>Clarifying questions help make sure everyone understands the same thing ✅. For example: “Do you mean you were tired because of the homework, or because of the sports game?” These questions prevent confusion by asking for more detail when something is unclear.</p>
+      <p>They are especially useful in teamwork and class discussions 👩‍🏫. When instructions are not clear, clarifying questions help avoid mistakes. For example: “When you said write an essay, do you mean one page or two?” This shows that you are paying attention.</p>
+      <p>Clarifying questions build trust because they show that you care about accuracy 🤝. The speaker feels respected since you want to fully understand their message. This helps prevent arguments and makes teamwork smoother.</p>
+      <p>Finally, clarifying questions make communication stronger 🏗️. They give both people a chance to check their understanding and avoid problems later. They are an essential skill in school, friendships, and even future jobs.</p>
+    `,
+    bins: ["Open-Ended", "Closed", "Probing", "Clarifying"],
+  },
+  tr: {
+    learn: `
+      <h3>Açık Uçlu Sorular ✨</h3>
+      <p>Açık uçlu sorular, detaylı cevapları teşvik eder ve karşınızdakini düşünmeye yönlendirir 🌱. Bu sorular “Evet” veya “Hayır” ile bitmez; kişinin düşüncelerini açıklamasını ister. Örneğin: “Takım çalışması hakkında ne düşünüyorsun?” veya “Bu problemi nasıl çözerdin?”</p>
+      <p>Açık uçlu sorular, karşılıklı saygıyı artırır ve samimi konuşmalar başlatır 👫. Böyle sorular sorulduğunda karşınızdaki kişi kendini değerli hisseder. Bu, arkadaşlıkların, sınıf içi iletişimin ve aile bağlarının güçlenmesine yardımcı olur.</p>
+      <p>Ayrıca bu sorular yaratıcılığı teşvik eder 🎨. İnsanlar kendi fikirlerini özgürce ifade edebilir. Örneğin, “Hikâyeyi beğendin mi?” yerine “Hikâyenin en sevdiğin bölümü hangisiydi ve neden?” derseniz, daha zengin bir sohbet elde edersiniz.</p>
+      <p>Son olarak, açık uçlu sorular bize karşımızdaki kişiyi daha iyi tanıma fırsatı verir 🧠. Bu sorular sayesinde sıradan bir konuşma, anlamlı bir paylaşıma dönüşebilir.</p>
+
+      <h3>Kapalı Sorular 🚪</h3>
+      <p>Kapalı sorular kısa ve net cevaplar gerektirir 📊. Genellikle “Mi”, “Mı”, “Var mı” gibi kelimelerle başlar. Örneğin: “Ödevini yaptın mı?” veya “Bugün yağmur yağıyor mu?”</p>
+      <p>Bu sorular, hızlı bilgi almak için çok kullanışlıdır ⏱️. Öğretmenler ders kontrolü yaparken, ebeveynler ev işleri için veya doktorlar kısa bilgi almak için kapalı sorular kullanır.</p>
+      <p>Ancak kapalı sorular derin düşünmeyi teşvik etmez 💭. Çok fazla kullanılırsa sohbet sıkıcı olabilir. “Geziyi beğendin mi?” sorusu sadece “Evet” ya da “Hayır” cevabı getirir.</p>
+      <p>Bu yüzden iyi iletişimciler kapalı soruları açık uçlu sorularla dengeler ⚖️. Böylece hem hızlı bilgi alınır hem de sohbet derinleşir.</p>
+
+      <h3>Sorgulayıcı Sorular 🔎</h3>
+      <p>Sorgulayıcı sorular, cevabın arkasındaki nedeni anlamak için sorulur 🌍. Örneğin: “Neden böyle düşündün?” veya “Daha fazla ayrıntı verebilir misin?”</p>
+      <p>Bu sorular, gerçekten dinlediğinizi gösterir 👂. Karşınızdaki kişi kendini ifade etmeye devam eder ve siz daha fazla bilgi edinirsiniz. Öğretmenler, araştırmacılar ve gazeteciler sıkça kullanır.</p>
+      <p>Sorgulayıcı sorular, gizli duyguları ya da sebepleri ortaya çıkarabilir 🤔. Bir öğrenci “Projeyi sevmedim” dediğinde, “Hangi kısmını sevmedin?” diye sorarsanız gerçeğe ulaşırsınız.</p>
+      <p>Ancak bu sorular saygılı bir şekilde sorulmalıdır 🙏. Aksi halde kişi baskı altında hissedebilir. Doğru kullanıldığında, samimi bağlar kurar.</p>
+
+      <h3>Açıklayıcı Sorular 💡</h3>
+      <p>Açıklayıcı sorular, yanlış anlamaları önlemek için kullanılır ✅. Örneğin: “Bunu mu kastettin, yoksa şunu mu?” veya “Zor dedin, hangi açıdan zor?”</p>
+      <p>Özellikle ekip çalışmaları ve sınıf ortamlarında çok faydalıdır 👩‍🏫. Talimatlar belirsiz olduğunda, açıklayıcı sorular işleri netleştirir.</p>
+      <p>Ayrıca güven oluşturur 🤝. Karşınızdaki kişi, sözlerinin önemsendiğini hisseder. Bu da iletişimi güçlendirir.</p>
+      <p>Sonuç olarak açıklayıcı sorular, iletişimi sağlamlaştırır 🏗️. Hem siz hem de karşınızdaki kişi doğru anladığından emin olur.</p>
+    `,
+    bins: ["Açık Uçlu", "Kapalı", "Sorgulayıcı", "Açıklayıcı"],
+  },
+  zh: {
+    learn: `
+      <h3>开放式问题 ✨</h3>
+      <p>开放式问题让对方必须详细回答，而不是简单的“是”或“否” 🌱。例如：“你怎么看待团队合作？” 或 “你会如何解决这个问题？”</p>
+      <p>这类问题能让人们感到被尊重 👫。因为你在认真听，他们会更愿意分享自己的想法和经历，从而建立信任和理解。</p>
+      <p>开放式问题也能激发创造力 🎨。比如：“你喜欢这个故事吗？” 只能得到“是/否”，但“你最喜欢故事的哪一部分？为什么？” 会引发更精彩的讨论。</p>
+      <p>通过开放式问题，我们能更好地了解别人和自己 🧠。它让普通的对话变得有意义，甚至改变我们的思维方式。</p>
+
+      <h3>封闭式问题 🚪</h3>
+      <p>封闭式问题通常只需要简短回答 📊。例如：“你完成作业了吗？” 或 “今天下雨了吗？”</p>
+      <p>它们在获取具体信息时很高效 ⏱️。老师、医生、父母都常常使用这种问题来快速确认事实。</p>
+      <p>然而，这类问题可能让对话显得浅显 💭。过多使用只会得到“是/否”，无法引发深入讨论。</p>
+      <p>所以，好的交流需要平衡 ⚖️。既用封闭式问题获取事实，也用开放式问题促进思考。</p>
+
+      <h3>探究式问题 🔎</h3>
+      <p>探究式问题是为了深入了解对方的回答 🌍。例如：“你为什么这样认为？” 或 “能详细说说吗？”</p>
+      <p>它们表明你在认真倾听 👂。这会鼓励对方继续解释，提供更多细节。老师和研究人员经常用这种方法。</p>
+      <p>探究式问题还可以揭示隐藏的想法或感受 🤔。例如，如果有人说“我不喜欢这个项目”，你可以追问“具体哪一部分？”</p>
+      <p>但必须注意方式 🙏。如果语气过于强硬，对方会感到有压力。友好地使用，才能建立更深的理解。</p>
+
+      <h3>澄清式问题 💡</h3>
+      <p>澄清式问题用来确认双方的理解是否一致 ✅。例如：“你是指作业太难，还是时间不够？”</p>
+      <p>这种问题在团队合作和课堂中很重要 👩‍🏫。它避免误会，确保大家在同一频道。</p>
+      <p>澄清式问题能建立信任 🤝。对方会觉得你重视他们的话语，从而更愿意合作。</p>
+      <p>总之，澄清式问题让沟通更清晰 🏗️。它保证对话有效，减少错误，提高效率。</p>
+    `,
+    bins: ["开放式", "封闭式", "探究式", "澄清式"],
+  }
+};
+
+
+const questions = {
+  en: {
+    easy: [
+      { text: "What is your favorite color?", type: "open" },
+      { text: "What food do you like most?", type: "open" },
+      { text: "What do you like to do after school?", type: "open" },
+      { text: "What is your favorite sport?", type: "open" },
+      { text: "Did you eat breakfast today?", type: "closed" },
+      { text: "Is it sunny outside?", type: "closed" },
+      { text: "Are you wearing shoes?", type: "closed" },
+      { text: "Can you see the board?", type: "closed" },
+      { text: "Can you tell me more about your pet?", type: "probing" },
+      { text: "Why do you like that game?", type: "probing" },
+      { text: "Can you explain why you like pizza?", type: "probing" },
+      { text: "What makes you laugh the most?", type: "probing" },
+      { text: "Do you mean your dog or your cat?", type: "clarifying" },
+      { text: "When you said 'fun,' did you mean exciting or relaxing?", type: "clarifying" },
+      { text: "Do you mean your best friend at school or outside school?", type: "clarifying" },
+      { text: "Did you mean yesterday or today?", type: "clarifying" }
+    ],
+    medium: [
+      { text: "How would you describe a good friend?", type: "open" },
+      { text: "What kind of books do you enjoy reading?", type: "open" },
+      { text: "What do you usually do on weekends?", type: "open" },
+      { text: "How do you celebrate birthdays?", type: "open" },
+      { text: "Is math your favorite subject?", type: "closed" },
+      { text: "Did you watch the news yesterday?", type: "closed" },
+      { text: "Are you in grade 7?", type: "closed" },
+      { text: "Is this classroom big?", type: "closed" },
+      { text: "Why do you think group work is important?", type: "probing" },
+      { text: "Can you tell me more about why that story inspired you?", type: "probing" },
+      { text: "Why do you enjoy playing with your friends?", type: "probing" },
+      { text: "Can you explain how you solved that problem?", type: "probing" },
+      { text: "Do you mean the whole team, or just a few people?", type: "clarifying" },
+      { text: "When you said 'difficult,' did you mean confusing or too much work?", type: "clarifying" },
+      { text: "Did you mean your family or your friends?", type: "clarifying" },
+      { text: "Do you mean summer vacation or winter vacation?", type: "clarifying" }
+    ],
+    hard: [
+      { text: "What are the benefits of learning another language?", type: "open" },
+      { text: "How would you solve a conflict between two friends?", type: "open" },
+      { text: "What can schools do to reduce bullying?", type: "open" },
+      { text: "How do you think technology changes society?", type: "open" },
+      { text: "Have you ever traveled outside your city?", type: "closed" },
+      { text: "Can people live without social media?", type: "closed" },
+      { text: "Is pollution a big problem in your town?", type: "closed" },
+      { text: "Do you think homework is necessary?", type: "closed" },
+      { text: "Why do you believe technology changes society?", type: "probing" },
+      { text: "Can you explain why different cultures may see this issue differently?", type: "probing" },
+      { text: "Why do you think some people avoid reading?", type: "probing" },
+      { text: "What makes teamwork harder for some people?", type: "probing" },
+      { text: "Do you mean technology in school, or in daily life?", type: "clarifying" },
+      { text: "When you said 'unfair,' do you mean unfair to you or unfair to everyone?", type: "clarifying" },
+      { text: "Do you mean the government or the people?", type: "clarifying" },
+      { text: "Are you talking about the past or the future?", type: "clarifying" }
+    ]
+  },
+
+  tr: {
+    easy: [
+      { text: "En sevdiğin renk nedir?", type: "open" },
+      { text: "En sevdiğin yemek hangisi?", type: "open" },
+      { text: "Okuldan sonra ne yapmayı seversin?", type: "open" },
+      { text: "En sevdiğin spor nedir?", type: "open" },
+      { text: "Bugün kahvaltı yaptın mı?", type: "closed" },
+      { text: "Bugün hava güneşli mi?", type: "closed" },
+      { text: "Ayakkabı giyiyor musun?", type: "closed" },
+      { text: "Tahtayı görebiliyor musun?", type: "closed" },
+      { text: "Bana evcil hayvanından biraz daha bahseder misin?", type: "probing" },
+      { text: "Neden o oyunu seviyorsun?", type: "probing" },
+      { text: "Pizza’yı neden sevdiğini açıklayabilir misin?", type: "probing" },
+      { text: "Seni en çok ne güldürür?", type: "probing" },
+      { text: "Köpeğini mi kastettin yoksa kedini mi?", type: "clarifying" },
+      { text: "'Eğlenceli' derken heyecanlı mı yoksa rahatlatıcı mı?", type: "clarifying" },
+      { text: "En iyi arkadaşını okuldan mı yoksa dışarıdan mı kastettin?", type: "clarifying" },
+      { text: "Dünü mü kastettin yoksa bugünü mü?", type: "clarifying" }
+    ],
+    medium: [
+      { text: "İyi bir arkadaş nasıl olur?", type: "open" },
+      { text: "Hangi tür kitapları okumaktan hoşlanırsın?", type: "open" },
+      { text: "Hafta sonları genelde ne yaparsın?", type: "open" },
+      { text: "Doğum günlerini nasıl kutlarsın?", type: "open" },
+      { text: "Matematik senin en sevdiğin ders mi?", type: "closed" },
+      { text: "Dün haberleri izledin mi?", type: "closed" },
+      { text: "Sen 7. sınıfta mısın?", type: "closed" },
+      { text: "Bu sınıf büyük mü?", type: "closed" },
+      { text: "Neden grup çalışmasının önemli olduğunu düşünüyorsun?", type: "probing" },
+      { text: "O hikayenin seni neden etkilediğini biraz daha anlatır mısın?", type: "probing" },
+      { text: "Arkadaşlarınla oynamayı neden seviyorsun?", type: "probing" },
+      { text: "Bu sorunu nasıl çözdüğünü açıklayabilir misin?", type: "probing" },
+      { text: "Bütün takımı mı, yoksa sadece birkaç kişiyi mi kastettin?", type: "clarifying" },
+      { text: "'Zordu' derken kafa karıştırıcı mı yoksa çok mu iş vardı?", type: "clarifying" },
+      { text: "Aileni mi yoksa arkadaşlarını mı kastettin?", type: "clarifying" },
+      { text: "Yaz tatilini mi yoksa kış tatilini mi kastettin?", type: "clarifying" }
+    ],
+    hard: [
+      { text: "Başka bir dil öğrenmenin faydaları nelerdir?", type: "open" },
+      { text: "İki arkadaş arasındaki bir sorunu nasıl çözerdin?", type: "open" },
+      { text: "Okullarda zorbalığı azaltmak için ne yapılabilir?", type: "open" },
+      { text: "Sence teknoloji toplumu nasıl değiştiriyor?", type: "open" },
+      { text: "Hiç şehir dışına seyahat ettin mi?", type: "closed" },
+      { text: "Sosyal medya olmadan insanlar yaşayabilir mi?", type: "closed" },
+      { text: "Şehrinde kirlilik büyük bir sorun mu?", type: "closed" },
+      { text: "Ödev gerekli mi?", type: "closed" },
+      { text: "Neden teknolojinin toplumu değiştirdiğine inanıyorsun?", type: "probing" },
+      { text: "Farklı kültürlerin bu konuyu neden farklı görebileceğini açıklayabilir misin?", type: "probing" },
+      { text: "Neden bazı insanlar kitap okumaktan kaçınır?", type: "probing" },
+      { text: "Takım çalışmasını zorlaştıran şeyler nelerdir?", type: "probing" },
+      { text: "Okuldaki teknolojiyi mi, yoksa günlük yaşamı mı kastettin?", type: "clarifying" },
+      { text: "'Adil değil' derken sadece sana mı yoksa herkese mi adil değil demek istedin?", type: "clarifying" },
+      { text: "Devleti mi yoksa insanları mı kastettin?", type: "clarifying" },
+      { text: "Geçmişi mi kastettin yoksa geleceği mi?", type: "clarifying" }
+    ]
+  },
+
+  zh: {
+    easy: [
+      { text: "你最喜欢的颜色是什么？", type: "open" },
+      { text: "你最喜欢的食物是什么？", type: "open" },
+      { text: "放学后你喜欢做什么？", type: "open" },
+      { text: "你最喜欢的运动是什么？", type: "open" },
+      { text: "你今天吃早餐了吗？", type: "closed" },
+      { text: "今天是晴天吗？", type: "closed" },
+      { text: "你穿鞋子了吗？", type: "closed" },
+      { text: "你能看到黑板吗？", type: "closed" },
+      { text: "你能多讲一点你的宠物吗？", type: "probing" },
+      { text: "你为什么喜欢那个游戏？", type: "probing" },
+      { text: "你能解释一下为什么喜欢披萨吗？", type: "probing" },
+      { text: "什么事情最让你发笑？", type: "probing" },
+      { text: "你是指狗还是猫？", type: "clarifying" },
+      { text: "当你说‘有趣’时，是指刺激还是放松？", type: "clarifying" },
+      { text: "你是指学校的朋友还是外面的朋友？", type: "clarifying" },
+      { text: "你是指昨天还是今天？", type: "clarifying" }
+    ],
+    medium: [
+      { text: "你觉得一个好朋友应该是什么样的？", type: "open" },
+      { text: "你喜欢读什么类型的书？", type: "open" },
+      { text: "你周末通常做什么？", type: "open" },
+      { text: "你怎么庆祝生日？", type: "open" },
+      { text: "数学是你最喜欢的科目吗？", type: "closed" },
+      { text: "你昨天看新闻了吗？", type: "closed" },
+      { text: "你是七年级吗？", type: "closed" },
+      { text: "这个教室大吗？", type: "closed" },
+      { text: "你为什么觉得小组合作很重要？", type: "probing" },
+      { text: "你能多解释一下为什么那个故事让你受启发吗？", type: "probing" },
+      { text: "你为什么喜欢和朋友一起玩？", type: "probing" },
+      { text: "你能解释一下你是如何解决这个问题的吗？", type: "probing" },
+      { text: "你是指整个团队还是部分人？", type: "clarifying" },
+      { text: "当你说‘困难’时，是指难理解还是工作量大？", type: "clarifying" },
+      { text: "你是指家人还是朋友？", type: "clarifying" },
+      { text: "你是指暑假还是寒假？", type: "clarifying" }
+    ],
+    hard: [
+      { text: "学习另一种语言有什么好处？", type: "open" },
+      { text: "如果两个朋友发生冲突，你会如何解决？", type: "open" },
+      { text: "学校可以做些什么来减少欺凌？", type: "open" },
+      { text: "你认为科技如何改变社会？", type: "open" },
+      { text: "你曾经去过你所在城市以外的地方吗？", type: "closed" },
+      { text: "人类可以没有社交媒体生活吗？", type: "closed" },
+      { text: "污染在你的城市是一个大问题吗？", type: "closed" },
+      { text: "作业有必要吗？", type: "closed" },
+      { text: "你为什么认为科技会改变社会？", type: "probing" },
+      { text: "你能解释一下为什么不同文化会对这个问题有不同看法吗？", type: "probing" },
+      { text: "你为什么觉得有些人不喜欢读书？", type: "probing" },
+      { text: "是什么让团队合作变得困难？", type: "probing" },
+      { text: "你是指学校里的科技还是日常生活中的科技？", type: "clarifying" },
+      { text: "当你说‘不公平’时，是指对你不公平还是对大家不公平？", type: "clarifying" },
+      { text: "你是指政府还是人民？", type: "clarifying" },
+      { text: "你说的是过去还是未来？", type: "clarifying" }
+    ]
+  }
+};
+
+
+
+  let currentLang = "en";
+  let difficulty = "easy";
+  let score = 0, streak = 0, lives = 3, speed = 1, dropInterval = 3000, activeQuestion = null, gameRunning = false;
+
+  const startScreen = document.getElementById("startScreen");
+  const learnScreen = document.getElementById("learnScreen");
+  const gameArea = document.getElementById("gameArea");
+  const bins = document.querySelectorAll(".bin");
+  const scoreboard = document.getElementById("scoreboard");
+  const livesBoard = document.getElementById("lives");
+  const learnText = document.getElementById("learnText");
+  const gameOverScreen = document.getElementById("gameOverScreen");
+  const finalScore = document.getElementById("finalScore");
+
+  function highlightSelection(group, selectedId) {
+    group.forEach(id => {
+      document.getElementById(id).classList.remove("selected");
+    });
+    document.getElementById(selectedId).classList.add("selected");
+  }
+
+  function selectLanguage(lang) {
+    currentLang = lang;
+    const labels = texts[lang].bins;
+    bins.forEach((bin, i) => bin.innerText = labels[i]);
+    highlightSelection(["btn-en","btn-tr","btn-zh"], "btn-" + lang);
+  }
+
+  function selectDifficulty(level) {
+    difficulty = level;
+    if (level === "easy") { speed = 1; dropInterval = 3000; }
+    if (level === "medium") { speed = 1.5; dropInterval = 2000; }
+    if (level === "hard") { speed = 2; dropInterval = 1500; }
+    highlightSelection(["btn-easy","btn-medium","btn-hard"], "btn-" + level);
+  }
+
+  function showLearn() {
+    startScreen.style.display = "none";
+    learnScreen.style.display = "flex";
+    learnText.innerHTML = texts[currentLang].learn;
+  }
+
+  function backToStart() {
+    learnScreen.style.display = "none";
+    startScreen.style.display = "flex";
+  }
+
+function spawnQuestion() {
+  const pool = questions[currentLang][difficulty]; // choose correct language + difficulty
+  const q = pool[Math.floor(Math.random() * pool.length)];
+  
+  const div = document.createElement("div");
+  div.className = "question";
+  div.innerText = q.text;
+  div.style.top = "0px";
+  div.style.left = Math.random() * (window.innerWidth - 220) + "px";
+  div.draggable = true;
+  div.dataset.type = q.type;
+
+  div.ondragstart = () => { 
+    activeQuestion = div; 
+    setTimeout(() => (div.style.display = "none"), 0); 
+  };
+  div.ondragend = () => { div.style.display = "block"; };
+
+  gameArea.appendChild(div);
+
+  const fall = setInterval(() => {
+    if (!document.body.contains(div) || !gameRunning) { 
+      clearInterval(fall); 
+      return; 
+    }
+    let top = parseInt(div.style.top);
+    div.style.top = top + speed + "px";
+    if (top > gameArea.clientHeight - 50) {
+      if (gameArea.contains(div)) gameArea.removeChild(div);
+      lives -= 1;
+      updateScore();
+      if (lives <= 0) endGame();
+      clearInterval(fall);
+    }
+  }, 20);
+}
+
+
+  bins.forEach((bin) => {
+    bin.ondragover = (e) => e.preventDefault();
+    bin.ondrop = (e) => {
+      e.preventDefault();
+      if (!activeQuestion) return;
+      activeQuestion.style.display = "block";
+      if (activeQuestion.dataset.type === bin.dataset.type) {
+        bin.classList.add("correct"); setTimeout(() => bin.classList.remove("correct"), 500);
+        score += 10; streak++;
+        if (streak % 3 === 0) score += 10;
+      } else {
+        bin.classList.add("wrong"); setTimeout(() => bin.classList.remove("wrong"), 500);
+        streak = 0; lives--;
+      }
+      updateScore();
+      if (lives <= 0) endGame();
+      if (activeQuestion.parentNode) activeQuestion.remove();
+      activeQuestion = null;
+    };
+  });
+
+  function updateScore() {
+    scoreboard.innerText = `Score: ${score} | Streak: ${streak}`;
+    livesBoard.innerText = `Lives: ${lives}`;
+  }
+
+  function gameLoop() {
+    if (!gameRunning) return;
+    spawnQuestion();
+    setTimeout(gameLoop, dropInterval);
+  }
+
+function startGame() {
+  score = 0; 
+  streak = 0; 
+  lives = 3;
+  updateScore();
+
+  startScreen.style.display = "none";
+  gameOverScreen.style.display = "none";
+
+  gameArea.style.display = "block";
+  document.getElementById("bins").style.display = "flex"; // ✅ show bins when game starts
+
+  gameRunning = true;
+  gameLoop();
+}
+
+document.getElementById("btn-start").addEventListener("click", startGame);
+
+  function endGame() {
+    gameRunning = false;
+    gameArea.style.display = "none";
+    document.getElementById("bins").style.display = "none";
+    finalScore.innerText = `Final Score: ${score} | Max Streak: ${streak}`;
+    gameOverScreen.style.display = "flex";
+  }
+
+  function restartGame() {
+    gameOverScreen.style.display = "none";
+    startScreen.style.display = "flex";
+  }
+
+  // Set defaults
+  selectLanguage("en");
+  selectDifficulty("easy");
+  startScreen.style.display = "flex";
+
+
+</script>
+</body>
+</html>
