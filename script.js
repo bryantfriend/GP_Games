@@ -13,6 +13,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Make sure each line ends with a comma (,) except for the last one.
 
     const games = [
+                {
+            fileName: 'questionsorterarcade.html',
+            title: 'Question Sorter Arcade'
+        }, 
         {
             fileName: 'sourcespotter.html',
             title: 'Source Spotter'
