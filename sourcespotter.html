@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spot the Reliable Source</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+            background-color: #f0f9ff; /* sky-50 */
+        }
+        .card {
+            background-color: white;
+            border-radius: 1.5rem; /* rounded-3xl */
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            overflow: hidden;
+        }
+        .btn {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 0.75rem; /* rounded-xl */
+            font-weight: 600;
+        }
+        .btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn-primary {
+            background-color: #0ea5e9; /* sky-500 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0284c7; /* sky-600 */
+        }
+        .btn-secondary {
+            background-color: #e0f2fe; /* sky-100 */
+            color: #0ea5e9; /* sky-500 */
+        }
+        .btn-secondary.active {
+            background-color: #0ea5e9; /* sky-500 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .source-btn.correct {
+            background-color: #22c55e; /* green-500 */
+            border-color: #16a34a; /* green-600 */
+            color: white;
+        }
+        .source-btn.incorrect {
+            background-color: #ef4444; /* red-500 */
+            border-color: #dc2626; /* red-600 */
+            color: white;
+        }
+        .feedback-card {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="container" class="w-full max-w-2xl mx-auto">
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="card p-8 text-center">
+            <h1 id="start-title" class="text-4xl font-bold text-slate-800 mb-2">Welcome! 👋</h1>
+            <p id="start-subtitle" class="text-lg text-slate-500 mb-8">Let's learn to spot reliable sources!</p>
+
+            <div class="mb-8">
+                <h2 id="lang-select-title" class="text-xl font-semibold text-slate-700 mb-4">1. Choose your language</h2>
+                <div class="flex justify-center space-x-3">
+                    <button onclick="selectLanguage('en')" class="lang-btn en btn btn-secondary active px-6 py-3">English</button>
+                    <button onclick="selectLanguage('tr')" class="lang-btn tr btn btn-secondary px-6 py-3">Türkçe</button>
+                    <button onclick="selectLanguage('zh')" class="lang-btn zh btn btn-secondary px-6 py-3">中文</button>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h2 id="difficulty-select-title" class="text-xl font-semibold text-slate-700 mb-4">2. Choose your level</h2>
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="selectDifficulty('easy')" class="difficulty-btn easy btn btn-secondary py-4">Easy 😊</button>
+                    <button onclick="selectDifficulty('medium')" class="difficulty-btn medium btn btn-secondary py-4">Medium 🤔</button>
+                    <button onclick="selectDifficulty('hard')" class="difficulty-btn hard btn btn-secondary py-4">Hard 🧐</button>
+                </div>
+            </div>
+
+            <button id="start-game-btn" onclick="startGame()" class="w-full btn btn-primary py-4 text-xl">Start Game</button>
+        </div>
+
+        <!-- Game Container -->
+        <div id="game-container" class="card p-6 md:p-8 hidden">
+            <header class="flex flex-col md:flex-row justify-between items-center mb-6 pb-4 border-b border-slate-200">
+                <h1 id="game-title" class="text-2xl font-bold text-slate-800 mb-4 md:mb-0">Spot the Reliable Source</h1>
+                <div class="flex items-center space-x-2">
+                    <span id="score-label" class="text-lg font-semibold text-slate-600">Score:</span>
+                    <span id="score-value" class="text-2xl font-bold text-sky-500">0</span>
+                </div>
+            </header>
+
+            <main id="main-content">
+                <div id="scenario-container" class="text-center bg-slate-50 p-6 rounded-2xl mb-8">
+                    <p id="scenario-text" class="text-xl md:text-2xl text-slate-700 leading-relaxed"></p>
+                </div>
+
+                <div id="sources-container" class="grid md:grid-cols-2 gap-6">
+                    <button id="source-a" onclick="checkAnswer('A')" class="source-btn btn w-full bg-white border-2 border-slate-200 p-6 text-left text-lg text-slate-800">
+                        <span class="font-bold text-sky-600">Source A:</span>
+                        <p id="source-a-text" class="mt-2"></p>
+                    </button>
+                    <button id="source-b" onclick="checkAnswer('B')" class="source-btn btn w-full bg-white border-2 border-slate-200 p-6 text-left text-lg text-slate-800">
+                         <span class="font-bold text-sky-600">Source B:</span>
+                        <p id="source-b-text" class="mt-2"></p>
+                    </button>
+                </div>
+
+                <div id="feedback-container" class="mt-8 text-center hidden">
+                    <div class="feedback-card bg-slate-50 p-6 rounded-2xl">
+                        <h2 id="feedback-title" class="text-3xl font-bold mb-2"></h2>
+                        <p id="feedback-explanation" class="text-lg text-slate-600"></p>
+                        <button id="next-button" onclick="nextQuestion()" class="mt-6 btn btn-primary py-3 px-8 text-lg">Next Question</button>
+                    </div>
+                </div>
+            </main>
+            
+            <div id="final-score-container" class="mt-8 text-center hidden">
+                 <div class="bg-slate-50 p-8 rounded-2xl">
+                    <h2 id="final-score-title" class="text-3xl font-bold mb-4 text-slate-800">Game Over!</h2>
+                    <p id="final-score-text" class="text-2xl text-slate-600 mb-6">Your final score is:</p>
+                    <p id="final-score-value" class="text-6xl font-bold text-sky-500 mb-8"></p>
+                    <button id="restart-button" onclick="restartGame()" class="btn btn-primary py-3 px-8 text-lg">Play Again</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const translations = {
+            en: {
+                startTitle: 'Welcome! 👋',
+                startSubtitle: "Let's learn to spot reliable sources!",
+                langSelectTitle: '1. Choose your language',
+                difficultySelectTitle: '2. Choose your level',
+                difficulty: { easy: 'Easy 😊', medium: 'Medium 🤔', hard: 'Hard 🧐' },
+                startGameBtn: 'Start Game',
+                title: 'Spot the Reliable Source',
+                score: 'Score:',
+                next: 'Next Question',
+                correct: 'Correct! ✅',
+                incorrect: 'Not Quite! ❌',
+                gameOver: 'Game Over! 🎉',
+                finalScoreText: 'Your final score is:',
+                playAgain: 'Play Again',
+                sourceA: 'Source A:',
+                sourceB: 'Source B:',
+                levels: {
+                    easy: [
+                        { scenario: 'A headline claims, "Scientists discover eating 10 apples a day reverses aging."', sourceA_text: 'An article on a blog called "ForeverYoungSecrets.net" with many ads.', sourceB_text: 'A research paper published in the "New England Journal of Medicine," a respected medical journal.', correctSource: 'B', explanation: 'Reputable scientific journals are peer-reviewed. Blogs with a commercial interest are often biased.'},
+                        { scenario: 'You see a post stating, "A massive solar flare will cause a global power outage tomorrow!"', sourceA_text: 'A message forwarded many times on a social media app from an unknown author.', sourceB_text: 'An official alert on the website of NASA.', correctSource: 'B', explanation: 'Official scientific agencies like NASA are the most reliable sources for this type of information.'},
+                        { scenario: 'A video shows a politician saying something outrageous. The caption claims they want to "ban all pets".', sourceA_text: 'A short, out-of-context clip from an anonymous account.', sourceB_text: 'The full, unedited speech from a non-partisan news organization like the Associated Press.', correctSource: 'B', explanation: 'Short clips can be easily manipulated. Always seek the full story from a neutral news source.'},
+                        { scenario: 'An article says a new local power plant is "perfectly safe and has zero environmental impact."', sourceA_text: 'A press release published on the power company\'s own website.', sourceB_text: 'An investigative report by an independent environmental agency with data.', correctSource: 'B', explanation: 'A company will always present its own projects positively. An independent agency provides a more balanced view.'},
+                        { scenario: "Is it true that chocolate cures colds?", sourceA_text: "A candy company's website.", sourceB_text: "A study from a major university's health department.", correctSource: 'B', explanation: 'A company selling a product has a bias. A university health department provides objective, research-based information.'},
+                        { scenario: "A message says school is cancelled tomorrow due to a surprise holiday.", sourceA_text: "A text from a friend who heard it from another friend.", sourceB_text: "The official school district website.", correctSource: 'B', explanation: 'Official sources are the only place to get reliable announcements. Rumors spread easily among friends.'},
+                        { scenario: "A website claims a new video game is the 'best game ever made'.", sourceA_text: "The game developer's official promotional website.", sourceB_text: "A review from an independent game critic who has played many games.", correctSource: 'B', explanation: 'A creator will always promote their own work. An independent critic provides a more objective opinion.'},
+                        { scenario: "You read that polar bears are now living in the desert.", sourceA_text: "A cartoon show about talking animals.", sourceB_text: "A wildlife encyclopedia like National Geographic.", correctSource: 'B', explanation: 'Encyclopedias and reputable nature organizations are dedicated to factual information about the natural world.'},
+                        { scenario: "A pop-up ad says you've won a free phone.", sourceA_text: "A flashy ad asking for your personal information to claim the prize.", sourceB_text: "An official announcement from a well-known company's verified social media page.", correctSource: 'B', explanation: 'Pop-up ads asking for personal information are often scams. A verified account is a much more trustworthy source.'},
+                        { scenario: "What's the weather going to be like today?", sourceA_text: "Your friend guesses by looking at the sky.", sourceB_text: "The national weather service forecast.", correctSource: 'B', explanation: 'Official weather services use scientific data and models to make accurate forecasts.'},
+                        { scenario: "Are wooden roller coasters safe?", sourceA_text: "A person's comment on a video saying they look scary.", sourceB_text: "An article by an engineering association that inspects amusement park rides.", correctSource: 'B', explanation: 'Experts in a field, like engineers, provide more reliable safety information than personal opinions.'},
+                        { scenario: "You want to know the rules of baseball.", sourceA_text: "Watching a movie about a baseball team.", sourceB_text: "The official rulebook published by Major League Baseball (MLB).", correctSource: 'B', explanation: 'Movies often change details for the story. The official rulebook is the primary source for the correct rules.'}
+                    ],
+                    medium: [
+                        { scenario: "Is the new 'VitaBoost' energy drink healthy?", sourceA_text: "An article on a fitness influencer's social media with a #ad and a discount code for the drink.", sourceB_text: 'A nutritional analysis by a registered dietitian not affiliated with the company.', correctSource: 'B', explanation: 'Sponsored content (#ad) is advertising, not an unbiased review. An independent professional is more objective.'},
+                        { scenario: "You want to learn about the history of ancient Rome.", sourceA_text: 'A detailed encyclopedia entry with citations to historical texts and academic authors.', sourceB_text: 'A Hollywood movie that dramatizes the lives of Roman emperors.', correctSource: 'A', explanation: 'Encyclopedias are for factual information, while movies often change historical details for entertainment.'},
+                        { scenario: "A financial article suggests investing all your money in 'CryptoCoin X'.", sourceA_text: "An anonymous forum post that promises you'll get rich quick.", sourceB_text: "An article from a reputable financial news source that explains the risks and benefits.", correctSource: 'B', explanation: 'Anonymous financial advice is very risky. Reputable news sources aim to provide balanced information.'},
+                        { scenario: "You're writing a report on World War II.", sourceA_text: "A historical fiction novel set during the war.", sourceB_text: "A history textbook or a documentary from a historical channel with expert interviews.", correctSource: 'B', explanation: 'While based on history, novels are fiction. Textbooks and expert documentaries are created for factual accuracy.'},
+                        { scenario: "A headline reads: 'New study shows broccoli is unhealthy'.", sourceA_text: "An article that only interviews the one scientist who did the study.", sourceB_text: "A health news website that consults several different nutrition experts to get their opinion on the study.", correctSource: 'B', explanation: 'One study is not enough to make a conclusion. A reliable source will look for consensus among many experts.'},
+                        { scenario: "Is a new miracle cleaning product safe for pets?", sourceA_text: "Customer reviews on the company's shopping page.", sourceB_text: "The official safety data sheet (SDS) for the product and reports from poison control centers.", correctSource: 'B', explanation: 'Customer reviews are subjective opinions. Official safety data is based on scientific testing.'},
+                        { scenario: "A political ad shows an opponent's photo in black and white with scary music.", sourceA_text: "The political campaign's advertisement.", sourceB_text: "A non-partisan voter's guide that compares all candidates' voting records.", correctSource: 'B', explanation: 'Political ads are designed to persuade you using emotion. A non-partisan guide focuses on presenting facts.'},
+                        { scenario: "Does a popular herbal supplement really improve memory?", sourceA_text: "The product's website featuring glowing testimonials from happy customers.", sourceB_text: "A meta-analysis of multiple scientific studies on the supplement published by the National Institutes of Health (NIH).", correctSource: 'B', explanation: 'Testimonials are anecdotes, not scientific evidence. A meta-analysis from a major health institution is one of the highest forms of evidence.'},
+                        { scenario: "A local factory is accused of polluting a river.", sourceA_text: "The factory's CEO giving a speech about their commitment to the environment.", sourceB_text: "Water quality test results from the Environmental Protection Agency (EPA).", correctSource: 'B', explanation: 'The CEO has a strong bias to protect their company. The EPA is an independent agency that provides objective data.'},
+                        { scenario: "What are the effects of playing video games on the brain?", sourceA_text: "A newspaper opinion column written by a parent who dislikes video games.", sourceB_text: "A scientific journal article that reviews dozens of brain imaging studies on gamers.", correctSource: 'B', explanation: 'An opinion column is based on personal belief. A review of scientific studies is based on evidence.'},
+                        { scenario: "You want to find out the main cause of the American Civil War.", sourceA_text: "A blog post by a history enthusiast who claims it was all about taxes.", sourceB_text: "A consensus statement from a conference of professional historians who specialize in the 19th century.", correctSource: 'B', explanation: 'Complex historical events rarely have one single cause. A consensus of experts provides a more complete and accurate picture.'},
+                        { scenario: "A website claims a new type of car engine runs on water.", sourceA_text: "A video with dramatic music showing a car moving, but without showing the engine's design.", sourceB_text: "A physics textbook explaining the laws of thermodynamics.", correctSource: 'B', explanation: 'Extraordinary claims require extraordinary evidence. The laws of physics (thermodynamics) show that you cannot get more energy out of water than you put in to separate it, making such an engine impossible.'}
+                    ],
+                    hard: [
+                         { scenario: "A study is being reported on climate change. Which source is likely more reliable?", sourceA_text: 'A news article that quotes one scientist who disagrees with the consensus and frames it as a major debate.', sourceB_text: 'A summary report from the Intergovernmental Panel on Climate Change (IPCC).', correctSource: 'B', explanation: 'The IPCC report represents the broad scientific consensus. An article focusing on a single dissenting voice can create a "false balance".'},
+                         { scenario: "You're researching a controversial new law.", sourceA_text: 'An opinion piece from a newspaper\'s editorial section that uses emotional language and calls opponents "unpatriotic."', sourceB_text: "A non-partisan fact-checking organization's analysis of the law's text.", correctSource: 'B', explanation: 'Opinion pieces are meant to persuade, not just inform, and may use logical fallacies. Fact-checking organizations focus on objective analysis.'},
+                         { scenario: "You see two different news reports about the same protest.", sourceA_text: "A report that only shows interviews with protesters and uses language like 'brave freedom fighters'.", sourceB_text: "A report that interviews protesters, police, and local business owners and describes the events neutrally.", correctSource: 'B', explanation: 'A reliable news source strives for balance and neutrality, presenting multiple perspectives rather than taking one side.'},
+                         { scenario: "Researching a complex medical condition.", sourceA_text: "A personal blog where someone describes their own symptoms and what they think is happening.", sourceB_text: "A website from a major hospital or medical research institution, like the Mayo Clinic or NIH.", correctSource: 'B', explanation: 'While personal stories can be helpful, medical information should come from trusted, expert institutions that rely on extensive research.'},
+                         { scenario: "A scientific claim is presented online. Which is a better sign of reliability?", sourceA_text: "The article says 'scientists have proven...' but doesn't link to any studies.", sourceB_text: "The article explains the study's methods and provides a direct link to the research paper in a peer-reviewed journal.", correctSource: 'B', explanation: 'Transparency is key. A reliable source will show you the evidence by linking to the original study, not just make claims.'},
+                         { scenario: "A historical document is found. Which interpretation is more reliable?", sourceA_text: "A TV show host who claims it proves a wild conspiracy theory.", sourceB_text: "A team of university historians who have analyzed the document's language, age, and context.", correctSource: 'B', explanation: 'Historical analysis requires deep expertise. Professional historians are trained to interpret documents accurately, unlike entertainers.'},
+                         { scenario: "Evaluating statistics about a city's crime rate.", sourceA_text: "A politician's speech that uses select numbers to make the rate sound very high or very low.", sourceB_text: "The raw data published by the city's official police department or a national statistics bureau.", correctSource: 'B', explanation: 'Primary data from an official source is more reliable than "cherry-picked" statistics used to support an argument.'},
+                         { scenario: "An article claims a certain food is a 'superfood' that prevents cancer.", sourceA_text: "The article cites a study done on mice in a lab.", sourceB_text: "The article cites long-term dietary studies involving thousands of people.", correctSource: 'B', explanation: 'Results from animal studies do not always apply to humans. Large-scale human studies are more reliable for making health claims.'},
+                         { scenario: "Is a widely cited statistic actually true?", sourceA_text: "A graphic on social media that shows the statistic with a picture.", sourceB_text: "A fact-checking website that traces the statistic back to its original research paper and evaluates the study's quality.", correctSource: 'B', explanation: 'Statistics can be easily made up. Fact-checking organizations do the hard work of verifying where numbers come from and if they are legitimate.'},
+                         { scenario: "Two studies on the same topic have conflicting results. What should you do?", sourceA_text: "Choose the study that confirms what you already believe.", sourceB_text: "Look for a meta-analysis or systematic review that evaluates all available studies on the topic to see the overall trend.", correctSource: 'B', explanation: 'A meta-analysis provides a bigger picture by combining results from many studies, which is more reliable than a single study. Choosing data that confirms your beliefs is called "confirmation bias".'},
+                         { scenario: "A news site reports on a new medical breakthrough.", sourceA_text: "The article has an exciting, sensational headline like 'CURE FOR AGING FOUND!' but the details are vague.", sourceB_text: "The article has a cautious headline and accurately explains the study's limitations and that more research is needed.", correctSource: 'B', explanation: 'Sensational headlines are a red flag. Responsible science journalism is cautious and accurately represents the slow, careful process of research.'},
+                         { scenario: "You are trying to understand a complex global conflict.", sourceA_text: "An emotional social media post from an unverified account that blames one single group for everything.", sourceB_text: "A report from an international relations expert or a respected global news agency that explains the long history and multiple factors involved.", correctSource: 'B', explanation: 'Complex problems rarely have simple explanations. Expert analysis provides the context and nuance that is missing from overly simplistic, emotional accounts.'}
+                    ]
+                }
+            },
+            tr: {
+                startTitle: 'Hoş Geldiniz! 👋',
+                startSubtitle: 'Güvenilir kaynakları bulmayı öğrenelim!',
+                langSelectTitle: '1. Dilinizi seçin',
+                difficultySelectTitle: '2. Seviyenizi seçin',
+                difficulty: { easy: 'Kolay 😊', medium: 'Orta 🤔', hard: 'Zor 🧐' },
+                startGameBtn: 'Oyuna Başla',
+                title: 'Güvenilir Kaynağı Bul',
+                score: 'Puan:',
+                next: 'Sonraki Soru',
+                correct: 'Doğru! ✅',
+                incorrect: 'Pek Değil! ❌',
+                gameOver: 'Oyun Bitti! 🎉',
+                finalScoreText: 'Nihai puanınız:',
+                playAgain: 'Tekrar Oyna',
+                sourceA: 'Kaynak A:',
+                sourceB: 'Kaynak B:',
+                levels: {
+                    easy: [
+                        { scenario: 'Bir manşet, "Bilim insanları günde 10 elma yemenin yaşlanmayı tersine çevirdiğini keşfetti" diyor.', sourceA_text: 'Reklamlarla dolu "GencKalmaSirlari.net" adlı bir blog yazısı.', sourceB_text: 'Saygın bir tıp dergisi olan "New England Journal of Medicine"de yayınlanan bir araştırma makalesi.', correctSource: 'B', explanation: 'Saygın bilimsel dergiler hakem denetiminden geçer. Ticari çıkarı olan bloglar genellikle yanlıdır.'},
+                        { scenario: 'Bir gönderi, "Yarın büyük bir güneş patlaması küresel bir elektrik kesintisine neden olacak!" diyor.', sourceA_text: 'Bilinmeyen bir yazardan bir sosyal medya uygulamasında defalarca iletilen bir mesaj.', sourceB_text: 'NASA web sitesinde resmi bir uyarı.', correctSource: 'B', explanation: 'NASA gibi resmi bilim kurumları bu tür bilgiler için en güvenilir kaynaklardır.'},
+                        { scenario: 'Bir videoda bir politikacının çirkin bir şey söylediği görülüyor. Altyazı, "tüm evcil hayvanları yasaklamak" istediklerini iddia ediyor.', sourceA_text: 'Anonim bir hesaptan alınmış kısa, bağlam dışı bir klip.', sourceB_text: 'Associated Press gibi partizan olmayan bir haber kuruluşundan konuşmanın tam, düzenlenmemiş hali.', correctSource: 'B', explanation: 'Kısa klipler kolayca manipüle edilebilir. Her zaman tarafsız bir haber kaynağından hikayenin tamamını arayın.'},
+                        { scenario: 'Bir makale, yeni bir yerel elektrik santralinin "tamamen güvenli ve sıfır çevresel etkiye sahip" olduğunu söylüyor.', sourceA_text: 'Doğrudan enerji şirketinin kendi web sitesinde yayınlanan bir basın bülteni.', sourceB_text: 'Verilerle bağımsız bir çevre ajansının hazırladığı bir araştırma raporu.', correctSource: 'B', explanation: 'Bir şirket kendi projelerini her zaman olumlu sunacaktır. Bağımsız bir ajans daha dengeli bir görüş sunar.'},
+                        { scenario: "Çikolatanın soğuk algınlığını iyileştirdiği doğru mu?", sourceA_text: "Bir şekerleme şirketinin web sitesi.", sourceB_text: "Büyük bir üniversitenin sağlık bölümünden bir çalışma.", correctSource: 'B', explanation: 'Ürün satan bir şirketin taraf tutması söz konusudur. Bir üniversitenin sağlık bölümü, araştırmaya dayalı objektif bilgi sağlar.'},
+                        { scenario: "Bir mesajda, sürpriz bir tatil nedeniyle yarın okulun iptal olduğu söyleniyor.", sourceA_text: "Başka bir arkadaştan duyan bir arkadaşınızdan gelen bir metin.", sourceB_text: "Resmi okul bölgesi web sitesi.", correctSource: 'B', explanation: 'Resmi duyuruları almak için tek güvenilir yer resmi kaynaklardır. Söylentiler arkadaşlar arasında kolayca yayılır.'},
+                        { scenario: "Bir web sitesi, yeni bir video oyununun 'şimdiye kadar yapılmış en iyi oyun' olduğunu iddia ediyor.", sourceA_text: "Oyun geliştiricisinin resmi tanıtım web sitesi.", sourceB_text: "Birçok oyun oynamış bağımsız bir oyun eleştirmeninden bir inceleme.", correctSource: 'B', explanation: 'Bir yaratıcı her zaman kendi işini tanıtacaktır. Bağımsız bir eleştirmen daha objektif bir görüş sunar.'},
+                        { scenario: "Kutup ayılarının artık çölde yaşadığını okudunuz.", sourceA_text: "Konuşan hayvanlar hakkında bir çizgi film gösterisi.", sourceB_text: "National Geographic gibi bir yaban hayatı ansiklopedisi.", correctSource: 'B', explanation: 'Ansiklopediler ve saygın doğa kuruluşları, doğal dünya hakkında gerçek bilgilere adanmıştır.'},
+                        { scenario: "Bir açılır pencere reklamı, ücretsiz bir telefon kazandığınızı söylüyor.", sourceA_text: "Ödülü talep etmek için kişisel bilgilerinizi isteyen gösterişli bir reklam.", sourceB_text: "Tanınmış bir şirketin doğrulanmış sosyal medya sayfasından resmi bir duyuru.", correctSource: 'B', explanation: 'Kişisel bilgi isteyen açılır pencereler genellikle dolandırıcılıktır. Doğrulanmış bir hesap çok daha güvenilir bir kaynaktır.'},
+                        { scenario: "Bugün hava nasıl olacak?", sourceA_text: "Arkadaşınız gökyüzüne bakarak tahmin ediyor.", sourceB_text: "Ulusal hava durumu servisi tahmini.", correctSource: 'B', explanation: 'Resmi hava durumu servisleri, doğru tahminler yapmak için bilimsel verileri ve modelleri kullanır.'},
+                        { scenario: "Ahşap hız trenleri güvenli mi?", sourceA_text: "Bir videoda korkutucu göründüklerini söyleyen bir kişinin yorumu.", sourceB_text: "Lunapark gezintilerini denetleyen bir mühendislik birliği tarafından yazılmış bir makale.", correctSource: 'B', explanation: 'Mühendisler gibi bir alandaki uzmanlar, kişisel görüşlerden daha güvenilir güvenlik bilgileri sağlar.'},
+                        { scenario: "Beyzbol kurallarını öğrenmek istiyorsunuz.", sourceA_text: "Bir beyzbol takımı hakkında bir film izlemek.", sourceB_text: "Major League Baseball (MLB) tarafından yayınlanan resmi kural kitabı.", correctSource: 'B', explanation: 'Filmler genellikle hikaye için ayrıntıları değiştirir. Resmi kural kitabı, doğru kurallar için birincil kaynaktır.'}
+                    ],
+                    medium: [
+                        { scenario: "Yeni 'VitaBoost' enerji içeceği sağlıklı mı?", sourceA_text: 'Bir fitness fenomeninin sosyal medyasında #reklam ve içecek için indirim kodu içeren bir makale.', sourceB_text: 'Şirketle bağlantısı olmayan kayıtlı bir diyetisyen tarafından yapılan bir beslenme analizi.', correctSource: 'B', explanation: 'Sponsorlu içerik (#reklam) tarafsız bir inceleme değil, reklamdır. Bağımsız bir profesyonel daha objektiftir.'},
+                        { scenario: "Antik Roma tarihi hakkında bilgi edinmek istiyorsunuz.", sourceA_text: 'Tarihsel metinlere ve akademik yazarlara atıflar içeren ayrıntılı bir ansiklopedi maddesi.', sourceB_text: 'Roma imparatorlarının hayatlarını dramatize eden bir Hollywood filmi.', correctSource: 'A', explanation: 'Ansiklopediler gerçek bilgiler içindir, filmler ise eğlence için genellikle tarihsel detayları değiştirir.'},
+                        { scenario: "Bir finans makalesi tüm paranızı 'KriptoPara X'e yatırmanızı öneriyor.", sourceA_text: "Hızlı zengin olacağınızı vaat eden anonim bir forum gönderisi.", sourceB_text: "Riskleri ve faydaları açıklayan saygın bir finans haber kaynağından bir makale.", correctSource: 'B', explanation: 'Anonim finansal tavsiyeler çok risklidir. Saygın haber kaynakları dengeli bilgi sağlamayı hedefler.'},
+                        { scenario: "İkinci Dünya Savaşı hakkında bir rapor yazıyorsunuz.", sourceA_text: "Savaş sırasında geçen bir tarihi kurgu romanı.", sourceB_text: "Uzman röportajları içeren bir tarih ders kitabı veya bir tarih kanalından bir belgesel.", correctSource: 'B', explanation: 'Tarihe dayalı olsa da romanlar kurgudur. Ders kitapları ve uzman belgeselleri olgusal doğruluk için oluşturulur.'},
+                        { scenario: "Bir manşet: 'Yeni çalışma brokolinin sağlıksız olduğunu gösteriyor'.", sourceA_text: "Sadece çalışmayı yapan bir bilim insanıyla röportaj yapan bir makale.", sourceB_text: "Çalışma hakkında görüşlerini almak için birkaç farklı beslenme uzmanına danışan bir sağlık haberleri web sitesi.", correctSource: 'B', explanation: 'Bir çalışma sonuç çıkarmak için yeterli değildir. Güvenilir bir kaynak birçok uzman arasında fikir birliği arayacaktır.'},
+                        { scenario: "Yeni bir mucize temizlik ürünü evcil hayvanlar için güvenli mi?", sourceA_text: "Şirketin alışveriş sayfasındaki müşteri yorumları.", sourceB_text: "Ürünün resmi güvenlik bilgi formu (SDS) ve zehir kontrol merkezlerinden gelen raporlar.", correctSource: 'B', explanation: 'Müşteri yorumları öznel görüşlerdir. Resmi güvenlik verileri bilimsel testlere dayanmaktadır.'},
+                        { scenario: "Bir siyasi reklam, bir rakibin fotoğrafını siyah beyaz ve korkutucu bir müzikle gösteriyor.", sourceA_text: "Siyasi kampanyanın reklamı.", sourceB_text: "Tüm adayların oy kayıtlarını karşılaştıran partizan olmayan bir seçmen rehberi.", correctSource: 'B', explanation: 'Siyasi reklamlar sizi duygu kullanarak ikna etmek için tasarlanmıştır. Partizan olmayan bir rehber gerçekleri sunmaya odaklanır.'},
+                        { scenario: "Popüler bir bitkisel takviye gerçekten hafızayı geliştiriyor mu?", sourceA_text: "Mutlu müşterilerden parlak referanslar içeren ürünün web sitesi.", sourceB_text: "Ulusal Sağlık Enstitüleri (NIH) tarafından yayınlanan takviye üzerine çok sayıda bilimsel çalışmanın meta-analizi.", correctSource: 'B', explanation: 'Referanslar anekdottur, bilimsel kanıt değildir. Büyük bir sağlık kurumundan gelen bir meta-analiz, en yüksek kanıt biçimlerinden biridir.'},
+                        { scenario: "Yerel bir fabrika bir nehri kirletmekle suçlanıyor.", sourceA_text: "Fabrika CEO'sunun çevreye olan bağlılıkları hakkında bir konuşma yapması.", sourceB_text: "Çevre Koruma Ajansı'ndan (EPA) su kalitesi test sonuçları.", correctSource: 'B', explanation: 'CEO\'nun şirketini korumak için güçlü bir önyargısı vardır. EPA, objektif veriler sağlayan bağımsız bir kurumdur.'},
+                        { scenario: "Video oyunları oynamanın beyin üzerindeki etkileri nelerdir?", sourceA_text: "Video oyunlarını sevmeyen bir ebeveyn tarafından yazılmış bir gazete görüş sütunu.", sourceB_text: "Oyuncular üzerinde düzinelerce beyin görüntüleme çalışmasını inceleyen bir bilimsel dergi makalesi.", correctSource: 'B', explanation: 'Bir görüş sütunu kişisel inanca dayanır. Bilimsel çalışmaların bir incelemesi kanıta dayanır.'},
+                        { scenario: "Amerikan İç Savaşı'nın ana nedenini öğrenmek istiyorsunuz.", sourceA_text: "Her şeyin vergilerle ilgili olduğunu iddia eden bir tarih meraklısının blog yazısı.", sourceB_text: "19. yüzyılda uzmanlaşmış profesyonel tarihçilerden oluşan bir konferanstan bir fikir birliği bildirisi.", correctSource: 'B', explanation: 'Karmaşık tarihsel olayların nadiren tek bir nedeni vardır. Uzmanların bir fikir birliği, daha eksiksiz ve doğru bir resim sunar.'},
+                        { scenario: "Bir web sitesi, yeni bir tür araba motorunun suyla çalıştığını iddia ediyor.", sourceA_text: "Dramatik müzikli bir arabanın hareket ettiğini gösteren ancak motorun tasarımını göstermeyen bir video.", sourceB_text: "Termodinamik yasalarını açıklayan bir fizik ders kitabı.", correctSource: 'B', explanation: 'Olağanüstü iddialar olağanüstü kanıt gerektirir. Fizik yasaları (termodinamik), sudan onu ayırmak için harcadığınızdan daha fazla enerji alamayacağınızı gösterir, bu da böyle bir motoru imkansız kılar.'}
+                    ],
+                    hard: [
+                         { scenario: "İklim değişikliği hakkında bir çalışma rapor ediliyor. Hangi kaynak daha güvenilir?", sourceA_text: 'Fikir birliğine katılmayan bir bilim insanından alıntı yapan ve bunu büyük bir tartışma gibi gösteren bir haber makalesi.', sourceB_text: 'Hükümetlerarası İklim Değişikliği Paneli\'nden (IPCC) bir özet rapor.', correctSource: 'B', explanation: 'IPCC raporu geniş bilimsel fikir birliğini temsil eder. Tek bir aykırı sese odaklanan bir makale "yanlış denge" yaratabilir.'},
+                         { scenario: "Tartışmalı yeni bir yasayı araştırıyorsunuz.", sourceA_text: 'Bir gazetenin editöryal bölümünden, duygusal bir dil kullanan ve muhalifleri "vatan haini" olarak nitelendiren bir görüş yazısı.', sourceB_text: 'Partizan olmayan bir doğruluk kontrolü kuruluşunun yasa metni analizi.', correctSource: 'B', explanation: 'Görüş yazıları sadece bilgilendirmek için değil, ikna etmek için yazılır ve mantık hataları kullanabilir. Doğruluk kontrolü kuruluşları nesnel analize odaklanır.'},
+                         { scenario: "Aynı protesto hakkında iki farklı haber görüyorsunuz.", sourceA_text: "Sadece protestocularla röportajları gösteren ve 'cesur özgürlük savaşçıları' gibi bir dil kullanan bir rapor.", sourceB_text: "Protestocular, polis ve yerel işletme sahipleriyle röportaj yapan ve olayları tarafsız bir şekilde anlatan bir rapor.", correctSource: 'B', explanation: 'Güvenilir bir haber kaynağı, bir taraf tutmak yerine birden fazla bakış açısı sunarak denge ve tarafsızlık için çabalar.'},
+                         { scenario: "Karmaşık bir tıbbi durumu araştırıyorsunuz.", sourceA_text: "Birinin kendi semptomlarını ve ne olduğunu düşündüğünü anlattığı kişisel bir blog.", sourceB_text: "Mayo Clinic veya NIH gibi büyük bir hastane veya tıbbi araştırma kurumunun web sitesi.", correctSource: 'B', explanation: 'Kişisel hikayeler yardımcı olabilirken, tıbbi bilgiler kapsamlı araştırmalara dayanan güvenilir, uzman kurumlardan gelmelidir.'},
+                         { scenario: "Çevrimiçi olarak bilimsel bir iddia sunulmaktadır. Hangisi daha iyi bir güvenilirlik işaretidir?", sourceA_text: "Makale 'bilim adamları kanıtladı...' diyor ancak herhangi bir çalışmaya bağlantı vermiyor.", sourceB_text: "Makale, çalışmanın yöntemlerini açıklıyor ve hakemli bir dergideki araştırma makalesine doğrudan bir bağlantı sağlıyor.", correctSource: 'B', explanation: 'Şeffaflık anahtardır. Güvenilir bir kaynak, sadece iddialarda bulunmak yerine orijinal çalışmaya bağlantı vererek size kanıtları gösterecektir.'},
+                         { scenario: "Tarihi bir belge bulundu. Hangi yorum daha güvenilir?", sourceA_text: "Vahşi bir komplo teorisini kanıtladığını iddia eden bir TV programı sunucusu.", sourceB_text: "Belgenin dilini, yaşını ve bağlamını analiz eden bir üniversite tarihçileri ekibi.", correctSource: 'B', explanation: 'Tarihsel analiz derin uzmanlık gerektirir. Profesyonel tarihçiler, eğlencecilerin aksine belgeleri doğru bir şekilde yorumlamak için eğitilmiştir.'},
+                         { scenario: "Bir şehrin suç oranı hakkındaki istatistikleri değerlendiriyorsunuz.", sourceA_text: "Oranın çok yüksek veya çok düşük görünmesini sağlamak için seçilmiş rakamları kullanan bir politikacının konuşması.", sourceB_text: "Şehrin resmi polis departmanı veya ulusal bir istatistik bürosu tarafından yayınlanan ham veriler.", correctSource: 'B', explanation: 'Resmi bir kaynaktan alınan birincil veriler, bir argümanı desteklemek için kullanılan "özenle seçilmiş" istatistiklerden daha güvenilirdir.'},
+                         { scenario: "Bir makale, belirli bir yiyeceğin kanseri önleyen bir 'süper gıda' olduğunu iddia ediyor.", sourceA_text: "Makale, laboratuvarda fareler üzerinde yapılmış bir çalışmayı aktarıyor.", sourceB_text: "Makale, binlerce insanı içeren uzun vadeli diyet çalışmalarını aktarıyor.", correctSource: 'B', explanation: 'Hayvan çalışmalarından elde edilen sonuçlar her zaman insanlar için geçerli değildir. Büyük ölçekli insan çalışmaları, sağlık iddialarında bulunmak için daha güvenilirdir.'},
+                         { scenario: "Yaygın olarak alıntılanan bir istatistik gerçekten doğru mu?", sourceA_text: "Sosyal medyada bir resimle istatistiği gösteren bir grafik.", sourceB_text: "İstatistiği orijinal araştırma makalesine kadar izleyen ve çalışmanın kalitesini değerlendiren bir doğruluk kontrolü web sitesi.", correctSource: 'B', explanation: 'İstatistikler kolayca uydurulabilir. Doğruluk kontrolü kuruluşları, sayıların nereden geldiğini ve meşru olup olmadığını doğrulama zor işini yapar.'},
+                         { scenario: "Aynı konu üzerine iki çalışma çelişkili sonuçlara sahip. Ne yapmalısınız?", sourceA_text: "Zaten inandığınızı doğrulayan çalışmayı seçin.", sourceB_text: "Genel eğilimi görmek için konuyla ilgili mevcut tüm çalışmaları değerlendiren bir meta-analiz veya sistematik derleme arayın.", correctSource: 'B', explanation: 'Bir meta-analiz, tek bir çalışmadan daha güvenilir olan birçok çalışmanın sonuçlarını birleştirerek daha büyük bir resim sunar. İnançlarınızı doğrulayan verileri seçmek "doğrulama yanlılığı" olarak adlandırılır.'},
+                         { scenario: "Bir haber sitesi yeni bir tıbbi atılım hakkında haber yapıyor.", sourceA_text: "Makalenin 'YAŞLANMAYA ÇARE BULUNDU!' gibi heyecan verici, sansasyonel bir başlığı var ancak ayrıntılar belirsiz.", sourceB_text: "Makalenin temkinli bir başlığı var ve çalışmanın sınırlamalarını ve daha fazla araştırmaya ihtiyaç duyulduğunu doğru bir şekilde açıklıyor.", correctSource: 'B', explanation: 'Sansasyonel başlıklar bir tehlike işaretidir. Sorumlu bilim gazeteciliği temkinlidir ve yavaş, dikkatli araştırma sürecini doğru bir şekilde temsil eder.'},
+                         { scenario: "Karmaşık bir küresel çatışmayı anlamaya çalışıyorsunuz.", sourceA_text: "Her şey için tek bir grubu suçlayan doğrulanmamış bir hesaptan duygusal bir sosyal medya gönderisi.", sourceB_text: "Uzun tarihi ve ilgili çok sayıda faktörü açıklayan bir uluslararası ilişkiler uzmanından veya saygın bir küresel haber ajansından bir rapor.", correctSource: 'B', explanation: 'Karmaşık sorunların nadiren basit açıklamaları vardır. Uzman analizi, aşırı basit, duygusal anlatımlarda eksik olan bağlamı ve nüansı sağlar.'}
+                    ]
+                }
+            },
+            zh: {
+                startTitle: '欢迎！👋',
+                startSubtitle: '让我们学习如何发现可靠的信源！',
+                langSelectTitle: '1. 选择你的语言',
+                difficultySelectTitle: '2. 选择你的级别',
+                difficulty: { easy: '简单 😊', medium: '中等 🤔', hard: '困难 🧐' },
+                startGameBtn: '开始游戏',
+                title: '找出可靠来源',
+                score: '分数:',
+                next: '下一题',
+                correct: '正确! ✅',
+                incorrect: '不太对! ❌',
+                gameOver: '游戏结束! 🎉',
+                finalScoreText: '你的最终分数是:',
+                playAgain: '再玩一次',
+                sourceA: '来源 A:',
+                sourceB: '来源 B:',
+                levels: {
+                    easy: [
+                        { scenario: '一个标题声称，“科学家发现每天吃10个苹果可以逆转衰老。”', sourceA_text: '一篇名为“永葆青春秘诀.net”的博客文章，其中包含许多广告。', sourceB_text: '一篇发表在备受尊敬的医学期刊《新英格兰医学杂志》上的研究论文。', correctSource: 'B', explanation: '信誉良好的科学期刊经过同行评审。有商业利益的博客通常带有偏见。'},
+                        { scenario: '你看到一则帖子说，“明天巨大的太阳耀斑将导致全球停电！”', sourceA_text: '一条在社交媒体应用上被多次转发的消息，原始作者不详。', sourceB_text: '美国国家航空航天局（NASA）网站上的官方警报。', correctSource: 'B', explanation: '像NASA这样的官方科学机构是此类信息最可靠的来源。'},
+                        { scenario: '一段视频显示一位政治家说了一些令人愤慨的话。字幕声称他们想“禁止所有宠物”。', sourceA_text: '来自一个匿名账户的简短、断章取义的剪辑。', sourceB_text: '来自美联社等无党派新闻机构的完整、未经编辑的演讲。', correctSource: 'B', explanation: '短片很容易被操纵。应始终从一个中立的新闻来源寻求完整的故事。'},
+                        { scenario: '一篇文章称，当地一座新发电厂“完全安全，对环境零影响”。', sourceA_text: '直接发布在电力公司自己网站上的新闻稿。', sourceB_text: '由一个包含数据的独立环保机构撰写的调查报告。', correctSource: 'B', explanation: '公司总是会积极地介绍自己的项目。一个独立的机构能提供更平衡的观点。'},
+                        { scenario: "巧克力能治感冒是真的吗？", sourceA_text: "一家糖果公司的网站。", sourceB_text: "一所主要大学卫生部门的一项研究。", correctSource: 'B', explanation: '销售产品的公司存在偏见。大学卫生部门提供基于研究的客观信息。'},
+                        { scenario: "一条消息说，由于意外假期，明天学校停课。", sourceA_text: "一个从另一个朋友那里听说的朋友发来的短信。", sourceB_text: "官方学区网站。", correctSource: 'B', explanation: '官方来源是获取可靠公告的唯一途径。谣言很容易在朋友之间传播。'},
+                        { scenario: "一个网站声称一款新视频游戏是'有史以来最好的游戏'。", sourceA_text: "游戏开发商的官方宣传网站。", sourceB_text: "一位玩过很多游戏的独立游戏评论家的评论。", correctSource: 'B', explanation: '创作者总是会推广自己的作品。独立评论家提供更客观的意见。'},
+                        { scenario: "你读到北极熊现在生活在沙漠里。", sourceA_text: "一部关于会说话的动物的卡通片。", sourceB_text: "像《国家地理》这样的野生动物百科全书。", correctSource: 'B', explanation: '百科全书和信誉良好的自然组织致力于提供关于自然世界的事实信息。'},
+                        { scenario: "一个弹出广告说你赢得了一部免费手机。", sourceA_text: "一个华丽的广告，要求你提供个人信息以领取奖品。", sourceB_text: "一家知名公司的认证社交媒体页面上的官方公告。", correctSource: 'B', explanation: '要求提供个人信息的弹出广告通常是骗局。认证账户是更值得信赖的来源。'},
+                        { scenario: "今天天气会怎么样？", sourceA_text: "你的朋友看着天空猜测。", sourceB_text: "国家气象局的预报。", correctSource: 'B', explanation: '官方气象服务使用科学数据和模型进行准确预报。'},
+                        { scenario: "木制过山车安全吗？", sourceA_text: "一个人在视频上评论说它们看起来很吓人。", sourceB_text: "一篇由检查游乐园设施的工程协会撰写的文章。", correctSource: 'B', explanation: '像工程师这样的领域专家提供比个人意见更可靠的安全信息。'},
+                        { scenario: "你想知道棒球的规则。", sourceA_text: "看一部关于棒球队的电影。", sourceB_text: "美国职业棒球大联盟（MLB）出版的官方规则手册。", correctSource: 'B', explanation: '电影经常为了故事情节而改变细节。官方规则手册是正确规则的主要来源。'}
+                    ],
+                    medium: [
+                        { scenario: "新款'VitaBoost'能量饮料健康吗？", sourceA_text: '健身网红在社交媒体上发布的文章，附有#ad标签和该饮料的折扣码。', sourceB_text: '由一位与该公司无关的注册营养师发布的营养分析报告。', correctSource: 'B', explanation: '赞助内容（#ad）是广告，不是公正的评论。独立的专业人士更为客观。'},
+                        { scenario: "你想了解古罗马的历史。", sourceA_text: '一篇详细的百科全书条目，引用了历史文献和学术作者。', sourceB_text: '一部将罗马皇帝生平戏剧化的好莱坞电影。', correctSource: 'A', explanation: '百科全书提供事实信息，而电影为了娱乐常常会改变历史细节。'},
+                        { scenario: "一篇金融文章建议将所有资金投资于'加密货币X'。", sourceA_text: "一个承诺你会快速致富的匿名论坛帖子。", sourceB_text: "一篇来自信誉良好的金融新闻来源的文章，解释了风险和收益。", correctSource: 'B', explanation: '匿名的财务建议风险很高。信誉良好的新闻来源旨在提供平衡的信息。'},
+                        { scenario: "你正在写一份关于第二次世界大战的报告。", sourceA_text: "一部以战争为背景的历史小说。", sourceB_text: "一本历史教科书或一部来自历史频道的有专家访谈的纪录片。", correctSource: 'B', explanation: '虽然小说基于历史，但它们是虚构的。教科书和专家纪录片是为了事实准确性而创作的。'},
+                        { scenario: "一个标题写着：'新研究表明西兰花不健康'。", sourceA_text: "一篇只采访了进行该研究的一位科学家的文章。", sourceB_text: "一个健康新闻网站，咨询了几位不同的营养专家对该研究的看法。", correctSource: 'B', explanation: '一项研究不足以得出结论。一个可靠的来源会寻求许多专家之间的一致意见。'},
+                        { scenario: "一种新的神奇清洁产品对宠物安全吗？", sourceA_text: "公司购物页面上的客户评论。", sourceB_text: "产品的官方安全数据表（SDS）和毒物控制中心的报告。", correctSource: 'B', explanation: '客户评论是主观意见。官方安全数据基于科学测试。'},
+                        { scenario: "一则政治广告用黑白照片和恐怖音乐展示对手。", sourceA_text: "政治竞选活动的广告。", sourceB_text: "一个比较所有候选人投票记录的无党派选民指南。", correctSource: 'B', explanation: '政治广告旨在利用情感说服你。无党派指南则专注于呈现事实。'},
+                        { scenario: "一种流行的草药补充剂真的能提高记忆力吗？", sourceA_text: "该产品网站上刊登了满意顾客热情洋溢的推荐信。", sourceB_text: "美国国立卫生研究院（NIH）发表的关于该补充剂的多项科学研究的荟萃分析。", correctSource: 'B', explanation: '推荐信是轶事，不是科学证据。来自主要卫生机构的荟萃分析是最高形式的证据之一。'},
+                        { scenario: "一家当地工厂被指控污染了一条河流。", sourceA_text: "工厂首席执行官就他们对环境的承诺发表演讲。", sourceB_text: "来自环境保护署（EPA）的水质检测结果。", correctSource: 'B', explanation: '首席执行官有强烈的偏见来保护他们的公司。EPA是一个提供客观数据的独立机构。'},
+                        { scenario: "玩视频游戏对大脑有什么影响？", sourceA_text: "一位不喜欢视频游戏的家长写的报纸观点专栏。", sourceB_text: "一篇科学期刊文章，回顾了数十项关于游戏玩家的大脑成像研究。", correctSource: 'B', explanation: '观点专栏基于个人信念。科学研究的回顾则基于证据。'},
+                        { scenario: "你想找出美国内战的主要原因。", sourceA_text: "一位历史爱好者写的博客文章，声称一切都是因为税收。", sourceB_text: "一个由专攻19世纪的专业历史学家组成的会议的共识声明。", correctSource: 'B', explanation: '复杂的历史事件很少有单一的原因。专家的共识提供了更完整、更准确的画面。'},
+                        { scenario: "一个网站声称一种新型汽车发动机用水作燃料。", sourceA_text: "一个带有戏剧性音乐的视频，显示一辆汽车在移动，但没有展示发动机的设计。", sourceB_text: "一本解释热力学定律的物理教科书。", correctSource: 'B', explanation: '非凡的主张需要非凡的证据。物理定律（热力学）表明，你从水中获得的能量不能超过你分离它所投入的能量，这使得这种发动机不可能实现。'}
+                    ],
+                    hard: [
+                         { scenario: "一份关于气候变化的研究报告正在被报道。哪个来源可能更可靠？", sourceA_text: '一篇新闻文章引用了一位不同意共识的科学家的话，并将其描述为一场重大辩论。', sourceB_text: '政府间气候变化专门委员会（IPCC）的总结报告。', correctSource: 'B', explanation: 'IPCC报告代表了广泛的科学共识。一篇只关注一个异议声音的文章可能会造成“虚假平衡”。'},
+                         { scenario: "你正在研究一项有争议的新法律。", sourceA_text: '报纸社论版的一篇观点文章，使用情绪化语言，并称反对者为“不爱国”。', sourceB_text: '一个无党派事实核查组织对该法律文本的分析。', correctSource: 'B', explanation: '观点文章旨在说服而非仅仅告知，并可能使用逻辑谬误。事实核查组织专注于客观分析。'},
+                         { scenario: "你看到关于同一次抗议的两种不同新闻报道。", sourceA_text: "一份只采访抗议者并使用'勇敢的自由战士'等语言的报道。", sourceB_text: "一份采访了抗议者、警察和当地企业主并中立描述事件的报道。", correctSource: 'B', explanation: '一个可靠的新闻来源力求平衡和中立，呈现多种观点而不是偏袒一方。'},
+                         { scenario: "研究一种复杂的医疗状况。", sourceA_text: "一个个人博客，有人在上面描述自己的症状和他们认为发生的事情。", sourceB_text: "来自像梅奥诊所或美国国立卫生研究院这样的大型医院或医学研究机构的网站。", correctSource: 'B', explanation: '虽然个人故事可能有所帮助，但医疗信息应来自依赖广泛研究的、值得信赖的专家机构。'},
+                         { scenario: "网上提出了一项科学主张。哪个是更可靠的标志？", sourceA_text: "文章说'科学家已经证明......'但没有链接到任何研究。", sourceB_text: "文章解释了研究方法，并提供了指向同行评审期刊上研究论文的直接链接。", correctSource: 'B', explanation: '透明度是关键。一个可靠的来源会通过链接到原始研究来向你展示证据，而不仅仅是提出主张。'},
+                         { scenario: "发现了一份历史文件。哪种解释更可靠？", sourceA_text: "一位电视节目主持人声称它证明了一个疯狂的阴谋论。", sourceB_text: "一个分析了该文件语言、年代和背景的大学历史学家团队。", correctSource: 'B', explanation: '历史分析需要深厚的专业知识。专业历史学家受过准确解读文件的训练，这与演艺人员不同。'},
+                         { scenario: "评估一个城市的犯罪率统计数据。", sourceA_text: "一位政治家的演讲，使用挑选的数字使犯罪率听起来非常高或非常低。", sourceB_text: "由该市官方警察局或国家统计局发布的原始数据。", correctSource: 'B', explanation: '来自官方来源的原始数据比用来支持论点的“精挑细选”的统计数据更可靠。'},
+                         { scenario: "一篇文章声称某种食物是预防癌症的'超级食物'。", sourceA_text: "文章引用了一项在实验室对老鼠进行的研究。", sourceB_text: "文章引用了涉及数千人的长期饮食研究。", correctSource: 'B', explanation: '动物研究的结果并不总是适用于人类。大规模的人类研究对于提出健康主张更为可靠。'},
+                         { scenario: "一个被广泛引用的统计数据真的属实吗？", sourceA_text: "社交媒体上的一张图表，用图片显示该统计数据。", sourceB_text: "一个事实核查网站，将该统计数据追溯到其原始研究论文，并评估该研究的质量。", correctSource: 'B', explanation: '统计数据很容易被编造。事实核查组织做了艰苦的工作，核实数字的来源以及它们是否合法。'},
+                         { scenario: "关于同一主题的两项研究结果相互矛盾。你应该怎么做？", sourceA_text: "选择证实你已有信念的研究。", sourceB_text: "寻找一篇荟萃分析或系统综述，评估该主题上所有可用的研究，以了解总体趋势。", correctSource: 'B', explanation: '荟萃分析通过结合多项研究的结果提供了一个更宏大的图景，这比单一研究更可靠。选择证实自己信念的数据被称为“确认偏误”。'},
+                         { scenario: "一个新闻网站报道了一项新的医学突破。", sourceA_text: "文章有一个激动人心、耸人听闻的标题，如'找到了治愈衰老的方法！'但细节含糊不清。", sourceB_text: "文章有一个谨慎的标题，并准确地解释了研究的局限性以及需要更多研究。", correctSource: 'B', explanation: '耸人听闻的标题是一个危险信号。负责任的科学新闻报道是谨慎的，并准确地反映了缓慢、仔细的研究过程。'},
+                         { scenario: "你正在试图理解一场复杂的全球冲突。", sourceA_text: "来自一个未经证实的账户的情绪化社交媒体帖子，将一切归咎于单一群体。", sourceB_text: "来自国际关系专家或受人尊敬的全球新闻机构的报告，解释了长久的历史和涉及的多个因素。", correctSource: 'B', explanation: '复杂的问题很少有简单的解释。专家分析提供了过于简单化、情绪化的叙述中所缺少的背景和细微差别。'}
+                    ]
+                }
+            }
+        };
+
+        let selectedLanguage = 'en';
+        let selectedDifficulty = null;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let questions = [];
+
+        const startScreenEl = document.getElementById('start-screen');
+        const gameContainerEl = document.getElementById('game-container');
+        const scoreValueEl = document.getElementById('score-value');
+        const scenarioTextEl = document.getElementById('scenario-text');
+        const sourceATextEl = document.getElementById('source-a-text');
+        const sourceBTextEl = document.getElementById('source-b-text');
+        const sourceAButton = document.getElementById('source-a');
+        const sourceBButton = document.getElementById('source-b');
+        const feedbackContainerEl = document.getElementById('feedback-container');
+        const feedbackTitleEl = document.getElementById('feedback-title');
+        const feedbackExplanationEl = document.getElementById('feedback-explanation');
+        const finalScoreContainerEl = document.getElementById('final-score-container');
+        const mainContentEl = document.getElementById('main-content');
+        
+        function selectLanguage(lang) {
+            selectedLanguage = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.lang-btn.${lang}`).classList.add('active');
+            updateStartScreenText();
+        }
+
+        function selectDifficulty(difficulty) {
+            selectedDifficulty = difficulty;
+            document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.difficulty-btn.${difficulty}`).classList.add('active');
+        }
+
+        function updateStartScreenText() {
+            const t = translations[selectedLanguage];
+            document.getElementById('start-title').innerHTML = t.startTitle;
+            document.getElementById('start-subtitle').textContent = t.startSubtitle;
+            document.getElementById('lang-select-title').textContent = t.langSelectTitle;
+            document.getElementById('difficulty-select-title').textContent = t.difficultySelectTitle;
+            document.querySelector('.difficulty-btn.easy').innerHTML = t.difficulty.easy;
+            document.querySelector('.difficulty-btn.medium').innerHTML = t.difficulty.medium;
+            document.querySelector('.difficulty-btn.hard').innerHTML = t.difficulty.hard;
+            document.getElementById('start-game-btn').textContent = t.startGameBtn;
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function startGame() {
+            if (!selectedDifficulty) {
+                const difficultySection = document.getElementById('difficulty-select-title').parentElement;
+                difficultySection.classList.add('ring-2', 'ring-red-400', 'rounded-xl', 'p-2', '-m-2');
+                setTimeout(() => {
+                    difficultySection.classList.remove('ring-2', 'ring-red-400', 'rounded-xl', 'p-2', '-m-2');
+                }, 1500);
+                return;
+            }
+            startScreenEl.classList.add('hidden');
+            gameContainerEl.classList.remove('hidden');
+            
+            // Reset score and index for a new game
+            score = 0;
+            currentQuestionIndex = 0;
+            scoreValueEl.textContent = score;
+
+            updateGameUIText();
+            
+            const allQuestionsForLevel = translations[selectedLanguage].levels[selectedDifficulty];
+            const shuffledQuestions = shuffleArray([...allQuestionsForLevel]);
+            
+            // Take up to 10 questions from the pool.
+            questions = shuffledQuestions.slice(0, 10);
+
+            if (questions.length > 0) {
+                loadQuestion();
+            } else {
+                showFinalScore(); 
+            }
+        }
+        
+        function updateGameUIText() {
+            const t = translations[selectedLanguage];
+            document.getElementById('game-title').textContent = t.title;
+            document.getElementById('score-label').textContent = t.score;
+            document.getElementById('next-button').textContent = t.next;
+            document.getElementById('final-score-title').innerHTML = t.gameOver;
+            document.getElementById('final-score-text').textContent = t.finalScoreText;
+            document.getElementById('restart-button').textContent = t.playAgain;
+            document.querySelector('#source-a .font-bold').textContent = t.sourceA;
+            document.querySelector('#source-b .font-bold').textContent = t.sourceB;
+        }
+
+        function loadQuestion() {
+            feedbackContainerEl.classList.add('hidden');
+            sourceAButton.disabled = false;
+            sourceBButton.disabled = false;
+            sourceAButton.classList.remove('correct', 'incorrect');
+            sourceBButton.classList.remove('correct', 'incorrect');
+
+            const question = questions[currentQuestionIndex];
+            scenarioTextEl.textContent = question.scenario;
+            sourceATextEl.textContent = question.sourceA_text;
+            sourceBTextEl.textContent = question.sourceB_text;
+        }
+
+        function checkAnswer(selectedSource) {
+            sourceAButton.disabled = true;
+            sourceBButton.disabled = true;
+
+            const question = questions[currentQuestionIndex];
+            const correctButton = question.correctSource === 'A' ? sourceAButton : sourceBButton;
+            const incorrectButton = question.correctSource === 'A' ? sourceBButton : sourceAButton;
+
+            if (selectedSource === question.correctSource) {
+                score++;
+                scoreValueEl.textContent = score;
+                feedbackTitleEl.innerHTML = translations[selectedLanguage].correct;
+                feedbackTitleEl.className = 'text-3xl font-bold mb-2 text-green-600';
+                document.getElementById(`source-${selectedSource.toLowerCase()}`).classList.add('correct');
+            } else {
+                feedbackTitleEl.innerHTML = translations[selectedLanguage].incorrect;
+                feedbackTitleEl.className = 'text-3xl font-bold mb-2 text-red-600';
+                document.getElementById(`source-${selectedSource.toLowerCase()}`).classList.add('incorrect');
+                correctButton.classList.add('correct');
+            }
+            
+            feedbackExplanationEl.textContent = question.explanation;
+            feedbackContainerEl.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                loadQuestion();
+            } else {
+                showFinalScore();
+            }
+        }
+        
+        function showFinalScore() {
+            mainContentEl.classList.add('hidden');
+            document.getElementById('final-score-value').textContent = `${score} / ${questions.length}`;
+            finalScoreContainerEl.classList.remove('hidden');
+        }
+
+        function restartGame() {
+            score = 0;
+            currentQuestionIndex = 0;
+            selectedDifficulty = null;
+            scoreValueEl.textContent = score;
+            
+            document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
+            
+            finalScoreContainerEl.classList.add('hidden');
+            mainContentEl.classList.remove('hidden');
+            gameContainerEl.classList.add('hidden');
+            startScreenEl.classList.remove('hidden');
+        }
+
+        // Initial setup
+        window.onload = () => {
+            updateStartScreenText();
+        };
+    </script>
+</body>
+</html>
+
