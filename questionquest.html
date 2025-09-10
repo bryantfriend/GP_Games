@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Quest: The Explorer's Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Noto+Sans+SC&family=Noto+Sans+TR&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'IM Fell English', serif;
+            background-color: #F0EAD6; /* Papyrus-like background */
+            background-image: url('https://www.transparenttextures.com/patterns/old-wall.png');
+            transition: font-family 0.3s ease-in-out;
+        }
+        .font-en { font-family: 'IM Fell English', serif; }
+        .font-zh { font-family: 'Noto Sans SC', sans-serif; }
+        .font-tr { font-family: 'Noto Sans TR', sans-serif; }
+
+        .chest {
+            background-color: #8B4513;
+            border: 10px solid #D2691E;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3), inset 0 0 15px rgba(0,0,0,0.5);
+            position: relative;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+        .chest-lid {
+            background-color: #A0522D;
+            border-bottom: 5px solid #D2691E;
+            transform-origin: bottom center;
+            transition: transform 0.5s ease-in-out;
+        }
+        .chest.open .chest-lid {
+            transform: rotateX(-120deg);
+        }
+        .chest.shake {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translateX(-1px); }
+            20%, 80% { transform: translateX(2px); }
+            30%, 50%, 70% { transform: translateX(-4px); }
+            40%, 60% { transform: translateX(4px); }
+        }
+        .lock {
+            width: 60px; height: 45px; background-color: #FFD700; border: 3px solid #DAA520; border-radius: 10px; position: relative; margin: 0 auto; box-shadow: 0 5px 5px rgba(0,0,0,0.2);
+        }
+        .keyhole {
+            width: 10px; height: 15px; background-color: #3D2B1F; border-radius: 50% 50% 0 0; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+        }
+        .keyhole::after {
+            content: ''; width: 3px; height: 10px; background-color: #3D2B1F; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+        }
+        .btn-submit {
+            background-color: #DAA520; transition: all 0.2s ease-in-out;
+        }
+        .btn-submit:hover {
+            background-color: #FFD700; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+        .feedback {
+            transition: all 0.5s ease-in-out;
+        }
+        .coin {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            background-image: url('https://placehold.co/30x30/FFD700/8B4513?text=💰');
+            background-size: cover;
+            border-radius: 50%;
+            z-index: 100;
+            transition: all 1s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="w-full max-w-2xl md:max-w-4xl mx-auto text-center">
+
+        <!-- Header: Language & Score -->
+        <div class="flex justify-between items-center mb-4">
+            <!-- Language Selector -->
+            <div id="lang-selector" class="bg-[#D2B48C] border-2 border-[#8B4513] rounded-lg p-2 shadow-lg flex gap-2">
+                <button class="lang-btn px-3 py-1 rounded" data-lang="en">EN</button>
+                <button class="lang-btn px-3 py-1 rounded" data-lang="zh">中文</button>
+                <button class="lang-btn px-3 py-1 rounded" data-lang="tr">TR</button>
+            </div>
+            <!-- Score Board -->
+            <div id="score-container" class="bg-[#D2B48C] border-2 border-[#8B4513] rounded-lg p-3 shadow-lg flex items-center gap-3">
+                <img src="https://placehold.co/40x40/FFD700/000000?text=💰" data-key="score_alt" alt="Gold Coin" class="rounded-full">
+                <span id="score" class="text-2xl font-bold text-[#6B4F2E]">0</span>
+            </div>
+        </div>
+
+        <h1 class="text-5xl md:text-6xl text-[#6B4F2E] mb-2" style="text-shadow: 2px 2px #D2B48C;" data-key="title">Question Quest</h1>
+        <p class="text-lg text-[#805B36] mb-6" data-key="subtitle">The Explorer's Challenge</p>
+        
+        <!-- Progress Bar -->
+        <div class="w-full bg-[#D2B48C] rounded-full h-4 mb-6 border-2 border-[#8B4513]">
+            <div id="progress-bar" class="bg-yellow-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+
+        <!-- The Treasure Chest -->
+        <div id="chest" class="chest p-6 md:p-8 text-white relative">
+            <div class="chest-lid h-16 absolute top-0 left-0 right-0 rounded-t-lg"></div>
+            <div class="relative mt-12">
+                <div class="lock mb-4">
+                    <div class="keyhole"></div>
+                </div>
+                <h2 class="text-2xl font-bold text-yellow-200 mb-2" id="question-type-title" data-key="question_type_title">Question Type to Unlock</h2>
+                <p class="text-yellow-100 text-lg mb-4" id="situation" data-key="situation">A situation will appear here.</p>
+                <p class="text-sm italic text-yellow-300 mb-6" id="prompt" data-key="prompt">Your prompt will appear here.</p>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div id="input-area" class="bg-[#D2B48C] p-6 rounded-b-lg shadow-xl -mt-2">
+            <label for="question-input" class="block text-xl text-[#6B4F2E] mb-3" data-key="input_label">Craft your question here:</label>
+            <input type="text" id="question-input" class="w-full p-3 border-4 border-[#8B4513] rounded-lg bg-[#F5DEB3] text-[#3D2B1F] text-lg focus:outline-none focus:ring-2 focus:ring-[#DAA520]" data-key="input_placeholder" placeholder="Type your question...">
+            <button id="submit-btn" class="btn-submit text-[#3D2B1F] font-bold py-3 px-8 rounded-lg mt-4 text-xl shadow-md border-b-4 border-[#8B4513]" data-key="submit_btn">Unlock Chest!</button>
+        </div>
+
+        <!-- Feedback Message -->
+        <div id="feedback-message" class="feedback mt-6 p-4 rounded-lg text-lg opacity-0 transform translate-y-4"></div>
+    </div>
+
+    <script>
+        // --- TRANSLATIONS & GAME DATA ---
+        const translations = {
+            en: {
+                title: "Question Quest",
+                subtitle: "The Explorer's Challenge",
+                score_alt: "Gold Coin",
+                question_type_title: "Unlock with an {type} Question",
+                input_label: "Craft your question here:",
+                input_placeholder: "Type your question...",
+                submit_btn: "Unlock Chest!",
+                feedback_short: "A good question needs a bit more detail and should end with a '?' mark.",
+                feedback_open_ended: "Nice try! An open-ended question usually starts with 'What', 'How', or 'Why' and can't be answered with 'yes' or 'no'.",
+                feedback_probing: "A good probing question asks for more detail. Try using phrases like 'Could you give an example...?' or 'What specifically...?'",
+                feedback_clarifying: "A clarifying question helps you understand better. Try starting with 'So you mean...?' or 'Can you clarify...?'",
+                feedback_cursed_fail: "Oh no! The cursed lock zaps you! You lose {coins} coins!",
+                feedback_success: "Excellent question! The chest opens! You found {coins} coins!",
+                end_game_title: "Quest Complete!",
+                end_game_prompt: "Congratulations, master explorer! You've collected a total of {score} treasure coins!",
+                play_again_btn: "Play Again!",
+                scenarios: [
+                    { situation: "You meet a scientist who invented a machine that translates animal thoughts.", type: "Open-ended", prompt: "Ask an open-ended question to learn more about the invention." },
+                    { situation: "Your classmate says, 'I found the history homework really difficult.'", type: "Probing", prompt: "Ask a probing question to get more specific details." },
+                    { situation: "Your teacher says, 'Make sure your project proposal is comprehensive.'", type: "Clarifying", prompt: "Ask a clarifying question to understand what 'comprehensive' means." },
+                    { situation: "A famous chef is explaining their signature dish to you.", type: "Open-ended", prompt: "Ask an open-ended question to understand their creative process." },
+                    { situation: "A detective says, 'The clue we found was very unusual.'", type: "Probing", prompt: "Ask a probing question to learn more about the clue." },
+                    { situation: "A friend invites you and says, 'Just bring some snacks.'", type: "Clarifying", prompt: "Ask a clarifying question to find out what kind of snacks would be best." },
+                    { situation: "An artist stands by their abstract painting.", type: "Open-ended", prompt: "Ask an open-ended question to find out the meaning behind the art." },
+                    { situation: "A cursed chest with ancient runes appears. The lock looks complex.", type: "Cursed", prompt: "Ask a perfect open-ended question to get the treasure. But beware, failure has a price!" }
+                ],
+                validation_keywords: {
+                    open: ['what', 'how', 'why', 'tell me', 'explain', 'describe'],
+                    probe: ['what specifically', 'example', 'what happened', 'why do you think'],
+                    clarify: ['so you mean', 'to be clear', 'are you saying', 'what do you mean by', 'can you clarify'],
+                    yes_no: ['are', 'is', 'do', 'did', 'will', 'can', 'could', 'would', 'should']
+                }
+            },
+            zh: {
+                title: "问题探险",
+                subtitle: "探险家的挑战",
+                score_alt: "金币",
+                question_type_title: "用一个{type}问题来解锁",
+                input_label: "在这里写下你的问题：",
+                input_placeholder: "输入你的问题...",
+                submit_btn: "打开宝箱！",
+                feedback_short: "一个好问题需要更详细一些，并且应该以“？”结尾。",
+                feedback_open_ended: "不错！开放式问题通常以“什么”、“如何”或“为什么”开头，并且不能用“是”或“否”来回答。",
+                feedback_probing: "一个好的追问式问题会要求更多细节。试试用“你能举个例子吗？”或“具体是什么？”",
+                feedback_clarifying: "一个澄清式问题可以帮助你更好地理解。试试用“所以你的意思是…？”或“你能澄清一下…？”",
+                feedback_cursed_fail: "噢不！被诅咒的锁电了你一下！你失去了 {coins} 枚金币！",
+                feedback_success: "非常好的问题！宝箱打开了！你找到了 {coins} 枚金币！",
+                end_game_title: "探险完成！",
+                end_game_prompt: "恭喜你，探险大师！你总共收集了 {score} 枚金币！",
+                play_again_btn: "再玩一次！",
+                scenarios: [
+                    { situation: "你遇到一位科学家，他发明了一台能翻译动物思想的机器。", type: "开放式", prompt: "问一个开放式问题来了解更多关于这项发明的信息。" },
+                    { situation: "你的同学说：‘我觉得历史作业真的很难。’", type: "追问式", prompt: "问一个追问式问题来获取更多具体细节。" },
+                    { situation: "你的老师说：‘确保你的项目计划是全面的。’", type: "澄清式", prompt: "问一个澄清式问题来确保你理解‘全面’的意思。" },
+                    { situation: "一位著名厨师正在向你解释他的招牌菜。", type: "开放式", prompt: "问一个开放式问题来了解他的创作过程。" },
+                    { situation: "一位侦探说：‘我们找到的线索非常不寻常。’", type: "追问式", prompt: "问一个追问式问题来了解更多关于线索的信息。" },
+                    { situation: "一位朋友邀请你并说：‘带点零食来就行。’", type: "澄清式", prompt: "问一个澄清式问题来弄清楚带什么样的零食最好。" },
+                    { situation: "一位艺术家站在他的抽象画旁边。", type: "开放式", prompt: "问一个开放式问题来找出艺术背后的含义。" },
+                    { situation: "一个带有古老符文的被诅咒的宝箱出现了。锁看起来很复杂。", type: "被诅咒的", prompt: "问一个完美的开放式问题来获得宝藏。但要小心，失败是有代价的！" }
+                ],
+                validation_keywords: {
+                    open: ['什么', '如何', '为什么', '告诉我', '解释一下', '描述一下'],
+                    probe: ['具体', '例子', '接下来', '你为什么认为'],
+                    clarify: ['所以你的意思是', '澄清一下', '你是说', '你说的…是什么意思'],
+                    yes_no: ['是', '有', '会', '能', '可以']
+                }
+            },
+            tr: {
+                title: "Soru Macerası",
+                subtitle: "Kaşifin Meydan Okuması",
+                score_alt: "Altın Para",
+                question_type_title: "Bir {type} Sorusu ile Kilidi Aç",
+                input_label: "Sorunu buraya yaz:",
+                input_placeholder: "Sorunu yaz...",
+                submit_btn: "Sandığı Aç!",
+                feedback_short: "İyi bir soru biraz daha detay içermeli ve '?' işareti ile bitmelidir.",
+                feedback_open_ended: "Güzel deneme! Ucu açık bir soru genellikle 'Ne', 'Nasıl' veya 'Neden' ile başlar ve 'evet' ya da 'hayır' ile cevaplanamaz.",
+                feedback_probing: "İyi bir araştırma sorusu daha fazla detay ister. 'Bir örnek verebilir misin?' veya 'Özellikle ne?' gibi ifadeler kullanmayı dene.",
+                feedback_clarifying: "Açıklayıcı bir soru daha iyi anlamana yardımcı olur. 'Yani demek istediğin...' veya 'Açıklar mısın...' ile başlamayı dene.",
+                feedback_cursed_fail: "Olamaz! Lanetli kilit seni çarptı! {coins} altın kaybettin!",
+                feedback_success: "Harika soru! Sandık açıldı! {coins} altın buldun!",
+                end_game_title: "Görev Tamamlandı!",
+                end_game_prompt: "Tebrikler usta kaşif! Toplamda {score} altın topladın!",
+                play_again_btn: "Tekrar Oyna!",
+                scenarios: [
+                    { situation: "Hayvanların düşüncelerini tercüme eden bir makine icat eden bir bilim adamıyla tanıştınız.", type: "Ucu Açık", prompt: "İcat hakkında daha fazla bilgi edinmek için ucu açık bir soru sorun." },
+                    { situation: "Sınıf arkadaşın, 'Tarih ödevini gerçekten çok zor buldum' dedi.", type: "Araştırma", prompt: "Daha fazla spesifik ayrıntı almak için bir araştırma sorusu sorun." },
+                    { situation: "Öğretmeniniz, 'Proje teklifinizin kapsamlı olduğundan emin olun' dedi.", type: "Açıklayıcı", prompt: "'Kapsamlı' kelimesinin ne anlama geldiğini anlamak için açıklayıcı bir soru sorun." },
+                    { situation: "Ünlü bir şef size imza yemeğini anlatıyor.", type: "Ucu Açık", prompt: "Yaratıcı sürecini anlamak için ucu açık bir soru sorun." },
+                    { situation: "Bir dedektif, 'Bulduğumuz ipucu çok sıra dışıydı' dedi.", type: "Araştırma", prompt: "İpucu hakkında daha fazla bilgi edinmek için bir araştırma sorusu sorun." },
+                    { situation: "Bir arkadaşın seni davet edip 'Sadece biraz atıştırmalık getir' dedi.", type: "Açıklayıcı", prompt: "Ne tür atıştırmalıkların en iyisi olacağını öğrenmek için açıklayıcı bir soru sorun." },
+                    { situation: "Bir sanatçı soyut tablosunun yanında duruyor.", type: "Ucu Açık", prompt: "Sanatın arkasındaki anlamı bulmak için ucu açık bir soru sorun." },
+                    { situation: "Antik rünlerle dolu lanetli bir sandık belirir. Kilit karmaşık görünüyor.", type: "Lanetli", prompt: "Hazineyi almak için mükemmel bir ucu açık soru sorun. Ama dikkat et, başarısızlığın bir bedeli var!" }
+                ],
+                validation_keywords: {
+                    open: ['ne', 'nasıl', 'neden', 'niçin', 'anlatır mısın', 'açıklar mısın'],
+                    probe: ['özellikle ne', 'örnek', 'sonra ne oldu', 'sence neden'],
+                    clarify: ['yani', 'açıkçası', 'diyor musun', 'ne demek istiyorsun', 'açıklar mısın'],
+                    yes_no: ['mı', 'mi', 'mu', 'mü']
+                }
+            }
+        };
+        
+        // --- GAME STATE ---
+        let currentLang = 'en';
+        let scenarios = [];
+        let currentScenarioIndex = 0;
+        let score = 0;
+
+        // --- DOM ELEMENTS ---
+        const scoreEl = document.getElementById('score');
+        const situationEl = document.getElementById('situation');
+        const promptEl = document.getElementById('prompt');
+        const questionTypeTitleEl = document.getElementById('question-type-title');
+        const inputEl = document.getElementById('question-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const feedbackEl = document.getElementById('feedback-message');
+        const chestEl = document.getElementById('chest');
+        const progressBarEl = document.getElementById('progress-bar');
+        const langButtons = document.querySelectorAll('.lang-btn');
+        const bodyEl = document.body;
+
+        // --- CORE FUNCTIONS ---
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            bodyEl.className = bodyEl.className.replace(/font-\w+/, `font-${lang}`);
+            
+            // Update button styles
+            langButtons.forEach(btn => {
+                if (btn.dataset.lang === lang) {
+                    btn.classList.add('bg-yellow-500', 'font-bold');
+                } else {
+                    btn.classList.remove('bg-yellow-500', 'font-bold');
+                }
+            });
+
+            // Translate all elements with data-key
+            document.querySelectorAll('[data-key]').forEach(el => {
+                const key = el.dataset.key;
+                const translation = translations[lang][key];
+                if (translation) {
+                    if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                        el.placeholder = translation;
+                    } else {
+                        el.textContent = translation;
+                    }
+                }
+            });
+            
+            scenarios = [...translations[lang].scenarios];
+            shuffle(scenarios);
+            currentScenarioIndex = 0;
+            score = 0;
+            scoreEl.textContent = score;
+            loadScenario(currentScenarioIndex);
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        function loadScenario(index) {
+            chestEl.classList.remove('open');
+            if (index >= scenarios.length) {
+                endGame();
+                return;
+            }
+            const scenario = scenarios[index];
+            situationEl.textContent = scenario.situation;
+            promptEl.textContent = scenario.prompt;
+            
+            let typeText = scenario.type;
+            if (scenario.type === 'Cursed') typeText = translations[currentLang].scenarios.find(s=>s.type.includes('Lanetli') || s.type.includes('被诅咒的') || s.type.includes('Cursed')).type;
+            else if (scenario.type === 'Open-ended') typeText = translations[currentLang].scenarios.find(s=>s.type.includes('Ucu Açık') || s.type.includes('开放式') || s.type.includes('Open-ended')).type;
+            else if (scenario.type === 'Probing') typeText = translations[currentLang].scenarios.find(s=>s.type.includes('Araştırma') || s.type.includes('追问式') || s.type.includes('Probing')).type;
+            else if (scenario.type === 'Clarifying') typeText = translations[currentLang].scenarios.find(s=>s.type.includes('Açıklayıcı') || s.type.includes('澄清式') || s.type.includes('Clarifying')).type;
+
+            questionTypeTitleEl.textContent = translations[currentLang].question_type_title.replace('{type}', typeText);
+            
+            // Cursed chest styling
+            if(scenario.type === 'Cursed') {
+                chestEl.style.borderColor = '#8A2BE2'; // BlueViolet
+                chestEl.querySelector('.chest-lid').style.backgroundColor = '#4B0082'; // Indigo
+            } else {
+                chestEl.style.borderColor = '#D2691E';
+                chestEl.querySelector('.chest-lid').style.backgroundColor = '#A0522D';
+            }
+
+            inputEl.value = '';
+            inputEl.focus();
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const progress = (currentScenarioIndex / scenarios.length) * 100;
+            progressBarEl.style.width = `${progress}%`;
+        }
+        
+        function showFeedback(message, isSuccess) {
+            feedbackEl.innerHTML = message; // Use innerHTML to render styled coin amounts
+            feedbackEl.classList.remove('opacity-0', 'translate-y-4', 'bg-green-200', 'text-green-800', 'bg-red-200', 'text-red-800', 'bg-purple-200', 'text-purple-800');
+            let bgColor, textColor;
+            if (isSuccess === 'cursed-fail') {
+                bgColor = 'bg-purple-200'; textColor = 'text-purple-800';
+            } else if (isSuccess) {
+                bgColor = 'bg-green-200'; textColor = 'text-green-800';
+            } else {
+                bgColor = 'bg-red-200'; textColor = 'text-red-800';
+            }
+            feedbackEl.classList.add(bgColor, textColor, 'opacity-100');
+        }
+        
+        function animateCoins(amount) {
+            const scoreRect = document.getElementById('score-container').getBoundingClientRect();
+            for (let i = 0; i < amount; i++) {
+                const coin = document.createElement('div');
+                coin.className = 'coin';
+                document.body.appendChild(coin);
+
+                const startX = window.innerWidth / 2;
+                const startY = window.innerHeight / 2;
+                coin.style.left = `${startX}px`;
+                coin.style.top = `${startY}px`;
+
+                setTimeout(() => {
+                    coin.style.left = `${scoreRect.left + (scoreRect.width/2)}px`;
+                    coin.style.top = `${scoreRect.top + (scoreRect.height/2)}px`;
+                    coin.style.transform = 'scale(0.5)';
+                    coin.style.opacity = '0';
+                }, 50 + i * 50);
+
+                setTimeout(() => coin.remove(), 1100 + i * 50);
+            }
+        }
+
+        function validateQuestion() {
+            const question = inputEl.value.toLowerCase().trim();
+            const scenario = scenarios[currentScenarioIndex];
+            const keywords = translations[currentLang].validation_keywords;
+            
+            chestEl.classList.add('shake');
+            setTimeout(() => chestEl.classList.remove('shake'), 500);
+
+            if (question.length < 5 || (!question.endsWith('?') && !question.endsWith('？'))) {
+                showFeedback(translations[currentLang].feedback_short, false);
+                return;
+            }
+
+            let isValid = false;
+            let feedback = "";
+            let isCursedFail = false;
+            const startsWithYesNo = keywords.yes_no.some(starter => question.endsWith(starter) || question.startsWith(starter));
+
+            const checkType = (type, keys) => keys.some(starter => question.includes(starter));
+
+            switch (scenario.type) {
+                case 'Open-ended':
+                case 'Cursed':
+                    if (checkType('open', keywords.open) && !startsWithYesNo) {
+                        isValid = true;
+                    } else {
+                        feedback = translations[currentLang].feedback_open_ended;
+                        if(scenario.type === 'Cursed') isCursedFail = true;
+                    }
+                    break;
+                case 'Probing':
+                    if (checkType('probe', keywords.probe)) isValid = true;
+                    else feedback = translations[currentLang].feedback_probing;
+                    break;
+                case 'Clarifying':
+                     if (checkType('clarify', keywords.clarify)) isValid = true;
+                     else feedback = translations[currentLang].feedback_clarifying;
+                    break;
+            }
+            
+            submitBtn.disabled = true;
+
+            setTimeout(() => {
+                 if (isValid) {
+                    chestEl.classList.add('open');
+                    const coins = scenario.type === 'Cursed' ? 25 : Math.floor(Math.random() * 6) + 5;
+                    score += coins;
+                    animateCoins(coins);
+                    setTimeout(() => scoreEl.textContent = score, 500);
+                    showFeedback(translations[currentLang].feedback_success.replace('{coins}', `<strong class="font-bold">${coins}</strong>`), true);
+                    
+                    setTimeout(() => {
+                        currentScenarioIndex++;
+                        feedbackEl.classList.add('opacity-0');
+                        loadScenario(currentScenarioIndex);
+                        submitBtn.disabled = false;
+                    }, 2500);
+
+                } else {
+                    if (isCursedFail) {
+                        const coins = 10;
+                        score = Math.max(0, score - coins);
+                        scoreEl.textContent = score;
+                        showFeedback(translations[currentLang].feedback_cursed_fail.replace('{coins}', `<strong class="font-bold">${coins}</strong>`), 'cursed-fail');
+                        setTimeout(() => {
+                            currentScenarioIndex++;
+                            feedbackEl.classList.add('opacity-0');
+                            loadScenario(currentScenarioIndex);
+                            submitBtn.disabled = false;
+                        }, 2500);
+                    } else {
+                        showFeedback(feedback, false);
+                        submitBtn.disabled = false;
+                    }
+                }
+            }, 500);
+        }
+
+        function endGame() {
+            updateProgress();
+            situationEl.textContent = translations[currentLang].end_game_title;
+            promptEl.textContent = translations[currentLang].end_game_prompt.replace('{score}', score);
+            questionTypeTitleEl.textContent = "🎉";
+            document.getElementById('input-area').innerHTML = `<button onclick="setLanguage(currentLang)" class="btn-submit text-[#3D2B1F] font-bold py-3 px-8 rounded-lg mt-4 text-xl shadow-md border-b-4 border-[#8B4513]">${translations[currentLang].play_again_btn}</button>`;
+        }
+        
+        // --- EVENT LISTENERS ---
+        submitBtn.addEventListener('click', validateQuestion);
+        inputEl.addEventListener('keyup', (event) => { if (event.key === 'Enter') validateQuestion(); });
+        langButtons.forEach(btn => btn.addEventListener('click', () => setLanguage(btn.dataset.lang)));
+
+        // --- INITIALIZE GAME ---
+        setLanguage('en');
+    </script>
+</body>
+</html>
+
