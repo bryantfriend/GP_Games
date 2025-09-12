@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fact vs Opinion Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f8ff;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    #game, #result {
+      display: none;
+    }
+    button {
+      margin: 10px;
+      padding: 15px 25px;
+      border: none;
+      border-radius: 8px;
+      background: #007bff;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .question {
+      font-size: 24px;
+      margin: 20px;
+    }
+    .scoreboard {
+      font-size: 20px;
+      margin: 10px;
+    }
+    /* Style for selected buttons */
+    .selected {
+      background-color: #28a745; /* A green color to indicate selection */
+      box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <h1>Fact vs Opinion Game</h1>
+
+  <div id="start">
+    <h2>Select Language</h2>
+    <button id="lang-en" onclick="setLanguage('en')">English</button>
+    <button id="lang-zh" onclick="setLanguage('zh')">中文</button>
+    <button id="lang-tr" onclick="setLanguage('tr')">Türkçe</button>
+    <h2>Select Difficulty</h2>
+    <button id="diff-easy" onclick="setDifficulty('easy')">Easy</button>
+    <button id="diff-medium" onclick="setDifficulty('medium')">Medium</button>
+    <button id="diff-hard" onclick="setDifficulty('hard')">Hard</button>
+    <br><br>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <div id="game">
+    <div class="scoreboard">
+      <span id="timer">Time: 60</span> | <span id="score">Score: 0</span>
+    </div>
+    <div class="question" id="question"></div>
+    <button onclick="answer('fact')">Fact</button>
+    <button onclick="answer('opinion')">Opinion</button>
+  </div>
+
+  <div id="result">
+    <h2 id="finalScore"></h2>
+    <button onclick="restart()">Play Again</button>
+  </div>
+
+<script>
+  let language = 'en';
+  let difficulty = 'easy';
+  let score = 0;
+  let timeLeft = 60;
+  let timerInterval;
+  let questions = [];
+  let currentIndex = 0;
+
+  const questionBank = {
+    en: {
+      easy: [
+        { text: "The Earth has one moon.", type: "fact" },
+        { text: "Summer is hotter than winter.", type: "fact" },
+        { text: "Dogs are friendly animals.", type: "opinion" },
+        { text: "Ice cream is the tastiest dessert.", type: "opinion" },
+        { text: "Fish live in water.", type: "fact" },
+        { text: "Basketball is more fun than soccer.", type: "opinion" },
+        { text: "A year has 12 months.", type: "fact" },
+        { text: "Reading books is boring.", type: "opinion" },
+        { text: "The capital of the USA is Washington, D.C.", type: "fact" },
+        { text: "Chocolate is better than vanilla.", type: "opinion" },
+        { text: "Birds can fly.", type: "fact" },
+        { text: "Math is the hardest subject.", type: "opinion" },
+        { text: "There are seven continents.", type: "fact" },
+        { text: "Pizza is the best food.", type: "opinion" },
+        { text: "The sun gives light and heat.", type: "fact" },
+        { text: "Video games are a waste of time.", type: "opinion" },
+        { text: "Humans need water to live.", type: "fact" },
+        { text: "Cats are cuter than dogs.", type: "opinion" },
+        { text: "The ocean is made of salt water.", type: "fact" },
+        { text: "Summer vacation is too short.", type: "opinion" }
+      ],
+      medium: [
+        { text: "The Amazon is the largest rainforest in the world.", type: "fact" },
+        { text: "Movies are more entertaining than books.", type: "opinion" },
+        { text: "China has the largest population.", type: "fact" },
+        { text: "Homework helps students learn.", type: "opinion" },
+        { text: "Water boils at 100°C.", type: "fact" },
+        { text: "Fridays are the best day of the week.", type: "opinion" },
+        { text: "The Great Wall is in China.", type: "fact" },
+        { text: "Soccer is the most exciting sport.", type: "opinion" },
+        { text: "A triangle has three sides.", type: "fact" },
+        { text: "Rock music is better than pop music.", type: "opinion" },
+        { text: "Mount Everest is the tallest mountain.", type: "fact" },
+        { text: "Winter is the most beautiful season.", type: "opinion" },
+        { text: "The Nile is the longest river in Africa.", type: "fact" },
+        { text: "Swimming is the best kind of exercise.", type: "opinion" },
+        { text: "The Pacific is the largest ocean.", type: "fact" },
+        { text: "School lunch is terrible.", type: "opinion" },
+        { text: "The heart pumps blood through the body.", type: "fact" },
+        { text: "Cartoons are only for children.", type: "opinion" },
+        { text: "There are 24 hours in a day.", type: "fact" },
+        { text: "Math is more useful than history.", type: "opinion" }
+      ],
+      hard: [
+        { text: "The Earth orbits the sun once a year.", type: "fact" },
+        { text: "Online learning is better than classroom learning.", type: "opinion" },
+        { text: "The human body has 206 bones.", type: "fact" },
+        { text: "Art is more important than science.", type: "opinion" },
+        { text: "The Sahara is the largest hot desert.", type: "fact" },
+        { text: "Smartphones make life better.", type: "opinion" },
+        { text: "The speed of light is faster than sound.", type: "fact" },
+        { text: "History is the most important subject.", type: "opinion" },
+        { text: "Japan is made up of islands.", type: "fact" },
+        { text: "Living in a city is better than in the countryside.", type: "opinion" },
+        { text: "The heart has four chambers.", type: "fact" },
+        { text: "Technology makes people lazy.", type: "opinion" },
+        { text: "The equator divides Earth into two halves.", type: "fact" },
+        { text: "Music helps people concentrate.", type: "opinion" },
+        { text: "The moon reflects the light of the sun.", type: "fact" },
+        { text: "Reading is the best way to relax.", type: "opinion" },
+        { text: "The Statue of Liberty is in New York City.", type: "fact" },
+        { text: "Traveling is more fun than staying home.", type: "opinion" },
+        { text: "The Earth is the third planet from the sun.", type: "fact" },
+        { text: "Science is easier than math.", type: "opinion" }
+      ]
+    },
+    zh: {
+      easy: [
+        { text: "地球有一颗月亮。", type: "fact" },
+        { text: "狗很可爱。", type: "opinion" },
+        { text: "夏天比冬天热。", type: "fact" },
+        { text: "冰淇淋最好吃。", type: "opinion" },
+        { text: "鱼生活在水里。", type: "fact" },
+        { text: "篮球比足球好玩。", type: "opinion" },
+        { text: "一年有12个月。", type: "fact" },
+        { text: "阅读很无聊。", type: "opinion" },
+        { text: "美国的首都是华盛顿特区。", type: "fact" },
+        { text: "巧克力比香草好吃。", type: "opinion" },
+        { text: "鸟会飞。", type: "fact" },
+        { text: "数学最难。", type: "opinion" },
+        { text: "世界有七大洲。", type: "fact" },
+        { text: "披萨是最好吃的食物。", type: "opinion" },
+        { text: "太阳提供光和热。", type: "fact" },
+        { text: "玩电子游戏浪费时间。", type: "opinion" },
+        { text: "人类需要水才能生存。", type: "fact" },
+        { text: "猫比狗更可爱。", type: "opinion" },
+        { text: "海洋是咸水。", type: "fact" },
+        { text: "暑假太短了。", type: "opinion" }
+      ],
+      medium: [
+        { text: "亚马逊是世界上最大的雨林。", type: "fact" },
+        { text: "电影比书更有趣。", type: "opinion" },
+        { text: "中国人口最多。", type: "fact" },
+        { text: "作业帮助学生学习。", type: "opinion" },
+        { text: "水在100°C沸腾。", type: "fact" },
+        { text: "星期五是一周中最好的日子。", type: "opinion" },
+        { text: "长城在中国。", type: "fact" },
+        { text: "足球是最刺激的运动。", type: "opinion" },
+        { text: "三角形有三条边。", type: "fact" },
+        { text: "摇滚乐比流行音乐好听。", type: "opinion" },
+        { text: "珠穆朗玛峰是世界最高的山。", type: "fact" },
+        { text: "冬天最美丽。", type: "opinion" },
+        { text: "尼罗河是非洲最长的河流。", type: "fact" },
+        { text: "游泳是最好的运动。", type: "opinion" },
+        { text: "太平洋是最大的海洋。", type: "fact" },
+        { text: "学校午餐很难吃。", type: "opinion" },
+        { text: "心脏把血液泵到全身。", type: "fact" },
+        { text: "动画片只适合小孩。", type: "opinion" },
+        { text: "一天有24小时。", type: "fact" },
+        { text: "数学比历史更有用。", type: "opinion" }
+      ],
+      hard: [
+        { text: "地球每年绕太阳一圈。", type: "fact" },
+        { text: "网上学习比课堂学习更好。", type: "opinion" },
+        { text: "人体有206块骨头。", type: "fact" },
+        { text: "艺术比科学更重要。", type: "opinion" },
+        { text: "撒哈拉是最大的热带沙漠。", type: "fact" },
+        { text: "智能手机让生活更好。", type: "opinion" },
+        { text: "光速比声音快。", type: "fact" },
+        { text: "历史是最重要的学科。", type: "opinion" },
+        { text: "日本是群岛国家。", type: "fact" },
+        { text: "城市生活比乡村生活好。", type: "opinion" },
+        { text: "心脏有四个腔室。", type: "fact" },
+        { text: "科技让人变懒。", type: "opinion" },
+        { text: "赤道把地球分成两半。", type: "fact" },
+        { text: "音乐有助于集中注意力。", type: "opinion" },
+        { text: "月亮反射太阳的光。", type: "fact" },
+        { text: "阅读是最好的放松方式。", type: "opinion" },
+        { text: "自由女神像在纽约。", type: "fact" },
+        { text: "旅行比待在家里有趣。", type: "opinion" },
+        { text: "地球是距离太阳第三颗行星。", type: "fact" },
+        { text: "科学比数学简单。", type: "opinion" }
+      ]
+    },
+    tr: {
+      easy: [
+        { text: "Dünya’nın bir tane uydusu vardır.", type: "fact" },
+        { text: "Köpekler sevimlidir.", type: "opinion" },
+        { text: "Yaz, kıştan daha sıcaktır.", type: "fact" },
+        { text: "Dondurma en lezzetli tatlıdır.", type: "opinion" },
+        { text: "Balıklar suda yaşar.", type: "fact" },
+        { text: "Basketbol futboldan daha eğlencelidir.", type: "opinion" },
+        { text: "Bir yılda 12 ay vardır.", type: "fact" },
+        { text: "Kitap okumak sıkıcıdır.", type: "opinion" },
+        { text: "ABD’nin başkenti Washington, D.C.’dir.", type: "fact" },
+        { text: "Çikolata vanilyadan daha iyidir.", type: "opinion" },
+        { text: "Kuşlar uçabilir.", type: "fact" },
+        { text: "Matematik en zor derstir.", type: "opinion" },
+        { text: "Dünyada yedi kıta vardır.", type: "fact" },
+        { text: "Pizza en iyi yemektir.", type: "opinion" },
+        { text: "Güneş ışık ve ısı verir.", type: "fact" },
+        { text: "Video oyunları zaman kaybıdır.", type: "opinion" },
+        { text: "İnsanların yaşamak için suya ihtiyacı vardır.", type: "fact" },
+        { text: "Kediler köpeklerden daha sevimlidir.", type: "opinion" },
+        { text: "Okyanus tuzlu sudur.", type: "fact" },
+        { text: "Yaz tatili çok kısadır.", type: "opinion" }
+      ],
+      medium: [
+        { text: "Amazon, dünyanın en büyük yağmur ormanıdır.", type: "fact" },
+        { text: "Filmler kitaplardan daha eğlencelidir.", type: "opinion" },
+        { text: "Çin, en kalabalık nüfusa sahiptir.", type: "fact" },
+        { text: "Ödev öğrencilere yardımcı olur.", type: "opinion" },
+        { text: "Su 100°C’de kaynar.", type: "fact" },
+        { text: "Cuma haftanın en güzel günüdür.", type: "opinion" },
+        { text: "Çin Seddi Çin’dedir.", type: "fact" },
+        { text: "Futbol en heyecanlı spordur.", type: "opinion" },
+        { text: "Üçgenin üç kenarı vardır.", type: "fact" },
+        { text: "Rock müziği pop müzikten daha iyidir.", type: "opinion" },
+        { text: "Everest, dünyanın en yüksek dağıdır.", type: "fact" },
+        { text: "Kış en güzel mevsimdir.", type: "opinion" },
+        { text: "Nil, Afrika’nın en uzun nehridir.", type: "fact" },
+        { text: "Yüzme en iyi spordur.", type: "opinion" },
+        { text: "Pasifik, en büyük okyanustur.", type: "fact" },
+        { text: "Okul yemekleri berbat.", type: "opinion" },
+        { text: "Kalp, vücuda kan pompalar.", type: "fact" },
+        { text: "Çizgi filmler sadece çocuklar içindir.", type: "opinion" },
+        { text: "Bir gün 24 saattir.", type: "fact" },
+        { text: "Matematik tarihten daha faydalıdır.", type: "opinion" }
+      ],
+      hard: [
+        { text: "Dünya güneşin etrafında bir yılda döner.", type: "fact" },
+        { text: "Online eğitim sınıf eğitiminden daha iyidir.", type: "opinion" },
+        { text: "İnsan vücudunda 206 kemik vardır.", type: "fact" },
+        { text: "Sanat bilimden daha önemlidir.", type: "opinion" },
+        { text: "Sahra, en büyük sıcak çöldür.", type: "fact" },
+        { text: "Akıllı telefonlar hayatı güzelleştirir.", type: "opinion" },
+        { text: "Işık, sesten daha hızlıdır.", type: "fact" },
+        { text: "Tarih en önemli derstir.", type: "opinion" },
+        { text: "Japonya adalardan oluşur.", type: "fact" },
+        { text: "Şehir hayatı köy hayatından daha iyidir.", type: "opinion" },
+        { text: "Kalpte dört oda vardır.", type: "fact" },
+        { text: "Teknoloji insanları tembelleştirir.", type: "opinion" },
+        { text: "Ekvator, dünyayı ikiye böler.", type: "fact" },
+        { text: "Müzik insanların odaklanmasına yardımcı olur.", type: "opinion" },
+        { text: "Ay, güneş ışığını yansıtır.", type: "fact" },
+        { text: "Kitap okumak en iyi dinlenme yoludur.", type: "opinion" },
+        { text: "Özgürlük Heykeli New York’tadır.", type: "fact" },
+        { text: "Seyahat evde kalmaktan daha eğlencelidir.", type: "opinion" },
+        { text: "Dünya güneşe en yakın üçüncü gezegendir.", type: "fact" },
+        { text: "Fen matematikten daha kolaydır.", type: "opinion" }
+      ]
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Set default selections when the page loads
+    setLanguage('en');
+    setDifficulty('easy');
+  });
+
+  function setLanguage(lang) {
+    language = lang;
+    // Remove 'selected' class from all language buttons
+    ['en', 'zh', 'tr'].forEach(id => document.getElementById(`lang-${id}`).classList.remove('selected'));
+    // Add 'selected' class to the clicked button
+    document.getElementById(`lang-${lang}`).classList.add('selected');
+  }
+
+  function setDifficulty(diff) {
+    difficulty = diff;
+    // Remove 'selected' class from all difficulty buttons
+    ['easy', 'medium', 'hard'].forEach(id => document.getElementById(`diff-${id}`).classList.remove('selected'));
+    // Add 'selected' class to the clicked button
+    document.getElementById(`diff-${diff}`).classList.add('selected');
+  }
+
+  function startGame() {
+    document.getElementById('start').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
+
+    questions = [...questionBank[language][difficulty]];
+    shuffle(questions);
+    currentIndex = 0;
+    score = 0;
+    timeLeft = 60;
+
+    document.getElementById('score').textContent = "Score: " + score;
+    nextQuestion();
+
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      document.getElementById('timer').textContent = "Time: " + timeLeft;
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+  }
+
+  function nextQuestion() {
+    if (currentIndex >= questions.length) {
+      endGame();
+      return;
+    }
+    document.getElementById('question').textContent = questions[currentIndex].text;
+  }
+
+  function answer(choice) {
+    if (questions[currentIndex].type === choice) {
+      score++;
+      document.getElementById('score').textContent = "Score: " + score;
+    }
+    currentIndex++;
+    nextQuestion();
+  }
+
+  function endGame() {
+    clearInterval(timerInterval);
+    document.getElementById('game').style.display = 'none';
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('finalScore').textContent = "Final Score: " + score;
+  }
+
+  function restart() {
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('start').style.display = 'block';
+    // Reset to default selections
+    setLanguage('en');
+    setDifficulty('easy');
+  }
+
+  function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
+</script>
+</body>
+</html>
