@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Perspectives: Source Sorter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .bg-custom-green {
+            background-color: #4A5C43; /* A green shade inspired by the screenshot */
+        }
+        .text-custom-gold {
+            color: #E2C044; /* A gold/yellow shade inspired by the screenshot */
+        }
+        .border-custom-gold {
+            border-color: #E2C044;
+        }
+        .bg-custom-gold {
+            background-color: #E2C044;
+        }
+        .btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .answer-btn.correct {
+            background-color: #22c55e; /* green-500 */
+            color: white;
+            border-color: #16a34a; /* green-600 */
+        }
+        .answer-btn.incorrect {
+            background-color: #ef4444; /* red-500 */
+            color: white;
+            border-color: #dc2626; /* red-600 */
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="bg-custom-green text-white min-h-screen flex items-center justify-center p-4">
+
+    <div id="start-screen" class="w-full max-w-lg text-center">
+        <h1 class="text-4xl md:text-5xl font-bold text-custom-gold" data-translate="title">Source Sorter</h1>
+        <p class="mt-4 text-lg text-gray-200" data-translate="description">A game to test your Global Perspectives skills!</p>
+        
+        <div class="mt-8">
+            <label for="language-select" class="block mb-2 font-semibold text-gray-200" data-translate="select_language">Select Language</label>
+            <select id="language-select" class="w-full p-3 rounded-lg bg-gray-700 text-white border-2 border-gray-600 focus:border-custom-gold focus:outline-none">
+                <option value="en">English</option>
+                <option value="zh">中文 (Chinese)</option>
+                <option value="tr">Türkçe (Turkish)</option>
+            </select>
+        </div>
+
+        <div class="mt-6">
+            <label class="block mb-2 font-semibold text-gray-200" data-translate="select_difficulty">Select Difficulty</label>
+            <div class="grid grid-cols-3 gap-4">
+                <button data-difficulty="easy" class="difficulty-btn p-4 rounded-lg bg-gray-700 hover:bg-green-600 border-2 border-gray-600 btn" data-translate="easy">Easy</button>
+                <button data-difficulty="medium" class="difficulty-btn p-4 rounded-lg bg-gray-700 hover:bg-yellow-600 border-2 border-gray-600 btn" data-translate="medium">Medium</button>
+                <button data-difficulty="hard" class="difficulty-btn p-4 rounded-lg bg-gray-700 hover:bg-red-600 border-2 border-gray-600 btn" data-translate="hard">Hard</button>
+            </div>
+        </div>
+
+        <button id="start-btn" class="w-full mt-8 p-4 bg-custom-gold text-custom-green font-bold text-xl rounded-lg btn" data-translate="start_game">Start Game</button>
+    </div>
+
+    <div id="game-screen" class="hidden w-full max-w-5xl">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-4 p-4 rounded-lg card">
+            <div>
+                <span class="font-bold" data-translate="score">Score</span>: <span id="score">0</span>
+            </div>
+            <div class="text-lg font-semibold text-custom-gold">
+                <span data-translate="round">Round</span> <span id="current-round">1</span> / <span id="total-rounds">5</span>
+            </div>
+        </div>
+
+        <!-- Game Content -->
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Source Display -->
+            <div class="p-6 rounded-lg card">
+                <h2 class="text-xl font-bold text-custom-gold mb-3" data-translate="research_question">Research Question</h2>
+                <p id="research-question" class="mb-6 text-gray-200"></p>
+                <h2 class="text-xl font-bold text-custom-gold mb-3" data-translate="source">Source</h2>
+                <div id="source-content" class="p-4 bg-black bg-opacity-20 rounded-lg min-h-[150px] flex items-center justify-center">
+                    <!-- Source will be injected here -->
+                </div>
+            </div>
+
+            <!-- Questions -->
+            <div id="questions-container" class="p-6 rounded-lg card space-y-6">
+                <!-- Step 1 -->
+                <div id="step1-container">
+                    <h3 class="font-semibold text-lg"><span class="text-custom-gold">Step 1:</span> <span data-translate="step1_question">Is this a primary or secondary source?</span></h3>
+                    <div class="grid grid-cols-2 gap-4 mt-2">
+                        <button class="answer-btn p-3 rounded-lg bg-gray-700 border-2 border-gray-600 btn" data-step="1" data-answer="primary" data-translate="primary">Primary</button>
+                        <button class="answer-btn p-3 rounded-lg bg-gray-700 border-2 border-gray-600 btn" data-step="1" data-answer="secondary" data-translate="secondary">Secondary</button>
+                    </div>
+                </div>
+                <!-- Step 2 -->
+                <div id="step2-container" class="hidden">
+                    <h3 class="font-semibold text-lg"><span class="text-custom-gold">Step 2:</span> <span data-translate="step2_question">Explain why.</span></h3>
+                    <div id="step2-options" class="space-y-2 mt-2">
+                        <!-- Options injected here -->
+                    </div>
+                </div>
+                <!-- Step 3 -->
+                <div id="step3-container" class="hidden">
+                     <h3 class="font-semibold text-lg"><span class="text-custom-gold">Step 3:</span> <span data-translate="step3_question">Does this source strengthen the research question?</span></h3>
+                    <div class="grid grid-cols-2 gap-4 mt-2">
+                        <button class="answer-btn p-3 rounded-lg bg-gray-700 border-2 border-gray-600 btn" data-step="3" data-answer="yes" data-translate="yes">Yes</button>
+                        <button class="answer-btn p-3 rounded-lg bg-gray-700 border-2 border-gray-600 btn" data-step="3" data-answer="no" data-translate="no">No</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Feedback and Next Button -->
+        <div id="feedback-container" class="mt-4 text-center">
+            <p id="feedback-text" class="text-lg font-semibold h-8"></p>
+            <button id="next-btn" class="hidden mt-2 px-8 py-3 bg-custom-gold text-custom-green font-bold rounded-lg btn" data-translate="next">Next</button>
+        </div>
+    </div>
+    
+    <div id="end-screen" class="hidden w-full max-w-lg text-center">
+        <h2 class="text-4xl font-bold text-custom-gold" data-translate="game_over">Game Over!</h2>
+        <p class="mt-4 text-2xl" data-translate="final_score">Final Score</p>
+        <p id="final-score" class="text-6xl font-bold my-4 text-white">0</p>
+        <button id="play-again-btn" class="w-full mt-6 p-4 bg-custom-gold text-custom-green font-bold text-xl rounded-lg btn" data-translate="play_again">Play Again</button>
+    </div>
+
+
+<script>
+const startScreen = document.getElementById('start-screen');
+const gameScreen = document.getElementById('game-screen');
+const endScreen = document.getElementById('end-screen');
+
+const languageSelect = document.getElementById('language-select');
+const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+const startBtn = document.getElementById('start-btn');
+const playAgainBtn = document.getElementById('play-again-btn');
+const nextBtn = document.getElementById('next-btn');
+
+const scoreEl = document.getElementById('score');
+const currentRoundEl = document.getElementById('current-round');
+const totalRoundsEl = document.getElementById('total-rounds');
+const researchQuestionEl = document.getElementById('research-question');
+const sourceContentEl = document.getElementById('source-content');
+const questionsContainer = document.getElementById('questions-container');
+
+const step1Container = document.getElementById('step1-container');
+const step2Container = document.getElementById('step2-container');
+const step3Container = document.getElementById('step3-container');
+const step2OptionsEl = document.getElementById('step2-options');
+
+const feedbackText = document.getElementById('feedback-text');
+const finalScoreEl = document.getElementById('final-score');
+
+let currentLanguage = 'en';
+let currentDifficulty = 'easy';
+let score = 0;
+let currentRound = 0;
+let rounds = [];
+let currentStep = 1;
+
+// --- TRANSLATIONS AND CONTENT ---
+const translations = {
+    en: {
+        title: "Source Sorter",
+        description: "A game to test your Global Perspectives skills!",
+        select_language: "Select Language",
+        select_difficulty: "Select Difficulty",
+        easy: "Easy",
+        medium: "Medium",
+        hard: "Hard",
+        start_game: "Start Game",
+        score: "Score",
+        round: "Round",
+        research_question: "Research Question",
+        source: "Source",
+        step1_question: "Is this a primary or secondary source?",
+        primary: "Primary",
+        secondary: "Secondary",
+        step2_question: "Explain why.",
+        step3_question: "Does this source strengthen the research question?",
+        yes: "Yes",
+        no: "No",
+        correct: "Correct!",
+        incorrect: "Incorrect!",
+        next: "Next",
+        game_over: "Game Over!",
+        final_score: "Final Score",
+        play_again: "Play Again",
+    },
+    zh: {
+        title: "资源分类器",
+        description: "一个测试你全球视野技能的游戏！",
+        select_language: "选择语言",
+        select_difficulty: "选择难度",
+        easy: "简单",
+        medium: "中等",
+        hard: "困难",
+        start_game: "开始游戏",
+        score: "分数",
+        round: "回合",
+        research_question: "研究问题",
+        source: "资源",
+        step1_question: "这是一手资料还是二手资料？",
+        primary: "一手资料",
+        secondary: "二手资料",
+        step2_question: "解释原因。",
+        step3_question: "这个资料是否能加强研究问题？",
+        yes: "是",
+        no: "否",
+        correct: "正确！",
+        incorrect: "错误！",
+        next: "下一个",
+        game_over: "游戏结束！",
+        final_score: "最终得分",
+        play_again: "再玩一次",
+    },
+    tr: {
+        title: "Kaynak Ayırıcı",
+        description: "Küresel Perspektifler becerilerinizi test etmek için bir oyun!",
+        select_language: "Dil Seçin",
+        select_difficulty: "Zorluk Seçin",
+        easy: "Kolay",
+        medium: "Orta",
+        hard: "Zor",
+        start_game: "Oyuna Başla",
+        score: "Puan",
+        round: "Tur",
+        research_question: "Araştırma Sorusu",
+        source: "Kaynak",
+        step1_question: "Bu birincil mi yoksa ikincil bir kaynak mı?",
+        primary: "Birincil",
+        secondary: "İkincil",
+        step2_question: "Nedenini açıklayın.",
+        step3_question: "Bu kaynak araştırma sorusunu güçlendirir mi?",
+        yes: "Evet",
+        no: "Hayır",
+        correct: "Doğru!",
+        incorrect: "Yanlış!",
+        next: "Sonraki",
+        game_over: "Oyun Bitti!",
+        final_score: "Nihai Puan",
+        play_again: "Tekrar Oyna",
+    },
+};
+
+const gameContent = {
+  easy: [
+    {
+      researchQuestion: { en: "What was daily life like for a Roman soldier?", zh: "罗马士兵的日常生活是怎样的？", tr: "Romalı bir askerin günlük hayatı nasıldı?" },
+      source: { type: 'quote', content: { en: "'Woke up, patrolled the wall for 8 hours. The food was bland again. I miss home.' - From a soldier's diary found near Hadrian's Wall, 125 AD.", zh: "“醒来，在城墙上巡逻了8个小时。食物又没味道了。我想家了。” - 在哈德良长城附近发现的士兵日记，公元125年。", tr: "'Uyandım, 8 saat duvarda devriye gezdim. Yemek yine tatsızdı. Evimi özledim.' - Hadrian Duvarı yakınında bulunan bir askerin günlüğünden, MS 125." } },
+      answers: { step1: 'primary', step2: 0, step3: 'yes' },
+      step2_options: [
+        { en: "It is a first-hand account from the time period.", zh: "这是那个时期的第一手资料。", tr: "O döneme ait birinci elden bir anlatımdır." },
+        { en: "It was written by a modern historian.", zh: "它是由一位现代历史学家写的。", tr: "Modern bir tarihçi tarafından yazılmıştır." },
+        { en: "It summarizes many different sources.", zh: "它总结了许多不同的资料来源。", tr: "Birçok farklı kaynağı özetlemektedir." }
+      ]
+    },
+    {
+      researchQuestion: { en: "How did ancient Egyptians build the pyramids?", zh: "古埃及人是如何建造金字塔的？", tr: "Eski Mısırlılar piramitleri nasıl inşa ettiler?" },
+      source: { type: 'text', content: { en: "A history textbook chapter titled 'Pyramid Construction Techniques' explains the tools and labor organization used.", zh: "一本历史教科书的章节，标题为“金字塔建造技术”，解释了所使用的工具和劳工组织。", tr: "'Piramit İnşa Teknikleri' başlıklı bir tarih ders kitabı bölümü, kullanılan aletleri ve işçi organizasyonunu açıklamaktadır." } },
+      answers: { step1: 'secondary', step2: 2, step3: 'yes' },
+      step2_options: [
+        { en: "It was written by a pharaoh.", zh: "它是由一位法老写的。", tr: "Bir firavun tarafından yazılmıştır." },
+        { en: "It is an original engineering diagram.", zh: "这是一个原始的工程图。", tr: "Orijinal bir mühendislik şemasıdır." },
+        { en: "It is a summary and analysis written long after the events.", zh: "这是事件发生很久之后写的总结和分析。", tr: "Olaylardan çok sonra yazılmış bir özet ve analizdir." }
+      ]
+    },
+    {
+      researchQuestion: { en: "What did children do for fun in the 1950s in America?", zh: "1950年代美国的孩子们玩什么？", tr: "1950'lerde Amerika'daki çocuklar eğlenmek için ne yapardı?" },
+      source: { type: 'quote', content: { en: "From a 2010 biography: 'She recalled spending her childhood summers playing baseball in the street with neighbors.'", zh: "摘自2010年的一本传记：“她回忆说，她童年的夏天都是和邻居在街上打棒球度过的。”", tr: "2010 tarihli bir biyografiden: 'Çocukluk yazlarını komşularıyla sokakta beyzbol oynayarak geçirdiğini hatırladı.'" } },
+      answers: { step1: 'secondary', step2: 1, step3: 'yes' },
+      step2_options: [
+        { en: "It's a diary entry from a child in the 1950s.", zh: "这是1950年代一个孩子的日记。", tr: "1950'lerdeki bir çocuğun günlük kaydıdır." },
+        { en: "It's a biography written much later, recalling past events.", zh: "这是很久以后写的传记，回忆过去的事件。", tr: "Çok daha sonra yazılmış, geçmiş olayları anlatan bir biyografidir." },
+        { en: "It's a government report on child activities.", zh: "这是关于儿童活动的政府报告。", tr: "Çocuk faaliyetleri hakkında bir hükümet raporudur。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "What kind of clothing did Vikings wear?", zh: "维京人穿什么样的衣服？", tr: "Vikingler ne tür giysiler giyerdi?" },
+      source: { type: 'image', content: "https://placehold.co/600x400/D2B48C/000000?text=10th-Century+Drawing+of+Viking", alt: "A drawing of a Viking from a 10th-century manuscript." },
+      answers: { step1: 'primary', step2: 0, step3: 'yes' },
+      step2_options: [
+        { en: "It is an artifact created during the Viking age.", zh: "它是在维京时代创造的文物。", tr: "Viking çağında yaratılmış bir eserdir." },
+        { en: "It's a costume from a modern movie.", zh: "这是现代电影里的服装。", tr: "Modern bir filmden bir kostümdür." },
+        { en: "It's a description from a history book.", zh: "这是历史书中的描述。", tr: "Bir tarih kitabından bir tanımdır." }
+      ]
+    },
+    {
+      researchQuestion: { en: "What is the capital of Australia?", zh: "澳大利亚的首都是哪里？", tr: "Avustralya'nın başkenti neresidir?" },
+      source: { type: 'text', content: { en: "A page from a World Atlas printed last year, showing Canberra as the capital.", zh: "去年印刷的世界地图集的一页，显示堪培拉为首都。", tr: "Geçen yıl basılan bir Dünya Atlası'ndan Canberra'yı başkent olarak gösteren bir sayfa。" } },
+      answers: { step1: 'secondary', step2: 2, step3: 'yes' },
+      step2_options: [
+        { en: "An Australian government founding document.", zh: "澳大利亚政府的创始文件。", tr: "Avustralya hükümetinin kurucu bir belgesi." },
+        { en: "A live news report from Canberra.", zh: "来自堪培拉的现场新闻报道。", tr: "Canberra'dan canlı bir haber raporu。" },
+        { en: "It compiles established geographical information for reference.", zh: "它汇编已有的地理信息以供参考。", tr: "Referans için oluşturulmuş coğrafi bilgileri derler。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "What tools did cavemen use for hunting?", zh: "穴居人使用哪些工具狩猎？", tr: "Mağara insanları avlanmak için hangi aletleri kullanıyordu?" },
+      source: { type: 'image', content: "https://placehold.co/600x400/8B4513/FFFFFF?text=Stone+Spearhead", alt: "Photograph of a stone spearhead found in a cave." },
+      answers: { step1: 'primary', step2: 0, step3: 'yes' },
+      step2_options: [
+        { en: "It is an actual tool from the period.", zh: "这是该时期的实际工具。", tr: "Döneme ait gerçek bir alettir。" },
+        { en: "It is a replica sold in a museum shop.", zh: "这是博物馆商店出售的复制品。", tr: "Müze mağazasında satılan bir kopyadır。" },
+        { en: "It is a diagram from a textbook.", zh: "这是教科书中的示意图。", tr: "Bir ders kitabındaki diyagramdır。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "What was school like in medieval Europe?", zh: "中世纪欧洲的学校是什么样的？", tr: "Orta Çağ Avrupa'sında okul nasıldı?" },
+      source: { type: 'text', content: { en: "Excerpt from a medieval monk's writing: 'The students sit on benches and learn Latin prayers by memory.'", zh: "摘自一位中世纪僧侣的著作：“学生们坐在长凳上，背诵拉丁祷文。”", tr: "Ortaçağ keşişinin yazısından alıntı: 'Öğrenciler sıralarda oturur ve Latince duaları ezberler.'" } },
+      answers: { step1: 'primary', step2: 0, step3: 'yes' },
+      step2_options: [
+        { en: "It's a primary source describing education then.", zh: "这是描述当时教育的原始资料。", tr: "O dönemi anlatan birincil kaynaktır。" },
+        { en: "It's a 2020 history blog post.", zh: "这是2020年的历史博客文章。", tr: "2020 tarihli bir tarih blogu yazısıdır。" },
+        { en: "It's a fictional story.", zh: "这是虚构的故事。", tr: "Kurgu bir hikayedir。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "What food did ancient Chinese emperors eat?", zh: "古代中国皇帝吃什么食物？", tr: "Antik Çin imparatorları ne tür yemekler yerdi?" },
+      source: { type: 'text', content: { en: "A menu carved on bamboo slips found in a Han dynasty tomb lists rice, pork, and wine offerings.", zh: "在汉代墓葬中发现的竹简上刻有稻米、猪肉和酒的供品清单。", tr: "Han hanedanı mezarında bulunan bambu şeritlerde pirinç, domuz eti ve şarap listesi vardır。" } },
+      answers: { step1: 'primary', step2: 0, step3: 'yes' },
+      step2_options: [
+        { en: "It's an artifact from the Han dynasty.", zh: "这是汉代的文物。", tr: "Han hanedanına ait bir eserdir。" },
+        { en: "It's a modern cooking recipe.", zh: "这是现代菜谱。", tr: "Modern bir yemek tarifidir。" },
+        { en: "It's a textbook summary.", zh: "这是教科书摘要。", tr: "Bir ders kitabı özetidir。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "Who was Cleopatra?", zh: "克利奥帕特拉是谁？", tr: "Kleopatra kimdi?" },
+      source: { type: 'text', content: { en: "A short encyclopedia article describing her as the last active ruler of the Ptolemaic Kingdom of Egypt.", zh: "一篇简短的百科全书文章，描述她是托勒密王朝最后一位在位统治者。", tr: "Onu Ptolemaik Krallığı'nın son aktif hükümdarı olarak tanımlayan kısa bir ansiklopedi makalesi。" } },
+      answers: { step1: 'secondary', step2: 2, step3: 'yes' },
+      step2_options: [
+        { en: "It is Cleopatra's diary.", zh: "这是克利奥帕特拉的日记。", tr: "Kleopatra'nın günlüğüdür。" },
+        { en: "It is a letter she wrote to Julius Caesar.", zh: "这是她写给凯撒的信。", tr: "Sezar'a yazdığı bir mektuptur。" },
+        { en: "It is a modern summary of her life.", zh: "这是现代对她一生的总结。", tr: "Hayatının modern bir özetidir。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "How did people travel long distances in ancient Mesopotamia?", zh: "古代美索不达米亚的人如何长途旅行？", tr: "Antik Mezopotamya'da insanlar uzun mesafeleri nasıl seyahat ederdi?" },
+      source: { type: 'image', content: "https://placehold.co/600x400/DAA520/000?text=Clay+Tablet+Depicting+Boat", alt: "Clay tablet depicting reed boats on a river." },
+      answers: { step1: 'primary', step2: 0, step3: 'yes' },
+      step2_options: [
+        { en: "It is an ancient artifact showing boats used at the time.", zh: "这是显示当时船只的古代文物。", tr: "O dönemde kullanılan tekneleri gösteren eski bir eserdir。" },
+        { en: "It's a modern painting inspired by Mesopotamia.", zh: "这是受美索不达米亚启发的现代画作。", tr: "Mezopotamya'dan esinlenilmiş modern bir resimdir。" },
+        { en: "It's a history textbook diagram.", zh: "这是历史书中的图示。", tr: "Bir tarih kitabındaki çizimdir。" }
+      ]
+    }
+  ],
+    medium: [
+        {
+            researchQuestion: { en: "How did the public in the USA react to the moon landing in 1969?", zh: "1969年美国公众对登月有何反应？", tr: "1969'da ABD halkı Ay'a inişe nasıl tepki verdi?" },
+            source: { type: 'image', content: "https://placehold.co/600x400/333/FFF?text=Photo:+Family+watching+TV+in+1969", alt: "A photograph of a family watching the moon landing on TV." },
+            answers: { step1: 'primary', step2: 1, step3: 'yes' },
+            step2_options: [
+                { en: "It is a painting created last year.", zh: "这是去年创作的一幅画。", tr: "Geçen yıl yapılmış bir tablodur." },
+                { en: "It is a photograph taken at the time of the event.", zh: "这是事件发生时拍摄的照片。", tr: "Olay sırasında çekilmiş bir fotoğraftır." },
+                { en: "It is a screenshot from a movie about the moon landing.", zh: "这是关于登月的电影截图。", tr: "Ay'a inişle ilgili bir filmden alınmış bir ekran görüntüsüdür." },
+            ]
+        },
+        {
+            researchQuestion: { en: "What were the main arguments for and against a new city law in 1985?", zh: "1985年，支持和反对一项新城市法的主要论点是什么？", tr: "1985'teki yeni bir şehir yasasının lehindeki ve aleyhindeki temel argümanlar nelerdi?" },
+            source: { type: 'text', content: { en: "A newspaper editorial from 1985. It praises the law but mentions some citizens are worried about the cost.", zh: "1985年的一篇报纸社论。它赞扬了这项法律，但提到一些市民担心成本问题。", tr: "1985 tarihli bir gazete başyazısı. Yasayı övüyor ancak bazı vatandaşların maliyet konusunda endişeli olduğunu belirtiyor." } },
+            answers: { step1: 'primary', step2: 0, step3: 'yes' },
+            step2_options: [
+                { en: "It was created at the time and shows opinions from that moment.", zh: "它是在当时创作的，并显示了那一刻的意见。", tr: "O sırada yaratılmıştır ve o anın görüşlerini göstermektedir." },
+                { en: "It is a biography of the mayor.", zh: "这是市长的传记。", tr: "Belediye başkanının bir biyografisidir." },
+                { en: "It is a statistical analysis of the law's effects 10 years later.", zh: "这是10年后法律效果的统计分析。", tr: "Yasanın 10 yıl sonraki etkilerinin istatistiksel bir analizidir." },
+            ]
+        },
+        {
+            researchQuestion: { en: "How did the invention of the printing press change Europe?", zh: "印刷术的发明如何改变了欧洲？", tr: "Matbaanın icadı Avrupa'yı nasıl değiştirdi?" },
+            source: { type: 'text', content: { en: "An entry from a modern online encyclopedia about Johannes Gutenberg.", zh: "现代在线百科全书中关于约翰内斯·古腾堡的条目。", tr: "Johannes Gutenberg hakkında modern bir çevrimiçi ansiklopediden bir girdi." } },
+            answers: { step1: 'secondary', step2: 2, step3: 'yes' },
+            step2_options: [
+                { en: "It is a page from the Gutenberg Bible.", zh: "这是古腾堡圣经的一页。", tr: "Gutenberg İncili'nden bir sayfadır." },
+                { en: "It is a letter written by Gutenberg.", zh: "这是古腾堡写的信。", tr: "Gutenberg tarafından yazılmış bir mektuptur." },
+                { en: "It provides a summary of a historical person and their impact.", zh: "Tarihi bir kişinin ve etkilerinin bir özetini sunar。", tr: "Tarihi bir kişinin ve etkilerinin bir özetini sunar." },
+            ]
+        },
+        {
+            researchQuestion: { en: "What was the immediate impact of the eruption of Mount Vesuvius on Pompeii?", zh: "维苏威火山爆发对庞贝的直接影响是什么？", tr: "Vezüv Yanardağı'nın patlamasının Pompeii üzerindeki acil etkisi neydi?" },
+            source: { type: 'quote', content: { en: "A letter by Pliny the Younger (106 AD): '...a cloud of unusual size and appearance... it rose to a great height on a sort of trunk and then split off into branches.'", zh: "小普林尼的信（公元106年）：“……一朵大小和外观异常的云……它像树干一样升到很高的高度，然后分叉成树枝。”", tr: "Genç Pliny'nin bir mektubu (MS 106): '...olağandışı büyüklükte ve görünümde bir bulut... bir tür gövde üzerinde büyük bir yüksekliğe çıktı ve sonra dallara ayrıldı.'" } },
+            answers: { step1: 'primary', step2: 0, step3: 'yes' },
+            step2_options: [
+                { en: "It's an eyewitness account of the event.", zh: "这是事件的目击者描述。", tr: "Bu, olayın bir görgü tanığı anlatımıdır." },
+                { en: "It's from a Hollywood movie script.", zh: "它来自好莱坞电影剧本。", tr: "Bir Hollywood film senaryosundan alınmıştır." },
+                { en: "It's a modern geologist's analysis of the eruption.", zh: "这是现代地质学家对火山爆发的分析。", tr: "Modern bir jeologun patlama analizidir." },
+            ]
+        },
+        {
+            researchQuestion: { en: "How were political campaigns run in the US in the 1860s?", zh: "1860年代美国的政治竞选是如何进行的？", tr: "1860'larda ABD'de siyasi kampanyalar nasıl yürütülüyordu?" },
+            source: { type: 'image', content: "https://placehold.co/600x400/F5DEB3/000000?text=1864+Political+Cartoon", alt: "A political cartoon from Harper's Weekly magazine published in 1864 depicting Abraham Lincoln." },
+            answers: { step1: 'primary', step2: 2, step3: 'yes' },
+            step2_options: [
+                { en: "It's a modern artist's drawing of Lincoln.", zh: "这是现代艺术家画的林肯。", tr: "Lincoln'un modern bir sanatçı tarafından yapılmış çizimidir." },
+                { en: "It's a photo of a museum exhibit.", zh: "这是一张博物馆展览的照片。", tr: "Bir müze sergisinin fotoğrafıdır." },
+                { en: "It's an original document showing public opinion at the time.", zh: "这是显示当时公众舆论的原始文件。", tr: "O zamanki kamuoyunu gösteren orijinal bir belgedir." },
+            ]
+        },
+{
+      researchQuestion: { en: "How did radio broadcasts affect public opinion during World War II?", zh: "二战期间广播如何影响公众舆论？", tr: "II. Dünya Savaşı sırasında radyo yayınları kamuoyunu nasıl etkiledi?" },
+      source: { type: 'text', content: { en: "Excerpt from a 1942 BBC broadcast transcript encouraging citizens to conserve resources.", zh: "1942年BBC广播稿节选，呼吁公民节约资源。", tr: "1942 tarihli bir BBC yayın transkriptinden alıntı: vatandaşlara tasarruf yapmaları çağrısı yapıyor。" } },
+      answers: { step1: 'primary', step2: 0, step3: 'yes' },
+      step2_options: [
+        { en: "It was heard live during the war.", zh: "它是在战争期间现场播出的。", tr: "Savaş sırasında canlı olarak duyuldu。" },
+        { en: "It was written decades later.", zh: "它是几十年后写的。", tr: "Onlarca yıl sonra yazılmıştır。" },
+        { en: "It is a fictional radio drama.", zh: "它是虚构的广播剧。", tr: "Kurgu bir radyo oyunudur。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "How did women’s roles change in factories during WWI?", zh: "一战期间女性在工厂的角色如何变化？", tr: "I. Dünya Savaşı sırasında kadınların fabrikalardaki rolleri nasıl değişti?" },
+      source: { type: 'image', content: "https://placehold.co/600x400/FF69B4/000?text=WWI+Women+in+Factory", alt: "Historic photo of women operating machinery in 1916." },
+      answers: { step1: 'primary', step2: 1, step3: 'yes' },
+      step2_options: [
+        { en: "It is an artist's painting made later.", zh: "这是后来画家的画作。", tr: "Daha sonra yapılmış bir tablodur。" },
+        { en: "It is a photograph taken during the war.", zh: "这是战时拍摄的照片。", tr: "Savaş sırasında çekilmiş bir fotoğraftır。" },
+        { en: "It is a 2020 article about women in WWI.", zh: "这是2020年的一篇关于一战女性的文章。", tr: "2020 tarihli bir makaledir。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "What was the reaction to the end of apartheid in South Africa?", zh: "南非废除种族隔离后的反应如何？", tr: "Güney Afrika'da apartheid'in sona ermesine tepkiler nasıldı?" },
+      source: { type: 'quote', content: { en: "From Nelson Mandela’s 1994 speech: 'Never, never and never again shall it be that this beautiful land will experience the oppression of one by another.'", zh: "纳尔逊·曼德拉1994年演讲：“永远、永远、永远不要再让这片美丽的土地经历人与人之间的压迫。”", tr: "Nelson Mandela'nın 1994 konuşmasından: 'Bu güzel ülke artık asla, asla, asla birinin diğerini ezdiği bir yer olmayacak.'" } },
+      answers: { step1: 'primary', step2: 0, step3: 'yes' },
+      step2_options: [
+        { en: "It is Mandela speaking at the time.", zh: "这是曼德拉当时的讲话。", tr: "O sırada Mandela'nın konuşmasıdır。" },
+        { en: "It is a later historian’s commentary.", zh: "这是后来的历史学家评论。", tr: "Daha sonraki bir tarihçi yorumudur。" },
+        { en: "It is a movie script line.", zh: "这是电影剧本台词。", tr: "Bir film senaryosundaki replik。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "How did the Cold War influence space exploration?", zh: "冷战如何影响太空探索？", tr: "Soğuk Savaş uzay araştırmalarını nasıl etkiledi?" },
+      source: { type: 'text', content: { en: "A NASA summary article discussing how rivalry with the USSR accelerated space program funding.", zh: "美国国家航空航天局总结文章，讨论与苏联的竞争如何加快太空项目资金投入。", tr: "NASA'nın, SSCB ile rekabetin uzay programı fonlamasını nasıl hızlandırdığını anlatan bir özeti。" } },
+      answers: { step1: 'secondary', step2: 2, step3: 'yes' },
+      step2_options: [
+        { en: "It is a Soviet cosmonaut’s diary.", zh: "这是苏联宇航员的日记。", tr: "Bir Sovyet kozmonotunun günlüğüdür。" },
+        { en: "It is a 1960 news broadcast transcript.", zh: "这是1960年的新闻广播稿。", tr: "1960 yılına ait bir haber yayınıdır。" },
+        { en: "It is a retrospective analysis by NASA.", zh: "这是NASA的回顾分析。", tr: "NASA'nın geriye dönük bir analizidir。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "How did the Great Fire of London affect city planning?", zh: "伦敦大火如何影响城市规划？", tr: "Londra Büyük Yangını şehir planlamasını nasıl etkiledi?" },
+      source: { type: 'text', content: { en: "A chapter in a modern history book summarizing the rebuilding acts passed by Parliament in 1667.", zh: "现代历史书中总结了1667年议会通过的重建法案的章节。", tr: "1667'de Parlamento'nun çıkardığı yeniden inşa yasalarını özetleyen bir tarih kitabı bölümü。" } },
+      answers: { step1: 'secondary', step2: 2, step3: 'yes' },
+      step2_options: [
+        { en: "It is a diary of a survivor.", zh: "这是幸存者的日记。", tr: "Hayatta kalan birinin günlüğüdür。" },
+        { en: "It is a city map drawn during the fire.", zh: "这是火灾期间绘制的城市地图。", tr: "Yangın sırasında çizilmiş bir şehir haritasıdır。" },
+        { en: "It is a summary written centuries later.", zh: "这是几个世纪后写的总结。", tr: "Yüzyıllar sonra yazılmış bir özet。" }
+      ]
+    }
+  ],
+    hard: [
+        {
+            researchQuestion: { en: "What were the main economic causes of the French Revolution?", zh: "法国大革命的主要经济原因是什么？", tr: "Fransız Devrimi'nin temel ekonomik nedenleri nelerdi?" },
+            source: { type: 'text', content: { en: "Historian Dr. Dubois argues in her 2015 book that peasant land shortages were a more significant factor than royal debt, a view that challenges earlier interpretations.", zh: "历史学家杜布瓦博士在她的2015年著作中认为，农民土地短缺是比皇室债务更重要的因素，这一观点挑战了早期的解释。", tr: "Tarihçi Dr. Dubois, 2015 tarihli kitabında, köylülerin toprak kıtlığının kraliyet borcundan daha önemli bir faktör olduğunu savunuyor ve bu görüş önceki yorumlara meydan okuyor." } },
+            answers: { step1: 'secondary', step2: 2, step3: 'yes' },
+            step2_options: [
+                { en: "It is a direct quote from a French peasant in 1789.", zh: "这是1789年一位法国农民的原话。", tr: "1789'daki bir Fransız köylüsünden doğrudan bir alıntıdır." },
+                { en: "It's an original tax record from the French government.", zh: "这是法国政府的原始税务记录。", tr: "Fransız hükümetinden orijinal bir vergi kaydıdır." },
+                { en: "It analyzes and interprets primary sources to form a new argument.", zh: "它分析和解释一手资料以形成新的论点。", tr: "Yeni bir argüman oluşturmak için birincil kaynakları analiz eder ve yorumlar." },
+            ]
+        },
+        {
+            researchQuestion: { en: "How has climate change affected arctic fox populations?", zh: "气候变化如何影响北极狐种群？", tr: "İklim değişikliği kutup tilkisi popülasyonlarını nasıl etkiledi?" },
+            source: { type: 'text', content: { en: "A scientific study that gathers and analyzes 30 years of temperature data and fox population counts from various wildlife reports to find a correlation.", zh: "一项科学研究，收集并分析了30年来的温度数据和来自各种野生动物报告的狐狸种群数量，以找出相关性。", tr: "Çeşitli yaban hayatı raporlarından 30 yıllık sıcaklık verilerini ve tilki popülasyonu sayılarını toplayıp bir korelasyon bulmak için analiz eden bilimsel bir çalışma." } },
+            answers: { step1: 'secondary', step2: 1, step3: 'yes' },
+            step2_options: [
+                { en: "It is a single wildlife report from 1990.", zh: "这是1990年的一份野生动物报告。", tr: "1990 yılından tek bir yaban hayatı raporudur." },
+                { en: "It collects, synthesizes, and analyzes primary data to draw a new conclusion.", zh: "它收集、综合和分析一手数据以得出新的结论。", tr: "Yeni bir sonuca varmak için birincil verileri toplar, sentezler ve analiz eder." },
+                { en: "It is a diary of a scientist who studied foxes.", zh: "这是研究狐狸的科学家的日记。", tr: "Tilkileri inceleyen bir bilim adamının günlüğüdür." },
+            ]
+        },
+        {
+            researchQuestion: { en: "To what extent was the Silk Road a conduit for cultural exchange, not just trade?", zh: "丝绸之路在多大程度上不仅是贸易通道，也是文化交流的渠道？", tr: "İpek Yolu ne ölçüde sadece bir ticaret değil, aynı zamanda bir kültür alışverişi kanalıydı?" },
+            source: { type: 'text', content: { en: "A 2018 archeological report detailing the discovery of Roman glass in a Han Dynasty tomb. The report analyzes the chemical composition and discusses implications.", zh: "一份2018年的考古报告，详细介绍了一座汉代墓葬中罗马玻璃的发现。报告分析了化学成分并讨论了其意义。", tr: "Bir Han Hanedanı mezarında Roma camının keşfini detaylandıran 2018 tarihli bir arkeoloji raporu. Rapor, kimyasal bileşimi analiz ediyor ve çıkarımları tartışıyor." } },
+            answers: { step1: 'secondary', step2: 0, step3: 'yes' },
+            step2_options: [
+                { en: "The report is a modern analysis of primary artifacts.", zh: "该报告是对一手文物的现代分析。", tr: "Rapor, birincil eserlerin modern bir analizidir." },
+                { en: "It is the Roman glass itself.", zh: "它就是罗马玻璃本身。", tr: "Roma camının kendisidir." },
+                { en: "It is a merchant's diary from the Silk Road.", zh: "这是一本丝绸之路商人的日记。", tr: "İpek Yolu'ndan bir tüccarın günlüğüdür." },
+            ]
+        },
+        {
+            researchQuestion: { en: "How did Shakespeare's plays reflect the political anxieties of Elizabethan England?", zh: "莎士比亚的戏剧如何反映伊丽莎白时代英格兰的政治焦虑？", tr: "Shakespeare'in oyunları Elizabeth dönemi İngiltere'sinin siyasi endişelerini nasıl yansıtıyordu?" },
+            source: { type: 'image', content: "https://placehold.co/600x400/8A2BE2/FFFFFF?text=Playbill+for+'Macbeth',+c.+1606", alt: "An original playbill for a performance of 'Macbeth' at the Globe Theatre, circa 1606." },
+            answers: { step1: 'primary', step2: 2, step3: 'no' },
+            step2_options: [
+                { en: "It's a modern movie poster for 'Macbeth'.", zh: "这是现代电影《麦克白》的海报。", tr: "'Macbeth' için modern bir film afişidir." },
+                { en: "It's a literary critic's review from 2020.", zh: "这是2020年一位文学评论家的评论。", tr: "2020'den bir edebiyat eleştirmeninin incelemesidir." },
+                { en: "It's an artifact from the time period being studied.", zh: "这是所研究时期的一件文物。", tr: "İncelenen döneme ait bir eserdir." },
+            ]
+        },
+        {
+            researchQuestion: { en: "What is the relationship between industrial pollution and acid rain in the 20th century?", zh: "20世纪工业污染与酸雨之间是什么关系？", tr: "20. yüzyılda endüstriyel kirlilik ile asit yağmuru arasındaki ilişki nedir?" },
+            source: { type: 'text', content: { en: "A 2020 meta-analysis of 50 scientific studies on acid rain conducted between 1970 and 2000.", zh: "2020年对1970年至2000年间进行的50项关于酸雨的科学研究的荟萃分析。", tr: "1970 ile 2000 yılları arasında yürütülen asit yağmurları üzerine 50 bilimsel çalışmanın 2020 tarihli bir meta-analizi." } },
+            answers: { step1: 'secondary', step2: 1, step3: 'yes' },
+            step2_options: [
+                { en: "It is original data from one of the 50 studies.", zh: "这是50项研究中一项的原始数据。", tr: "50 çalışmadan birinin orijinal verisidir." },
+                { en: "It synthesizes the results of numerous primary studies.", zh: "它综合了众多一手研究的结果。", tr: "Çok sayıda birincil çalışmanın sonuçlarını sentezler." },
+                { en: "It is a politician's speech about acid rain.", zh: "这是一位政治家关于酸雨的演讲。", tr: "Bir politikacının asit yağmuru hakkındaki konuşmasıdır." },
+            ]
+        },
+      {
+      researchQuestion: { en: "How did the Opium Wars reshape China's relationship with Europe?", zh: "鸦片战争如何重塑中国与欧洲的关系？", tr: "Afyon Savaşları Çin'in Avrupa ile ilişkilerini nasıl yeniden şekillendirdi?" },
+      source: { type: 'text', content: { en: "A historian's journal article comparing Qing dynasty trade policies before and after the wars.", zh: "历史学家期刊文章，比较清朝战前战后的贸易政策。", tr: "Tarihçinin, Qing dönemi savaş öncesi ve sonrası ticaret politikalarını karşılaştırdığı bir makale。" } },
+      answers: { step1: 'secondary', step2: 2, step3: 'yes' },
+      step2_options: [
+        { en: "It is an 1840 government edict.", zh: "这是1840年的政府法令。", tr: "1840 tarihli bir hükümet fermanıdır。" },
+        { en: "It is a letter from a Chinese merchant.", zh: "这是中国商人的信件。", tr: "Bir Çin tüccarının mektubudur。" },
+        { en: "It is a modern analysis comparing primary documents.", zh: "这是比较原始文件的现代分析。", tr: "Birincil belgeleri karşılaştıran modern bir analizdir。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "What role did propaganda play in the Rwandan genocide?", zh: "宣传在卢旺达大屠杀中起了什么作用？", tr: "Propaganda Ruanda soykırımında ne rol oynadı?" },
+      source: { type: 'text', content: { en: "A media studies dissertation analyzing transcripts of Radio Télévision Libre des Mille Collines broadcasts.", zh: "一篇媒体研究论文，分析了自由千丘电台广播的文字记录。", tr: "RTLM yayınlarının transkriptlerini analiz eden bir medya çalışmaları tezi。" } },
+      answers: { step1: 'secondary', step2: 2, step3: 'yes' },
+      step2_options: [
+        { en: "It is a 1994 radio broadcast recording itself.", zh: "这是1994年的广播录音。", tr: "1994 tarihli radyo kaydıdır。" },
+        { en: "It is a survivor's interview transcript.", zh: "这是幸存者访谈记录。", tr: "Bir hayatta kalan röportajıdır。" },
+        { en: "It analyzes and interprets primary media evidence.", zh: "它分析和解释了主要媒体证据。", tr: "Birincil medya kanıtlarını analiz eder ve yorumlar。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "How did the Meiji Restoration modernize Japan?", zh: "明治维新如何使日本现代化？", tr: "Meiji Restorasyonu Japonya'yı nasıl modernleştirdi?" },
+      source: { type: 'text', content: { en: "A political science article outlining reforms in military, industry, and education between 1868–1912.", zh: "一篇政治学论文，概述了1868–1912年间在军事、工业和教育方面的改革。", tr: "1868–1912 arasında askeri, sanayi ve eğitimdeki reformları özetleyen bir siyaset bilimi makalesi。" } },
+      answers: { step1: 'secondary', step2: 2, step3: 'yes' },
+      step2_options: [
+        { en: "It is the 1868 imperial charter.", zh: "这是1868年的明治宪章。", tr: "1868 İmparatorluk Bildirgesidir。" },
+        { en: "It is a diary of a samurai.", zh: "这是武士的日记。", tr: "Bir samurayın günlüğüdür。" },
+        { en: "It is a modern scholarly analysis.", zh: "这是现代学术分析。", tr: "Modern bir akademik analizdir。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "How has social media changed revolutionary movements since 2010?", zh: "自2010年以来，社交媒体如何改变革命运动？", tr: "2010'dan beri sosyal medya devrimci hareketleri nasıl değiştirdi?" },
+      source: { type: 'text', content: { en: "A political sociology research paper comparing the Arab Spring, Hong Kong protests, and other movements.", zh: "一篇政治社会学论文，比较阿拉伯之春、香港抗议和其他运动。", tr: "Arap Baharı, Hong Kong protestoları ve diğer hareketleri karşılaştıran bir sosyoloji makalesi。" } },
+      answers: { step1: 'secondary', step2: 2, step3: 'yes' },
+      step2_options: [
+        { en: "It is a single activist’s tweet.", zh: "这是一个活动家的推文。", tr: "Bir aktivistin tweetidir。" },
+        { en: "It is a news clip from 2011.", zh: "这是2011年的新闻片段。", tr: "2011 tarihli bir haber klibidir。" },
+        { en: "It synthesizes multiple primary sources to find patterns.", zh: "它综合多个一手资料寻找模式。", tr: "Birçok birincil kaynağı sentezler。" }
+      ]
+    },
+    {
+      researchQuestion: { en: "How did the fall of the Berlin Wall influence global politics?", zh: "柏林墙倒塌如何影响全球政治？", tr: "Berlin Duvarı'nın yıkılması dünya politikasını nasıl etkiledi?" },
+      source: { type: 'quote', content: { en: "From a 1990 UN address: 'A new world order is at hand, one where nations cooperate instead of divide.'", zh: "摘自1990年联合国演讲：“一个新的世界秩序即将来临，国家之间合作而不是分裂。”", tr: "1990 BM konuşmasından: 'Bölünme yerine işbirliği yapılan yeni bir dünya düzeni geliyor.'" } },
+      answers: { step1: 'primary', step2: 0, step3: 'yes' },
+      step2_options: [
+        { en: "It is a speech from just after the wall fell.", zh: "这是柏林墙倒塌后不久的演讲。", tr: "Duvar yıkıldıktan hemen sonraki bir konuşmadır。" },
+        { en: "It is a 2020 history blog reflection.", zh: "这是2020年的历史博客反思。", tr: "2020 tarihli bir tarih blogu yorumudur。" },
+        { en: "It is a journalist’s opinion column years later.", zh: "这是多年后的专栏文章。", tr: "Yıllar sonra yazılmış bir köşe yazısıdır。" }
+      ]
+    }
+    ]
+};
+
+
+
+// --- FUNCTIONS ---
+
+function updateLanguage(lang) {
+    currentLanguage = lang;
+    document.querySelectorAll('[data-translate]').forEach(el => {
+        const key = el.getAttribute('data-translate');
+        if (translations[lang][key]) {
+            el.textContent = translations[lang][key];
+        }
+    });
+}
+
+function selectDifficulty(difficulty) {
+    currentDifficulty = difficulty;
+    difficultyBtns.forEach(btn => {
+        btn.classList.remove('bg-custom-gold', 'text-custom-green');
+        if (btn.dataset.difficulty === difficulty) {
+            btn.classList.add('bg-custom-gold', 'text-custom-green');
+        }
+    });
+}
+
+function startGame() {
+    score = 0;
+    currentRound = 0;
+    // Shuffle and slice the rounds for the chosen difficulty
+    rounds = [...gameContent[currentDifficulty]].sort(() => 0.5 - Math.random()).slice(0, 5);
+    
+    scoreEl.textContent = score;
+    totalRoundsEl.textContent = rounds.length;
+
+    startScreen.classList.add('hidden');
+    endScreen.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+
+    displayRound();
+}
+
+function displayRound() {
+    if (currentRound >= rounds.length) {
+        endGame();
+        return;
+    }
+    
+    // Reset UI for the new round
+    currentStep = 1;
+    resetButtons();
+    step1Container.style.opacity = '1';
+    step2Container.classList.add('hidden');
+    step3Container.classList.add('hidden');
+    nextBtn.classList.add('hidden');
+    feedbackText.textContent = '';
+    questionsContainer.querySelectorAll('button').forEach(b => b.disabled = false);
+
+    const roundData = rounds[currentRound];
+    currentRoundEl.textContent = currentRound + 1;
+    researchQuestionEl.textContent = roundData.researchQuestion[currentLanguage];
+
+    // Display source
+    sourceContentEl.innerHTML = '';
+    if (roundData.source.type === 'image') {
+        const img = document.createElement('img');
+        img.src = roundData.source.content;
+        img.alt = roundData.source.alt;
+        img.className = 'max-w-full max-h-[300px] rounded-lg object-contain';
+        sourceContentEl.appendChild(img);
+    } else {
+        const p = document.createElement('p');
+        p.className = 'text-center italic text-gray-200';
+        p.textContent = roundData.source.content[currentLanguage];
+        sourceContentEl.appendChild(p);
+    }
+    
+    // Display step 2 options
+    step2OptionsEl.innerHTML = '';
+    roundData.step2_options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.className = 'answer-btn w-full text-left p-3 rounded-lg bg-gray-700 border-2 border-gray-600 btn';
+        button.dataset.step = '2';
+        button.dataset.answer = index;
+        button.textContent = option[currentLanguage];
+        step2OptionsEl.appendChild(button);
+    });
+}
+
+function handleAnswer(step, answer) {
+    const roundData = rounds[currentRound];
+    const correctAns = roundData.answers[`step${step}`];
+    const isCorrect = String(answer) === String(correctAns);
+    
+    const clickedBtn = document.querySelector(`.answer-btn[data-step='${step}'][data-answer='${answer}']`);
+
+    // Disable all buttons for the current step
+    document.querySelectorAll(`.answer-btn[data-step='${step}']`).forEach(b => b.disabled = true);
+    
+    if (isCorrect) {
+        score += 10;
+        scoreEl.textContent = score;
+        feedbackText.textContent = translations[currentLanguage].correct;
+        feedbackText.classList.remove('text-red-400');
+        feedbackText.classList.add('text-green-400');
+        if (clickedBtn) clickedBtn.classList.add('correct');
+    } else {
+        feedbackText.textContent = translations[currentLanguage].incorrect;
+        feedbackText.classList.remove('text-green-400');
+        feedbackText.classList.add('text-red-400');
+        if (clickedBtn) clickedBtn.classList.add('incorrect');
+        
+        // Highlight the correct answer
+        const correctBtn = document.querySelector(`.answer-btn[data-step='${step}'][data-answer='${correctAns}']`);
+        if (correctBtn) correctBtn.classList.add('correct');
+    }
+    
+    // Move to next step or show Next button regardless of correctness
+    setTimeout(() => {
+        if (step === '1') {
+            step1Container.style.opacity = '0.5';
+            step2Container.classList.remove('hidden');
+            currentStep = 2;
+        } else if (step === '2') {
+            step2Container.style.opacity = '0.5';
+            step3Container.classList.remove('hidden');
+            currentStep = 3;
+        } else if (step === '3') {
+            nextBtn.classList.remove('hidden');
+        }
+    }, 1200); // Increased delay to allow seeing the feedback
+}
+
+function resetButtons() {
+    document.querySelectorAll('.answer-btn').forEach(btn => {
+        btn.classList.remove('correct', 'incorrect');
+        btn.disabled = false;
+    });
+    step1Container.style.opacity = '1';
+    step2Container.style.opacity = '1';
+    step3Container.style.opacity = '1';
+}
+
+function endGame() {
+    gameScreen.classList.add('hidden');
+    endScreen.classList.remove('hidden');
+    finalScoreEl.textContent = score;
+}
+
+// --- EVENT LISTENERS ---
+
+languageSelect.addEventListener('change', (e) => {
+    updateLanguage(e.target.value);
+});
+
+difficultyBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        selectDifficulty(btn.dataset.difficulty);
+    });
+});
+
+startBtn.addEventListener('click', startGame);
+playAgainBtn.addEventListener('click', () => {
+    endScreen.classList.add('hidden');
+    startScreen.classList.remove('hidden');
+    selectDifficulty('easy'); // Reset to default
+});
+
+nextBtn.addEventListener('click', () => {
+    currentRound++;
+    displayRound();
+});
+
+questionsContainer.addEventListener('click', (e) => {
+    if (e.target.matches('.answer-btn')) {
+        const { step, answer } = e.target.dataset;
+        if (parseInt(step) === currentStep) {
+            handleAnswer(step, answer);
+        }
+    }
+});
+
+
+// --- INITIALIZATION ---
+
+// Set default difficulty
+selectDifficulty('easy');
+// Set language based on browser preference or default to English
+const userLang = navigator.language.slice(0, 2);
+if (['en', 'zh', 'tr'].includes(userLang)) {
+    languageSelect.value = userLang;
+}
+updateLanguage(languageSelect.value);
+
+</script>
+</body>
+</html>
+
+
