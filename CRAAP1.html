@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRAAP Test Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .source-content {
+            white-space: pre-wrap; /* Allows for line breaks in the text */
+        }
+        .feedback-correct {
+            border-left: 5px solid #22c55e; /* green-500 */
+        }
+        .feedback-incorrect {
+            border-left: 5px solid #ef4444; /* red-500 */
+        }
+        .language-btn.active {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 transition-colors duration-300">
+
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-4xl">
+
+        <!-- Header -->
+        <header class="text-center mb-6">
+            <h1 data-key="title" class="text-3xl md:text-4xl font-bold text-gray-700">CRAAP Test Challenge</h1>
+            <p data-key="subtitle" class="text-md text-gray-500 mt-1">Evaluate the sources to test your media literacy skills!</p>
+        </header>
+
+        <!-- Language and Score Bar -->
+        <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-md mb-6 sticky top-2 z-10">
+            <div>
+                <button onclick="setLanguage('en')" class="language-btn active text-sm font-medium py-1 px-3 rounded-md transition-colors hover:bg-blue-100" id="lang-en">EN</button>
+                <button onclick="setLanguage('zh')" class="language-btn text-sm font-medium py-1 px-3 rounded-md transition-colors hover:bg-blue-100" id="lang-zh">中文</button>
+                <button onclick="setLanguage('tr')" class="language-btn text-sm font-medium py-1 px-3 rounded-md transition-colors hover:bg-blue-100" id="lang-tr">TR</button>
+            </div>
+            <div class="text-lg font-semibold">
+                <span data-key="score_label">Score</span>: <span id="score" class="text-blue-600">0</span>
+            </div>
+        </div>
+
+        <!-- Main Game Area -->
+        <main id="game-area" class="bg-white p-6 rounded-lg shadow-lg">
+            
+            <!-- Source Display -->
+            <div id="source-container" class="mb-8 border-b pb-6">
+                 <h2 data-key="source_title" class="text-2xl font-bold mb-3 text-gray-800">Source to Evaluate</h2>
+                <div class="bg-gray-50 p-4 rounded-md border">
+                    <h3 id="source-title" class="text-xl font-semibold text-blue-700 mb-2"></h3>
+                    <p id="source-author" class="text-sm text-gray-500 mb-2"></p>
+                    <p id="source-content" class="source-content text-gray-700 leading-relaxed"></p>
+                </div>
+            </div>
+
+            <!-- Questions -->
+            <div id="questions-container">
+                <!-- Questions will be dynamically inserted here -->
+            </div>
+
+            <!-- Buttons -->
+            <div id="button-container" class="mt-8 text-center">
+                <button id="submit-btn" onclick="checkAnswers()" class="bg-blue-500 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-blue-600 transition-transform transform hover:scale-105 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:scale-100">
+                    <span data-key="submit_btn">Check Answers</span>
+                </button>
+                <button id="next-btn" onclick="nextSource()" class="hidden bg-green-500 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-green-600 transition-transform transform hover:scale-105">
+                    <span data-key="next_btn">Next Source</span>
+                </button>
+            </div>
+        </main>
+        
+        <!-- Final Score / Restart Screen -->
+        <div id="final-screen" class="hidden text-center bg-white p-8 rounded-lg shadow-lg">
+            <h2 data-key="final_title" class="text-3xl font-bold mb-4 text-gray-800">Challenge Complete!</h2>
+            <p data-key="final_score_label" class="text-xl mb-2 text-gray-600">Your final score is:</p>
+            <p id="final-score" class="text-5xl font-bold text-blue-600 mb-8"></p>
+            <p id="final-feedback" class="text-lg mb-8"></p>
+            <button onclick="restartGame()" class="bg-blue-500 text-white font-bold py-3 px-10 rounded-lg shadow-md hover:bg-blue-600 transition-transform transform hover:scale-105">
+                <span data-key="restart_btn">Play Again</span>
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- TRANSLATIONS ---
+        const translations = {
+            en: {
+                title: "CRAAP Test Challenge",
+                subtitle: "Evaluate the sources to test your media literacy skills!",
+                score_label: "Score",
+                source_title: "Source to Evaluate",
+                submit_btn: "Check Answers",
+                next_btn: "Next Source",
+                feedback_correct: "Correct!",
+                feedback_incorrect: "Not quite.",
+                final_title: "Challenge Complete!",
+                final_score_label: "Your final score is:",
+                restart_btn: "Play Again",
+                final_feedback_excellent: "Excellent work! You're a critical thinking superstar! 🌟",
+                final_feedback_good: "Great job! You have a solid understanding of how to evaluate sources.",
+                final_feedback_average: "Good effort! Keep practicing to sharpen your skills.",
+                final_feedback_needs_improvement: "You're just getting started. Review the feedback and try again!",
+                craap: {
+                    C: "Currency",
+                    R: "Relevance",
+                    A: "Authority",
+                    P1: "Accuracy",
+                    P2: "Purpose",
+                },
+                questions: {
+                    C: "How timely is this information?",
+                    R: "How relevant is this information to a project on climate change solutions?",
+                    A: "Who is the author or publisher of this information?",
+                    P1: "How accurate and reliable is this information?",
+                    P2: "What is the primary purpose of this information?"
+                }
+            },
+            zh: {
+                title: "CRAAP 测试挑战",
+                subtitle: "评估信息来源，测试您的媒体素养技能！",
+                score_label: "分数",
+                source_title: "待评估来源",
+                submit_btn: "检查答案",
+                next_btn: "下一个来源",
+                feedback_correct: "正确！",
+                feedback_incorrect: "不完全正确。",
+                final_title: "挑战完成！",
+                final_score_label: "您的最终分数是：",
+                restart_btn: "再玩一次",
+                final_feedback_excellent: "非常棒！你是一位批判性思维的超级巨星！🌟",
+                final_feedback_good: "做得很好！您对如何评估来源有扎实的理解。",
+                final_feedback_average: "做得不错！继续练习以提高您的技能。",
+                final_feedback_needs_improvement: "你才刚刚开始。查看反馈并再试一次！",
+                craap: {
+                    C: "时效性 (Currency)",
+                    R: "相关性 (Relevance)",
+                    A: "权威性 (Authority)",
+                    P1: "准确性 (Accuracy)",
+                    P2: "目的性 (Purpose)",
+                },
+                questions: {
+                    C: "这条信息有多及时？",
+                    R: "这条信息与一个关于气候变化解决方案的项目有多大关系？",
+                    A: "这条信息的作者或发布者是谁？",
+                    P1: "这条信息有多准确和可靠？",
+                    P2: "这条信息的主要目的是什么？"
+                }
+            },
+            tr: {
+                title: "CRAAP Testi Mücadelesi",
+                subtitle: "Medya okuryazarlığı becerilerinizi test etmek için kaynakları değerlendirin!",
+                score_label: "Puan",
+                source_title: "Değerlendirilecek Kaynak",
+                submit_btn: "Cevapları Kontrol Et",
+                next_btn: "Sonraki Kaynak",
+                feedback_correct: "Doğru!",
+                feedback_incorrect: "Tam olarak değil.",
+                final_title: "Mücadele Tamamlandı!",
+                final_score_label: "Nihai puanınız:",
+                restart_btn: "Tekrar Oyna",
+                final_feedback_excellent: "Mükemmel iş! Sen bir eleştirel düşünme süperstarısın! 🌟",
+                final_feedback_good: "Harika iş! Kaynakları nasıl değerlendireceğinize dair sağlam bir anlayışa sahipsiniz.",
+                final_feedback_average: "İyi çaba! Becerilerinizi geliştirmek için pratik yapmaya devam edin.",
+                final_feedback_needs_improvement: "Daha yeni başlıyorsun. Geri bildirimi inceleyin ve tekrar deneyin!",
+                craap: {
+                    C: "Güncellik (Currency)",
+                    R: "İlgi (Relevance)",
+                    A: "Otorite (Authority)",
+                    P1: "Doğruluk (Accuracy)",
+                    P2: "Amaç (Purpose)",
+                },
+                questions: {
+                    C: "Bu bilgi ne kadar güncel?",
+                    R: "Bu bilgi iklim değişikliği çözümleri üzerine bir projeyle ne kadar alakalı?",
+                    A: "Bu bilginin yazarı veya yayıncısı kim?",
+                    P1: "Bu bilgi ne kadar doğru ve güvenilir?",
+                    P2: "Bu bilginin temel amacı nedir?"
+                }
+            }
+        };
+
+        // --- GAME DATA ---
+        const gameData = [
+            {
+                id: 1,
+                title: { en: "ScienceKids Journal: The Power of Solar", zh: "科学儿童杂志：太阳能的力量", tr: "ScienceKids Dergisi: Güneşin Gücü" },
+                author: { en: "By Dr. Evelyn Reed, Climatologist at Stanford University. Published: Last Month", zh: "作者：伊芙琳·里德博士，斯坦福大学气候学家。发表时间：上个月", tr: "Yazan: Dr. Evelyn Reed, Stanford Üniversitesi Klimatolog. Yayınlanma: Geçen Ay" },
+                content: { en: "Our latest research confirms that new-generation solar panels are 30% more efficient than models from just five years ago. These advancements make solar power a leading contender for solving the global energy crisis. Our data, peer-reviewed and published in Nature, shows a clear path forward.", zh: "我们最新的研究证实，新一代太阳能电池板的效率比五年前的型号高出30%。这些进步使太阳能成为解决全球能源危机的主要竞争者。我们的数据经过同行评审并发表在《自然》杂志上，展示了一条清晰的前进道路。", tr: "Son araştırmamız, yeni nesil güneş panellerinin sadece beş yıl önceki modellere göre %30 daha verimli olduğunu doğrulamaktadır. Bu gelişmeler, güneş enerjisini küresel enerji krizini çözmede lider bir aday haline getirmektedir. Hakemli ve Nature'da yayınlanan verilerimiz, ileriye dönük net bir yol göstermektedir." },
+                evaluations: {
+                    C: { // Currency
+                        options: {
+                            en: ["Very recent and up-to-date", "A few years old", "Very outdated"],
+                            zh: ["非常近期和最新", "几年前的", "非常过时"],
+                            tr: ["Çok yeni ve güncel", "Birkaç yıllık", "Çok eski"],
+                        },
+                        correctAnswer: 0,
+                        feedback: {
+                            en: "Published last month, this information is very current.",
+                            zh: "上个月发表，此信息非常及时。",
+                            tr: "Geçen ay yayınlanan bu bilgi çok güncel."
+                        }
+                    },
+                    R: { // Relevance
+                        options: {
+                            en: ["Highly relevant", "Somewhat relevant", "Not relevant"],
+                            zh: ["高度相关", "有些相关", "不相关"],
+                            tr: ["Çok alakalı", "Biraz alakalı", "Alakalı değil"],
+                        },
+                        correctAnswer: 0,
+                        feedback: {
+                            en: "This directly discusses a solution for the energy crisis, a key part of climate change.",
+                            zh: "这直接讨论了能源危机的解决方案，这是气候变化的关键部分。",
+                            tr: "Bu, iklim değişikliğinin önemli bir parçası olan enerji krizine bir çözümü doğrudan tartışıyor."
+                        }
+                    },
+                    A: { // Authority
+                        options: {
+                            en: ["A qualified expert from a major university", "A hobbyist blogger", "An anonymous account"],
+                            zh: ["一所重点大学的合格专家", "一个业余博客作者", "一个匿名账户"],
+                            tr: ["Büyük bir üniversiteden nitelikli bir uzman", "Hobici bir blog yazarı", "Anonim bir hesap"],
+                        },
+                        correctAnswer: 0,
+                        feedback: {
+                            en: "A PhD from Stanford University is a highly credible and authoritative source.",
+                            zh: "斯坦福大学的博士是一个非常可信和权威的来源。",
+                            tr: "Stanford Üniversitesi'nden bir doktora, son derece güvenilir ve yetkili bir kaynaktır."
+                        }
+                    },
+                    P1: { // Accuracy
+                        options: {
+                            en: ["Very accurate, mentions peer-reviewed data", "Somewhat accurate, but mostly opinion", "Likely inaccurate, no evidence"],
+                            zh: ["非常准确，提到了同行评审的数据", "有些准确，但主要是观点", "可能不准确，没有证据"],
+                            tr: ["Çok doğru, hakemli verilerden bahsediyor", "Biraz doğru, ama çoğunlukla görüş", "Muhtemelen yanlış, kanıt yok"],
+                        },
+                        correctAnswer: 0,
+                        feedback: {
+                            en: "The mention of 'peer-reviewed' and 'published in Nature' suggests high accuracy.",
+                            zh: "提到“同行评审”和“发表在《自然》杂志上”表明准确性很高。",
+                            tr: "'Hakemli' ve 'Nature'da yayınlandı' ifadeleri yüksek doğruluğa işaret ediyor."
+                        }
+                    },
+                    P2: { // Purpose
+                        options: {
+                            en: ["To inform the public based on research", "To sell a product", "To entertain with a fictional story"],
+                            zh: ["根据研究向公众提供信息", "销售产品", "用虚构故事娱乐"],
+                            tr: ["Araştırmaya dayanarak halkı bilgilendirmek", "Bir ürün satmak", "Kurgusal bir hikaye ile eğlendirmek"],
+                        },
+                        correctAnswer: 0,
+                        feedback: {
+                            en: "The goal is clearly to educate and inform readers about scientific advancements.",
+                            zh: "目标显然是教育和告知读者科学进步。",
+                            tr: "Amaç, okuyucuları bilimsel gelişmeler hakkında eğitmek ve bilgilendirmektir."
+                        }
+                    }
+                }
+            },
+            {
+                id: 2,
+                title: { en: "PlanetSavers Blog: Why Wind Turbines Are a SCAM!", zh: "地球拯救者博客：为什么风力涡轮机是个骗局！", tr: "Gezegen Kurtarıcıları Blogu: Rüzgar Türbinleri Neden Bir Aldatmaca!" },
+                author: { en: "By ConcernedCitizen88. Published: 3 years ago", zh: "作者：ConcernedCitizen88。发表时间：3年前", tr: "Yazan: EndişeliVatandaş88. Yayınlanma: 3 yıl önce" },
+                content: { en: "Don't believe the hype! They tell you wind turbines are 'green,' but I saw one that had fallen over once. These things are dangerous and probably don't even work. My uncle says he heard they use more energy to build than they ever produce. We need to stop this madness before it's too late.", zh: "别相信那些炒作！他们告诉你风力涡轮机是‘绿色’的，但我曾经看到一个倒了。这些东西很危险，而且可能根本不起作用。我叔叔说他听说建造它们所用的能源比它们产生的还要多。我们必须在为时已晚之前阻止这种疯狂。", tr: "Bu aldatmacaya inanmayın! Size rüzgar türbinlerinin 'yeşil' olduğunu söylüyorlar, ama ben bir keresinde devrilmiş bir tane gördüm. Bu şeyler tehlikeli ve muhtemelen çalışmıyor bile. Amcam, inşa edilmelerinin ürettiklerinden daha fazla enerji harcadığını duyduğunu söyledi. Çok geç olmadan bu çılgınlığı durdurmalıyız." },
+                evaluations: {
+                    C: {
+                        options: {
+                            en: ["Very recent and up-to-date", "A few years old", "Very outdated"],
+                            zh: ["非常近期和最新", "几年前的", "非常过时"],
+                            tr: ["Çok yeni ve güncel", "Birkaç yıllık", "Çok eski"],
+                        },
+                        correctAnswer: 1,
+                        feedback: {
+                            en: "At three years old, the information might not reflect the latest technology or research.",
+                            zh: "三年前的信息可能无法反映最新的技术或研究。",
+                            tr: "Üç yıllık olduğu için, bilgi en son teknolojiyi veya araştırmayı yansıtmayabilir."
+                        }
+                    },
+                    R: {
+                        options: {
+                            en: ["Highly relevant", "Somewhat relevant", "Not relevant"],
+                            zh: ["高度相关", "有些相关", "不相关"],
+                            tr: ["Çok alakalı", "Biraz alakalı", "Alakalı değil"],
+                        },
+                        correctAnswer: 0,
+                        feedback: {
+                            en: "It discusses wind turbines, which is relevant to climate change solutions, even if the information is poor.",
+                            zh: "它讨论了风力涡轮机，这与气候变化解决方案有关，即使信息质量很差。",
+                            tr: "Bilgiler zayıf olsa da, iklim değişikliği çözümleriyle ilgili olan rüzgar türbinlerini tartışıyor."
+                        }
+                    },
+                    A: {
+                        options: {
+                            en: ["A qualified expert from a major university", "A hobbyist blogger", "An anonymous account"],
+                            zh: ["一所重点大学的合格专家", "一个业余博客作者", "一个匿名账户"],
+                            tr: ["Büyük bir üniversiteden nitelikli bir uzman", "Hobici bir blog yazarı", "Anonim bir hesap"],
+                        },
+                        correctAnswer: 2,
+                        feedback: {
+                            en: "The author is anonymous ('ConcernedCitizen88') and has no stated qualifications.",
+                            zh: "作者是匿名的（‘ConcernedCitizen88’），没有说明任何资质。",
+                            tr: "Yazar anonimdir ('EndişeliVatandaş88') ve belirtilen bir niteliği yoktur."
+                        }
+                    },
+                    P1: {
+                        options: {
+                            en: ["Very accurate, mentions peer-reviewed data", "Somewhat accurate, but mostly opinion", "Likely inaccurate, no evidence"],
+                            zh: ["非常准确，提到了同行评审的数据", "有些准确，但主要是观点", "可能不准确，没有证据"],
+                            tr: ["Çok doğru, hakemli verilerden bahsediyor", "Biraz doğru, ama çoğunlukla görüş", "Muhtemelen yanlış, kanıt yok"],
+                        },
+                        correctAnswer: 2,
+                        feedback: {
+                            en: "The 'evidence' is just personal observation and hearsay ('my uncle says'). This is not reliable.",
+                            zh: "“证据”只是个人观察和道听途说（“我叔叔说”）。这是不可靠的。",
+                            tr: "'Kanıt' sadece kişisel gözlem ve söylentiden ibaret ('amcam söylüyor'). Bu güvenilir değil."
+                        }
+                    },
+                    P2: {
+                        options: {
+                            en: ["To inform with facts", "To persuade with emotion and opinion", "To sell a product"],
+                            zh: ["用事实告知", "用情感和观点说服", "销售产品"],
+                            tr: ["Gerçeklerle bilgilendirmek", "Duygu ve görüşle ikna etmek", "Bir ürün satmak"],
+                        },
+                        correctAnswer: 1,
+                        feedback: {
+                            en: "The language is emotional ('SCAM!', 'madness') and aims to persuade the reader, not inform them objectively.",
+                            zh: "语言是情绪化的（‘骗局！’，‘疯狂’），旨在说服读者，而不是客观地告知他们。",
+                            tr: "Dil duygusaldır ('ALDATMACA!', 'çılgınlık') ve okuyucuyu objektif olarak bilgilendirmek yerine ikna etmeyi amaçlamaktadır."
+                        }
+                    }
+                }
+            },
+            {
+                id: 3,
+                title: { en: "Buy 'Sun-Be-Gone' Umbrellas Now!", zh: "立即购买'Sun-Be-Gone'遮阳伞！", tr: "'Sun-Be-Gone' Şemsiyelerini Şimdi Satın Alın!" },
+                author: { en: "From the Marketing Dept. at UmbrellaCorp. Published: This Week", zh: "来自UmbrellaCorp市场部。发表时间：本周", tr: "UmbrellaCorp Pazarlama Departmanından. Yayınlanma: Bu Hafta" },
+                content: { en: "Feeling the heat? Scientists agree the world is getting warmer. Our patented 'Sun-Be-Gone' umbrella blocks 100% of harmful UV rays and is the ONLY real solution to protect your family. A recent study (funded by us) found that 10 out of 10 users felt cooler and happier. Don't wait for a climate disaster, buy your personal climate solution today!", zh: "感觉热吗？科学家们一致认为世界正在变暖。我们获得专利的“Sun-Be-Gone”遮阳伞可阻挡100%的有害紫外线，是保护您家人的唯一真正解决方案。最近一项（由我们资助的）研究发现，10名用户中有10名感觉更凉爽、更快乐。不要等待气候灾难，立即购买您的个人气候解决方案！", tr: "Sıcağı mı hissediyorsunuz? Bilim insanları dünyanın ısındığı konusunda hemfikir. Patentli 'Sun-Be-Gone' şemsiyemiz zararlı UV ışınlarının %100'ünü engeller ve ailenizi korumak için TEK gerçek çözümdür. Yakın zamanda (bizim tarafımızdan finanse edilen) bir çalışma, 10 kullanıcıdan 10'unun daha serin ve daha mutlu hissettiğini buldu. İklim felaketini beklemeyin, kişisel iklim çözümünüzü bugün satın alın!" },
+                evaluations: {
+                     C: { 
+                        options: {
+                            en: ["Very recent and up-to-date", "A few years old", "Very outdated"],
+                            zh: ["非常近期和最新", "几年前的", "非常过时"],
+                            tr: ["Çok yeni ve güncel", "Birkaç yıllık", "Çok eski"],
+                        },
+                        correctAnswer: 0,
+                        feedback: {
+                            en: "Published this week, it's very current.",
+                            zh: "本周发表，非常及时。",
+                            tr: "Bu hafta yayınlanan, çok güncel."
+                        }
+                    },
+                    R: { 
+                        options: {
+                            en: ["Highly relevant, it's a climate solution", "Somewhat relevant, it mentions climate change", "Not relevant, it's just about umbrellas"],
+                            zh: ["高度相关，这是一个气候解决方案", "有些相关，它提到了气候变化", "不相关，这只是关于雨伞的"],
+                            tr: ["Çok alakalı, bir iklim çözümü", "Biraz alakalı, iklim değişikliğinden bahsediyor", "Alakalı değil, sadece şemsiyelerle ilgili"],
+                        },
+                        correctAnswer: 1,
+                        feedback: {
+                            en: "It's not a real solution to the overall problem, but it mentions the topic. It's only slightly relevant.",
+                            zh: "这不是解决整个问题的真正办法，但它提到了这个话题。它只是稍微相关。",
+                            tr: "Genel soruna gerçek bir çözüm değil, ama konudan bahsediyor. Sadece biraz alakalı."
+                        }
+                    },
+                    A: {
+                        options: {
+                            en: ["An unbiased scientific organization", "A company selling a product", "A government environmental agency"],
+                            zh: ["一个公正的科学组织", "一家销售产品的公司", "一个政府环保机构"],
+                            tr: ["Tarafsız bir bilimsel kuruluş", "Bir ürün satan bir şirket", "Bir devlet çevre ajansı"],
+                        },
+                        correctAnswer: 1,
+                        feedback: {
+                            en: "The author is the marketing department of the company trying to sell you something. They are biased.",
+                            zh: "作者是试图向您推销东西的公司的营销部门。他们是有偏见的。",
+                            tr: "Yazar, size bir şeyler satmaya çalışan şirketin pazarlama departmanıdır. Taraflıdırlar."
+                        }
+                    },
+                    P1: {
+                        options: {
+                            en: ["Highly reliable, uses independent studies", "Potentially biased, the study was funded by the company", "Completely made up, no data given"],
+                            zh: ["高度可靠，使用独立研究", "可能存在偏见，该研究由公司资助", "完全是编造的，没有给出数据"],
+                            tr: ["Son derece güvenilir, bağımsız çalışmalar kullanıyor", "Potansiyel olarak taraflı, çalışma şirket tarafından finanse edildi", "Tamamen uydurma, veri verilmemiş"],
+                        },
+                        correctAnswer: 1,
+                        feedback: {
+                            en: "A study funded by the company selling the product is not reliable evidence. It's biased.",
+                            zh: "由销售产品的公司资助的研究不是可靠的证据。它是有偏见的。",
+                            tr: "Ürünü satan şirket tarafından finanse edilen bir çalışma güvenilir bir kanıt değildir. Taraflıdır."
+                        }
+                    },
+                    P2: {
+                        options: {
+                            en: ["To inform", "To entertain", "To persuade you to buy something"],
+                            zh: ["告知", "娱乐", "说服你买东西"],
+                            tr: ["Bilgilendirmek", "Eğlendirmek", "Sizi bir şey satın almaya ikna etmek"],
+                        },
+                        correctAnswer: 2,
+                        feedback: {
+                            en: "The entire purpose of this piece is to sell you an umbrella by using climate change as a hook.",
+                            zh: "这篇文章的全部目的就是以气候变化为由头向你推销一把雨伞。",
+                            tr: "Bu yazının bütün amacı, iklim değişikliğini bir kanca olarak kullanarak size bir şemsiye satmaktır."
+                        }
+                    }
+                }
+            }
+        ];
+
+        // --- GAME STATE ---
+        let currentSourceIndex = 0;
+        let score = 0;
+        let currentLang = 'en';
+
+        // --- DOM ELEMENTS ---
+        const scoreEl = document.getElementById('score');
+        const sourceTitleEl = document.getElementById('source-title');
+        const sourceAuthorEl = document.getElementById('source-author');
+        const sourceContentEl = document.getElementById('source-content');
+        const questionsContainer = document.getElementById('questions-container');
+        const submitBtn = document.getElementById('submit-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const gameArea = document.getElementById('game-area');
+        const finalScreen = document.getElementById('final-screen');
+        const finalScoreEl = document.getElementById('final-score');
+        const finalFeedbackEl = document.getElementById('final-feedback');
+
+        // --- FUNCTIONS ---
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('[data-key]').forEach(el => {
+                const key = el.getAttribute('data-key');
+                // The previous logic incorrectly split keys with underscores (like 'score_label').
+                // This now directly accesses the key from the translations object.
+                const text = translations[lang][key];
+                if (text) {
+                    el.innerText = text;
+                } else {
+                    el.innerText = `[${key}]`;
+                }
+            });
+            
+            document.querySelectorAll('.language-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`lang-${lang}`).classList.add('active');
+
+            // Reload current source to update question text
+            loadSource(currentSourceIndex);
+        }
+
+        function loadSource(index) {
+            if (index >= gameData.length) {
+                showFinalScreen();
+                return;
+            }
+
+            const source = gameData[index];
+            sourceTitleEl.innerText = source.title[currentLang];
+            sourceAuthorEl.innerText = source.author[currentLang];
+            sourceContentEl.innerText = source.content[currentLang];
+
+            questionsContainer.innerHTML = ''; // Clear previous questions
+
+            const craapOrder = ['C', 'R', 'A', 'P1', 'P2'];
+            craapOrder.forEach(key => {
+                const evalData = source.evaluations[key];
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'mb-6';
+                questionDiv.innerHTML = `
+                    <h4 class="text-lg font-semibold mb-2">${translations[currentLang].craap[key]}: <span class="font-normal text-gray-600">${translations[currentLang].questions[key]}</span></h4>
+                    <div class="space-y-2" id="options-${key}">
+                        ${evalData.options[currentLang].map((option, i) => `
+                            <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                                <input type="radio" name="q-${key}" value="${i}" class="mr-3 h-5 w-5 text-blue-500 focus:ring-blue-400">
+                                <span>${option}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div id="feedback-${key}" class="hidden mt-2 p-3 rounded-md text-sm"></div>
+                `;
+                questionsContainer.appendChild(questionDiv);
+            });
+            
+            submitBtn.classList.remove('hidden');
+            nextBtn.classList.add('hidden');
+            submitBtn.disabled = false;
+        }
+        
+        function allQuestionsAnswered() {
+            const craapOrder = ['C', 'R', 'A', 'P1', 'P2'];
+            return craapOrder.every(key => {
+                return document.querySelector(`input[name="q-${key}"]:checked`);
+            });
+        }
+
+        function checkAnswers() {
+            if (!allQuestionsAnswered()) {
+                alert(currentLang === 'zh' ? '请回答所有问题！' : currentLang === 'tr' ? 'Lütfen tüm soruları cevaplayın!' : 'Please answer all questions!');
+                return;
+            }
+
+            const source = gameData[currentSourceIndex];
+            let roundScore = 0;
+
+            const craapOrder = ['C', 'R', 'A', 'P1', 'P2'];
+            craapOrder.forEach(key => {
+                const selected = document.querySelector(`input[name="q-${key}"]:checked`);
+                const userAnswer = parseInt(selected.value, 10);
+                const correctAnswer = source.evaluations[key].correctAnswer;
+                const feedbackEl = document.getElementById(`feedback-${key}`);
+
+                // Disable radios for this question
+                document.querySelectorAll(`input[name="q-${key}"]`).forEach(radio => radio.disabled = true);
+                
+                feedbackEl.innerHTML = `<strong>${userAnswer === correctAnswer ? translations[currentLang].feedback_correct : translations[currentLang].feedback_incorrect}</strong> ${source.evaluations[key].feedback[currentLang]}`;
+                feedbackEl.classList.remove('hidden');
+
+                if (userAnswer === correctAnswer) {
+                    roundScore += 10;
+                    selected.parentElement.classList.add('bg-green-100', 'border-green-400');
+                    feedbackEl.classList.add('feedback-correct', 'bg-green-50');
+                } else {
+                    selected.parentElement.classList.add('bg-red-100', 'border-red-400');
+                    feedbackEl.classList.add('feedback-incorrect', 'bg-red-50');
+                    // Also highlight the correct answer
+                    const correctLabel = document.querySelector(`input[name="q-${key}"][value="${correctAnswer}"]`).parentElement;
+                    correctLabel.classList.add('bg-green-100', 'border-green-400');
+                }
+            });
+
+            score += roundScore;
+            scoreEl.innerText = score;
+
+            submitBtn.classList.add('hidden');
+            nextBtn.classList.remove('hidden');
+        }
+
+        function nextSource() {
+            currentSourceIndex++;
+            loadSource(currentSourceIndex);
+        }
+        
+        function showFinalScreen() {
+            gameArea.classList.add('hidden');
+            finalScreen.classList.remove('hidden');
+            finalScoreEl.innerText = score;
+            
+            const maxScore = gameData.length * 50;
+            const percentage = (score / maxScore) * 100;
+
+            let feedbackKey;
+            if (percentage >= 90) {
+                feedbackKey = 'final_feedback_excellent';
+            } else if (percentage >= 70) {
+                feedbackKey = 'final_feedback_good';
+            } else if (percentage >= 50) {
+                feedbackKey = 'final_feedback_average';
+            } else {
+                feedbackKey = 'final_feedback_needs_improvement';
+            }
+            finalFeedbackEl.innerText = translations[currentLang][feedbackKey];
+        }
+        
+        function restartGame() {
+            currentSourceIndex = 0;
+            score = 0;
+            scoreEl.innerText = '0';
+            
+            finalScreen.classList.add('hidden');
+            gameArea.classList.remove('hidden');
+            
+            loadSource(currentSourceIndex);
+        }
+
+        // --- INITIALIZE GAME ---
+        window.onload = () => {
+            loadSource(currentSourceIndex);
+            setLanguage('en');
+        };
+    </script>
+</body>
+</html>
+
+
