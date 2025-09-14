@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Quest - Peer Review Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1.5rem;
+            /* Padding is now handled by responsive utility classes on each card instance */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            transition: transform 0.3s ease-in-out;
+            border: 1px solid #e5e7eb;
+        }
+        .btn {
+            transition: all 0.2s ease-in-out;
+            border-radius: 0.75rem;
+            padding: 1rem 2rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            border-width: 2px;
+            border-style: solid;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+        .btn-difficulty {
+            background-color: #f3f4f6;
+            color: #374151;
+            border-color: #d1d5db;
+        }
+        .btn-difficulty.selected {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #2563eb;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .btn-strong {
+            background-color: #10b981; /* Emerald 500 */
+            color: white;
+            border-color: #059669; /* Emerald 600 */
+        }
+        .btn-weak {
+            background-color: #ef4444; /* Red 500 */
+            color: white;
+            border-color: #dc2626; /* Red 600 */
+        }
+        .feedback-modal {
+            display: none; /* Controlled via JavaScript */
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+            /* Added for vertical centering when JS sets display:flex */
+            align-items: center;
+            justify-content: center;
+        }
+        .feedback-content {
+            /* Removed margin: 10% auto to use flexbox centering */
+            margin: 1rem; /* Ensures a gap from screen edges */
+            width: 90%;
+            max-width: 500px;
+            animation: slideIn 0.4s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="w-full max-w-4xl mx-auto">
+        
+        <!-- Start Screen -->
+        <div id="start-screen" class="text-center">
+            <div class="card p-6 sm:p-10">
+                <h1 id="ui-title" class="text-3xl sm:text-5xl font-bold text-gray-800 mb-4">Question Quest</h1>
+                <p id="ui-subtitle" class="text-lg sm:text-xl text-gray-600 mb-6">A Peer Review Challenge for Global Perspectives</p>
+                
+                <div class="mb-8">
+                    <label for="language-select" id="ui-language-label" class="block text-lg font-medium text-gray-700 mb-2">Select Language</label>
+                    <select id="language-select" class="mt-1 block w-full max-w-xs mx-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                        <option value="en">English</option>
+                        <option value="tr">Türkçe (Turkish)</option>
+                        <option value="zh">中文 (Chinese)</option>
+                    </select>
+                </div>
+
+                <div class="mb-8">
+                    <h2 id="ui-difficulty-label" class="text-lg font-medium text-gray-700 mb-3">Choose Difficulty</h2>
+                    <div class="flex justify-center gap-2 sm:gap-4 flex-wrap">
+                        <button class="btn btn-difficulty text-base sm:text-lg px-6 py-3" data-difficulty="easy" id="ui-easy">Easy</button>
+                        <button class="btn btn-difficulty text-base sm:text-lg px-6 py-3" data-difficulty="medium" id="ui-medium">Medium</button>
+                        <button class="btn btn-difficulty text-base sm:text-lg px-6 py-3" data-difficulty="hard" id="ui-hard">Hard</button>
+                    </div>
+                </div>
+                
+                <p id="ui-instructions" class="text-base sm:text-lg text-gray-500 mb-8 max-w-2xl mx-auto">Read each research question. Decide if it is STRONG or WEAK based on the criteria for good research questions. Good luck!</p>
+                <button id="start-btn" class="btn bg-blue-500 text-white border-blue-600 hover:bg-blue-600 text-xl sm:text-2xl px-8 sm:px-10 py-3 sm:py-4" disabled>Start Game</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden">
+            <div class="text-center mb-6">
+                <div class="flex justify-between items-center">
+                    <p id="progress-text" class="text-lg font-semibold text-gray-700">Question 1 / 10</p>
+                    <p id="score-display" class="text-lg font-bold text-blue-600">Score: 0</p>
+                </div>
+                <div class="w-full bg-gray-300 rounded-full h-4 mt-2">
+                    <div id="progress-bar" class="bg-blue-500 h-4 rounded-full" style="width: 10%"></div>
+                </div>
+            </div>
+
+            <div class="card text-center p-6 sm:p-10">
+                <p id="ui-game-prompt" class="text-gray-500 font-semibold mb-2">Is this a strong or weak research question?</p>
+                <h2 id="question-text" class="text-2xl sm:text-3xl font-bold text-gray-800 mb-10 min-h-[120px] sm:min-h-[100px] flex items-center justify-center">Question text will appear here.</h2>
+                <div class="flex justify-center items-center gap-4 sm:gap-8 flex-wrap">
+                    <button id="strong-btn" class="btn btn-strong text-lg sm:text-xl px-6 py-3">👍 Strong Question</button>
+                    <button id="weak-btn" class="btn btn-weak text-lg sm:text-xl px-6 py-3">👎 Weak Question</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+         <div id="end-screen" class="hidden text-center">
+            <div class="card p-6 sm:p-10">
+                <h1 id="ui-end-title" class="text-3xl sm:text-5xl font-bold text-gray-800 mb-4">Challenge Complete!</h1>
+                <p id="ui-end-subtitle" class="text-xl sm:text-2xl text-gray-600 mb-6">Here's your final score:</p>
+                <p id="score-text" class="text-5xl sm:text-6xl font-bold text-blue-500 mb-8">150</p>
+                <p id="final-message" class="text-lg text-gray-500 mb-8"></p>
+                <button id="restart-btn" class="btn bg-blue-500 text-white border-blue-600 hover:bg-blue-600 text-xl sm:text-2xl px-8 sm:px-10 py-3 sm:py-4">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="feedback-modal">
+        <div class="feedback-content card text-center p-6 sm:p-8">
+            <h2 id="feedback-title" class="text-3xl sm:text-4xl font-bold mb-4">Correct!</h2>
+            <p id="feedback-explanation" class="text-base sm:text-lg text-gray-600 mb-8">Explanation goes here.</p>
+            <button id="next-btn" class="btn bg-blue-500 text-white border-blue-600 hover:bg-blue-600 text-lg sm:text-xl">Next Question</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const gameData = {
+            en: {
+                ui: {
+                    title: "Question Quest",
+                    subtitle: "A Peer Review Challenge for Global Perspectives",
+                    languageLabel: "Select Language",
+                    difficultyLabel: "Choose Difficulty",
+                    easy: "Easy",
+                    medium: "Medium",
+                    hard: "Hard",
+                    instructions: "Select a difficulty, then read each research question. Decide if it is STRONG or WEAK. Good luck!",
+                    startGame: "Start Game",
+                    gamePrompt: "Is this a strong or weak research question?",
+                    strong: "👍 Strong Question",
+                    weak: "👎 Weak Question",
+                    correct: "Correct!",
+                    incorrect: "Not Quite...",
+                    next: "Next Question",
+                    endTitle: "Challenge Complete!",
+                    endSubtitle: "Here's your final score:",
+                    playAgain: "Play Again",
+                    perfectScoreMsg: "Perfect score! You're a peer review master!",
+                    greatJobMsg: "Great job! You have a strong grasp of what makes a good research question.",
+                    niceTryMsg: "Nice try! You're on your way to becoming a great peer reviewer.",
+                    goodEffortMsg: "Good effort! Keep practicing and you'll get the hang of it."
+                },
+   easy: [
+      { text: "Is pollution bad for the environment?", isStrong: false, explanation: "WEAK: The answer is an obvious 'yes'. A strong question needs to be debatable." },
+      { text: "When did the internet start?", isStrong: false, explanation: "WEAK: This can be answered with a single fact and doesn't require analysis." },
+      { text: "What are some popular foods in Italy?", isStrong: true, explanation: "STRONG: For an easy level, this requires research and listing, which is a basic research skill." },
+      { text: "What is 2+2?", isStrong: false, explanation: "WEAK: This is a simple fact and not a research question." },
+      { text: "Who was the first president of the United States?", isStrong: false, explanation: "WEAK: It's a single factual answer, not research-based." },
+      { text: "What are the main rivers in Africa?", isStrong: true, explanation: "STRONG: Requires collecting data and compiling a list." },
+      { text: "Do cats like milk?", isStrong: false, explanation: "WEAK: Can be answered with a single observation or fact." },
+      { text: "What are some endangered animals in South America?", isStrong: true, explanation: "STRONG: Requires research and synthesis of multiple sources." },
+      { text: "What time is it right now?", isStrong: false, explanation: "WEAK: Not research, just observation." },
+      { text: "List three countries that speak Spanish.", isStrong: true, explanation: "STRONG: Basic recall and research skills for easy level." },
+      { text: "Is the sky blue?", isStrong: false, explanation: "WEAK: Obvious fact, not worth researching." },
+      { text: "What sports are played in the Olympics?", isStrong: true, explanation: "STRONG: Requires compiling a researched list." },
+      { text: "How many legs does a spider have?", isStrong: false, explanation: "WEAK: Simple fact, not a research question." },
+      { text: "Name the planets in our solar system.", isStrong: true, explanation: "STRONG: Involves recall of a complete set, basic research task." },
+      { text: "What color are bananas?", isStrong: false, explanation: "WEAK: Too obvious, no research needed." },
+      { text: "What are common festivals celebrated in India?", isStrong: true, explanation: "STRONG: Requires research and understanding of culture." },
+      { text: "Is water wet?", isStrong: false, explanation: "WEAK: Philosophical but not researchable with evidence." },
+      { text: "What are the main languages spoken in Canada?", isStrong: true, explanation: "STRONG: Requires research to identify official languages." },
+      { text: "How many days are in a week?", isStrong: false, explanation: "WEAK: Memorized fact, no research required." },
+      { text: "What are some traditional clothes in Japan?", isStrong: true, explanation: "STRONG: Encourages research into cultural traditions." }
+    ],
+    medium: [
+      { text: "To what extent has social media influenced political activism among young people in North Africa?", isStrong: true, explanation: "STRONG: It's specific, open-ended, and allows for research and debate." },
+      { text: "How can we solve world hunger?", isStrong: false, explanation: "WEAK: While important, it's too large and complex for a single research project." },
+      { text: "Why is traditional Japanese art better than modern art?", isStrong: false, explanation: "WEAK: It is biased and uses subjective language ('better than')." },
+      { text: "What are the effects of video games on teenagers’ sleep patterns?", isStrong: true, explanation: "STRONG: Specific, measurable, and researchable." },
+      { text: "Is pizza delicious?", isStrong: false, explanation: "WEAK: Purely subjective opinion." },
+      { text: "How has online learning affected students’ academic performance post-2020?", isStrong: true, explanation: "STRONG: Investigates a recent trend with measurable outcomes." },
+      { text: "Should everyone become vegetarian?", isStrong: false, explanation: "WEAK: Normative question, not purely researchable." },
+      { text: "What factors contribute to air pollution in Beijing?", isStrong: true, explanation: "STRONG: Focused and researchable." },
+      { text: "Why do people love dogs?", isStrong: false, explanation: "WEAK: Too vague and subjective." },
+      { text: "How has e-commerce changed shopping habits in Europe?", isStrong: true, explanation: "STRONG: Allows data collection and analysis." },
+      { text: "Is school boring?", isStrong: false, explanation: "WEAK: Subjective, not researchable." },
+      { text: "What strategies help reduce plastic waste in urban areas?", isStrong: true, explanation: "STRONG: Investigates practical solutions and their effectiveness." },
+      { text: "Who is the best soccer player in history?", isStrong: false, explanation: "WEAK: Subjective and cannot be answered definitively." },
+      { text: "How does peer pressure affect teenagers’ decision-making?", isStrong: true, explanation: "STRONG: Allows psychological and sociological research." },
+      { text: "Do birds sing?", isStrong: false, explanation: "WEAK: Simple observation, not research." },
+      { text: "How do cultural attitudes shape mental health awareness in Asia?", isStrong: true, explanation: "STRONG: Investigates culture’s influence on health topics." },
+      { text: "Is TikTok fun?", isStrong: false, explanation: "WEAK: Opinion-based and not measurable." },
+      { text: "How has global warming affected polar bear populations?", isStrong: true, explanation: "STRONG: Clear cause-effect research question." },
+      { text: "Why is math hard?", isStrong: false, explanation: "WEAK: Subjective, not scientifically measurable." },
+      { text: "What impact does music therapy have on anxiety levels in patients?", isStrong: true, explanation: "STRONG: Researchable with evidence-based outcomes." }
+    ],
+    hard: [
+      { text: "How has the legal framework surrounding intellectual property in the digital age impacted the economic viability of independent musicians in Western Europe versus East Asia?", isStrong: true, explanation: "STRONG: This is a complex, comparative question that is highly specific and requires deep, nuanced research across multiple domains (law, economics, geography)." },
+      { text: "Does this historical data prove that climate change is solely caused by industrialization?", isStrong: false, explanation: "WEAK: This is a leading and overly simplistic question. The word 'prove' is problematic in research, and 'solely' ignores other contributing factors, showing bias." },
+      { text: "What are the long-term psychological effects on child refugees who are integrated into host countries without language support, compared to those who receive it?", isStrong: true, explanation: "STRONG: It focuses on a very specific demographic, compares two clear conditions, and investigates complex, researchable outcomes (psychological effects)." },
+      { text: "To what extent has automation displaced blue-collar workers differently in Germany and the United States?", isStrong: true, explanation: "STRONG: Comparative, measurable, and researchable." },
+      { text: "Is democracy the best form of government?", isStrong: false, explanation: "WEAK: Too subjective and philosophical to answer with research alone." },
+      { text: "How has blockchain technology affected financial inclusion in Sub-Saharan Africa?", isStrong: true, explanation: "STRONG: Focused on technology and socio-economic outcomes." },
+      { text: "Are people happier now than in the past?", isStrong: false, explanation: "WEAK: Difficult to measure across time with precision, too broad." },
+      { text: "What role did female scientists play in the development of COVID-19 vaccines?", isStrong: true, explanation: "STRONG: Allows focused historical research and analysis of contributions." },
+      { text: "Is capitalism evil?", isStrong: false, explanation: "WEAK: Value-laden and non-researchable as stated." },
+      { text: "How do microplastic particles in oceans affect food chains at different trophic levels?", isStrong: true, explanation: "STRONG: Narrow, scientific, and researchable." },
+      { text: "Why do humans exist?", isStrong: false, explanation: "WEAK: Philosophical, not researchable with evidence." },
+      { text: "What is the relationship between universal basic income pilots and mental health outcomes?", isStrong: true, explanation: "STRONG: Specific, measurable, and allows for policy analysis." },
+      { text: "Should war ever be legal?", isStrong: false, explanation: "WEAK: Ethical/philosophical, not researchable empirically." },
+      { text: "How do urban heat islands disproportionately impact low-income communities?", isStrong: true, explanation: "STRONG: Investigates a social justice issue with measurable outcomes." },
+      { text: "Was Napoleon a hero or a villain?", isStrong: false, explanation: "WEAK: Subjective, depends on interpretation." },
+      { text: "What effect does media framing have on public perception of immigration policy?", isStrong: true, explanation: "STRONG: Investigates cause-effect with measurable variables." },
+      { text: "Is it fair that some countries are richer than others?", isStrong: false, explanation: "WEAK: Moral judgment rather than research question." },
+      { text: "What are the long-term economic impacts of declining birth rates in East Asia?", isStrong: true, explanation: "STRONG: Allows for economic modeling and trend analysis." },
+      { text: "How does misinformation spread differently on encrypted vs. public social media platforms?", isStrong: true, explanation: "STRONG: Requires comparative analysis and measurable data." },
+      { text: "Do aliens exist?", isStrong: false, explanation: "WEAK: Currently unanswerable with verifiable evidence." }
+    ]
+            },
+            tr: {
+                ui: {
+                    title: "Soru Macerası",
+                    subtitle: "Küresel Perspektifler İçin Akran Değerlendirmesi Yarışması",
+                    languageLabel: "Dil Seçin",
+                    difficultyLabel: "Zorluk Seçin",
+                    easy: "Kolay",
+                    medium: "Orta",
+                    hard: "Zor",
+                    instructions: "Bir zorluk seçin, sonra her araştırma sorusunu okuyun. GÜÇLÜ mü YOKSA ZAYIF mı olduğuna karar verin. İyi şanslar!",
+                    startGame: "Oyuna Başla",
+                    gamePrompt: "Bu güçlü mü yoksa zayıf bir araştırma sorusu mu?",
+                    strong: "👍 Güçlü Soru",
+                    weak: "👎 Zayıf Soru",
+                    correct: "Doğru!",
+                    incorrect: "Tam Değil...",
+                    next: "Sonraki Soru",
+                    endTitle: "Meydan Okuma Tamamlandı!",
+                    endSubtitle: "İşte nihai puanınız:",
+                    playAgain: "Tekrar Oyna",
+                    perfectScoreMsg: "Mükemmel puan! Sen bir akran değerlendirme ustasısın!",
+                    greatJobMsg: "Harika iş! İyi bir araştırma sorusunun ne olduğunu çok iyi anlıyorsun.",
+                    niceTryMsg: "İyi deneme! Harika bir akran değerlendiricisi olma yolundasın.",
+                    goodEffortMsg: "İyi çaba! Pratik yapmaya devam et, alışacaksın."
+                },
+ easy: [
+      { text: "Kirlilik çevre için kötü müdür?", isStrong: false, explanation: "ZAYIF: Cevap bariz bir 'evet'. Güçlü bir soru tartışılabilir olmalıdır." },
+      { text: "İnternet ne zaman başladı?", isStrong: false, explanation: "ZAYIF: Tek bir gerçekle cevaplanabilir." },
+      { text: "İtalya'daki bazı popüler yiyecekler nelerdir?", isStrong: true, explanation: "GÜÇLÜ: Listeleme ve araştırma gerektirir." },
+      { text: "2+2 kaç eder?", isStrong: false, explanation: "ZAYIF: Bu basit bir bilgi sorusudur." },
+      { text: "ABD'nin ilk başkanı kimdi?", isStrong: false, explanation: "ZAYIF: Tek bir doğru cevabı var." },
+      { text: "Afrika'nın başlıca nehirleri nelerdir?", isStrong: true, explanation: "GÜÇLÜ: Araştırma gerektirir." },
+      { text: "Kediler süt sever mi?", isStrong: false, explanation: "ZAYIF: Gözlemle kolayca cevaplanır." },
+      { text: "Güney Amerika'daki bazı nesli tükenmekte olan hayvanlar nelerdir?", isStrong: true, explanation: "GÜÇLÜ: Kaynak taraması gerektirir." },
+      { text: "Şu an saat kaç?", isStrong: false, explanation: "ZAYIF: Araştırma gerektirmez." },
+      { text: "Üç İspanyolca konuşan ülke sayınız.", isStrong: true, explanation: "GÜÇLÜ: Basit bilgi toplama becerisi gerektirir." },
+      { text: "Gökyüzü mavi mi?", isStrong: false, explanation: "ZAYIF: Bariz gerçek." },
+      { text: "Olimpiyatlarda hangi sporlar oynanır?", isStrong: true, explanation: "GÜÇLÜ: Listeleme ve araştırma gerektirir." },
+      { text: "Bir örümceğin kaç bacağı vardır?", isStrong: false, explanation: "ZAYIF: Tek cevaplı bilgi." },
+      { text: "Güneş sistemindeki gezegenleri isimlendirin.", isStrong: true, explanation: "GÜÇLÜ: Tam bir listeleme gerektirir." },
+      { text: "Muzlar hangi renktir?", isStrong: false, explanation: "ZAYIF: Bariz." },
+      { text: "Hindistan'da kutlanan bazı festivaller nelerdir?", isStrong: true, explanation: "GÜÇLÜ: Kültürel araştırma gerektirir." },
+      { text: "Su ıslak mı?", isStrong: false, explanation: "ZAYIF: Felsefi, ölçülemez." },
+      { text: "Kanada'da konuşulan diller nelerdir?", isStrong: true, explanation: "GÜÇLÜ: Resmî dilleri belirlemek için araştırma gerekir." },
+      { text: "Bir haftada kaç gün vardır?", isStrong: false, explanation: "ZAYIF: Hafızadan bilinir." },
+      { text: "Japonya'nın geleneksel kıyafetleri nelerdir?", isStrong: true, explanation: "GÜÇLÜ: Kültürel araştırma gerektirir." }
+    ],
+    medium: [
+      { text: "Sosyal medyanın yükselişi Kuzey Afrika'daki gençler arasında siyasi aktivizmi ne ölçüde etkiledi?", isStrong: true, explanation: "GÜÇLÜ: Belirli, açık uçlu ve araştırmaya uygun." },
+      { text: "Dünya açlığını nasıl çözebiliriz?", isStrong: false, explanation: "ZAYIF: Çok geniş ve tek proje için fazla karmaşık." },
+      { text: "Geleneksel Japon sanatı neden modern sanattan daha iyidir?", isStrong: false, explanation: "ZAYIF: Özneldir ve önyargılıdır." },
+      { text: "Video oyunları gençlerin uyku düzenini nasıl etkiler?", isStrong: true, explanation: "GÜÇLÜ: Ölçülebilir ve araştırılabilir." },
+      { text: "Pizza lezzetli midir?", isStrong: false, explanation: "ZAYIF: Tamamen özneldir." },
+      { text: "Çevrim içi eğitim 2020 sonrası akademik başarıyı nasıl etkiledi?", isStrong: true, explanation: "GÜÇLÜ: Güncel, ölçülebilir." },
+      { text: "Herkes vejetaryen olmalı mı?", isStrong: false, explanation: "ZAYIF: Normatif bir sorudur." },
+      { text: "Pekin'deki hava kirliliğine hangi faktörler katkı sağlar?", isStrong: true, explanation: "GÜÇLÜ: Odaklı ve araştırılabilir." },
+      { text: "İnsanlar neden köpekleri sever?", isStrong: false, explanation: "ZAYIF: Çok belirsiz ve öznel." },
+      { text: "E-ticaret Avrupa'daki alışveriş alışkanlıklarını nasıl değiştirdi?", isStrong: true, explanation: "GÜÇLÜ: Veri analizi yapılabilir." },
+      { text: "Okul sıkıcı mı?", isStrong: false, explanation: "ZAYIF: Tamamen özneldir." },
+      { text: "Plastik atığı azaltmak için hangi stratejiler etkilidir?", isStrong: true, explanation: "GÜÇLÜ: Çözüm odaklıdır." },
+      { text: "Tarihin en iyi futbolcusu kimdir?", isStrong: false, explanation: "ZAYIF: Özneldir." },
+      { text: "Akran baskısı gençlerin kararlarını nasıl etkiler?", isStrong: true, explanation: "GÜÇLÜ: Psikolojik araştırmaya uygundur." },
+      { text: "Kuşlar şarkı söyler mi?", isStrong: false, explanation: "ZAYIF: Basit gözlemle yanıtlanır." },
+      { text: "Asya'da kültürel tutumlar ruh sağlığı farkındalığını nasıl etkiler?", isStrong: true, explanation: "GÜÇLÜ: Sosyo-kültürel analiz gerektirir." },
+      { text: "TikTok eğlenceli mi?", isStrong: false, explanation: "ZAYIF: Öznel." },
+      { text: "Küresel ısınma kutup ayısı popülasyonlarını nasıl etkiledi?", isStrong: true, explanation: "GÜÇLÜ: Sebep-sonuç araştırması yapılabilir." },
+      { text: "Matematik neden zor?", isStrong: false, explanation: "ZAYIF: Çok özneldir." },
+      { text: "Müzik terapisi kaygı seviyelerini nasıl etkiler?", isStrong: true, explanation: "GÜÇLÜ: Kanıt temelli araştırma yapılabilir." }
+    ],
+    hard: [
+      { text: "Dijital çağda fikri mülkiyet yasaları Batı Avrupa ve Doğu Asya'daki bağımsız müzisyenlerin ekonomik sürdürülebilirliğini nasıl etkiledi?", isStrong: true, explanation: "GÜÇLÜ: Çok alanlı derin analiz gerektirir." },
+      { text: "Bu veriler iklim değişikliğinin yalnızca sanayileşmeden kaynaklandığını kanıtlıyor mu?", isStrong: false, explanation: "ZAYIF: Yönlendirici ve aşırı basit." },
+      { text: "Dil desteği olmadan entegrasyon yaşayan mülteci çocukların uzun vadeli psikolojik etkileri nelerdir?", isStrong: true, explanation: "GÜÇLÜ: Net karşılaştırma içerir." },
+      { text: "Otomasyon Almanya ve ABD'deki mavi yaka işçilerini ne ölçüde etkiledi?", isStrong: true, explanation: "GÜÇLÜ: Karşılaştırmalı analiz yapılabilir." },
+      { text: "Demokrasi en iyi yönetim biçimi midir?", isStrong: false, explanation: "ZAYIF: Özneldir." },
+      { text: "Blok zincir teknolojisi Sahra Altı Afrika'da finansal kapsayıcılığı nasıl etkiledi?", isStrong: true, explanation: "GÜÇLÜ: Sosyo-ekonomik analiz yapılabilir." },
+      { text: "İnsanlar geçmişe göre daha mı mutlu?", isStrong: false, explanation: "ZAYIF: Ölçülmesi zordur." },
+      { text: "Kadın bilim insanları COVID-19 aşısı geliştirilmesinde nasıl rol oynadı?", isStrong: true, explanation: "GÜÇLÜ: Tarihsel ve analitik araştırma gerektirir." },
+      { text: "Kapitalizm kötü mü?", isStrong: false, explanation: "ZAYIF: Değer yargısı içerir." },
+      { text: "Mikroplastikler deniz besin zincirini nasıl etkiler?", isStrong: true, explanation: "GÜÇLÜ: Bilimsel olarak araştırılabilir." },
+      { text: "İnsanlar neden var?", isStrong: false, explanation: "ZAYIF: Felsefi." },
+      { text: "Evrensel temel gelir pilot projeleri ruh sağlığını nasıl etkiler?", isStrong: true, explanation: "GÜÇLÜ: Politika analizi yapılabilir." },
+      { text: "Savaş yasal olmalı mı?", isStrong: false, explanation: "ZAYIF: Normatif." },
+      { text: "Kentsel ısı adaları düşük gelirli mahalleleri nasıl etkiler?", isStrong: true, explanation: "GÜÇLÜ: Sosyal adalet odaklı araştırma." },
+      { text: "Napolyon kahraman mıydı yoksa hain mi?", isStrong: false, explanation: "ZAYIF: Yoruma dayalı." },
+      { text: "Medya çerçevelemesi göçmen politikalarına halkın tepkisini nasıl şekillendirir?", isStrong: true, explanation: "GÜÇLÜ: Sebep-sonuç araştırması yapılabilir." },
+      { text: "Bazı ülkelerin zengin olması adil mi?", isStrong: false, explanation: "ZAYIF: Değer yargısı." },
+      { text: "Doğu Asya'da düşen doğum oranlarının ekonomik etkileri nelerdir?", isStrong: true, explanation: "GÜÇLÜ: Ekonomik modelleme yapılabilir." },
+      { text: "Yanlış bilgi şifreli platformlarda nasıl yayılır?", isStrong: true, explanation: "GÜÇLÜ: Karşılaştırmalı analiz gerektirir." },
+      { text: "Uzaylılar var mı?", isStrong: false, explanation: "ZAYIF: Kanıtlanamaz." }
+    ]
+            },
+            zh: {
+                ui: {
+                    title: "问题探险",
+                    subtitle: "全球视野的同行评审挑战",
+                    languageLabel: "选择语言",
+                    difficultyLabel: "选择难度",
+                    easy: "简单",
+                    medium: "中等",
+                    hard: "困难",
+                    instructions: "选择一个难度，然后阅读每个研究问题。判断它是“强”还是“弱”。祝你好运！",
+                    startGame: "开始游戏",
+                    gamePrompt: "这是一个强研究问题还是弱研究问题？",
+                    strong: "👍 强问题",
+                    weak: "👎 弱问题",
+                    correct: "正确！",
+                    incorrect: "不太对...",
+                    next: "下一个问题",
+                    endTitle: "挑战完成！",
+                    endSubtitle: "这是你的最终得分：",
+                    playAgain: "再玩一次",
+                    perfectScoreMsg: "满分！你是一位同行评审大师！",
+                    greatJobMsg: "做得很好！你对一个好的研究问题有很强的把握。",
+                    niceTryMsg: "不错的尝试！你正在成为一名优秀的同行评审员的路上。",
+                    goodEffortMsg: "付出就有回报！继续练习，你会掌握它的。"
+                },
+ easy: [
+      { text: "污染对环境有害吗？", isStrong: false, explanation: "弱：显而易见的答案是“是”。" },
+      { text: "互联网是什么时候开始的？", isStrong: false, explanation: "弱：可以用一个事实回答。" },
+      { text: "意大利有哪些受欢迎的食物？", isStrong: true, explanation: "强：需要收集和列举信息。" },
+      { text: "2+2等于多少？", isStrong: false, explanation: "弱：简单算术题。" },
+      { text: "美国第一任总统是谁？", isStrong: false, explanation: "弱：单一事实。" },
+      { text: "非洲的主要河流有哪些？", isStrong: true, explanation: "强：需要研究和汇总。" },
+      { text: "猫喜欢牛奶吗？", isStrong: false, explanation: "弱：可以通过观察回答。" },
+      { text: "南美有哪些濒危动物？", isStrong: true, explanation: "强：需要查阅资料。" },
+      { text: "现在几点了？", isStrong: false, explanation: "弱：不是研究问题。" },
+      { text: "列出三个讲西班牙语的国家。", isStrong: true, explanation: "强：基本信息收集能力。" },
+      { text: "天空是蓝色的吗？", isStrong: false, explanation: "弱：显而易见。" },
+      { text: "奥运会有哪些运动项目？", isStrong: true, explanation: "强：需要列表研究。" },
+      { text: "蜘蛛有几条腿？", isStrong: false, explanation: "弱：记忆知识。" },
+      { text: "说出太阳系的行星。", isStrong: true, explanation: "强：完整列举练习。" },
+      { text: "香蕉是什么颜色？", isStrong: false, explanation: "弱：显而易见。" },
+      { text: "印度有哪些传统节日？", isStrong: true, explanation: "强：文化研究。" },
+      { text: "水是湿的吗？", isStrong: false, explanation: "弱：哲学性问题。" },
+      { text: "加拿大的主要语言是什么？", isStrong: true, explanation: "强：研究官方语言。" },
+      { text: "一周有几天？", isStrong: false, explanation: "弱：简单记忆。" },
+      { text: "日本的传统服饰有哪些？", isStrong: true, explanation: "强：文化研究。" }
+    ],
+    medium: [
+      { text: "社交媒体的兴起在多大程度上影响了北非年轻人的政治激进主义？", isStrong: true, explanation: "强：具体、开放式，可研究。" },
+      { text: "我们如何解决世界饥饿问题？", isStrong: false, explanation: "弱：太大太复杂。" },
+      { text: "为什么传统日本艺术比现代艺术更好？", isStrong: false, explanation: "弱：主观偏见。" },
+      { text: "电子游戏如何影响青少年的睡眠？", isStrong: true, explanation: "强：可测量和分析。" },
+      { text: "披萨好吃吗？", isStrong: false, explanation: "弱：个人喜好。" },
+      { text: "线上学习如何影响2020年后的学业成绩？", isStrong: true, explanation: "强：近期研究话题。" },
+      { text: "每个人都应该吃素吗？", isStrong: false, explanation: "弱：规范性问题。" },
+      { text: "哪些因素导致北京的空气污染？", isStrong: true, explanation: "强：有针对性的问题。" },
+      { text: "人们为什么喜欢狗？", isStrong: false, explanation: "弱：模糊且主观。" },
+      { text: "电子商务如何改变欧洲人的购物习惯？", isStrong: true, explanation: "强：可以收集数据分析。" },
+      { text: "学校无聊吗？", isStrong: false, explanation: "弱：主观感受。" },
+      { text: "哪些策略能减少城市塑料垃圾？", isStrong: true, explanation: "强：可研究解决方案。" },
+      { text: "历史上最好的足球运动员是谁？", isStrong: false, explanation: "弱：无法得出唯一答案。" },
+      { text: "同龄压力如何影响青少年的决策？", isStrong: true, explanation: "强：心理学研究。" },
+      { text: "鸟会唱歌吗？", isStrong: false, explanation: "弱：直接观察可得。" },
+      { text: "亚洲的文化态度如何影响心理健康认知？", isStrong: true, explanation: "强：社会文化研究。" },
+      { text: "抖音有趣吗？", isStrong: false, explanation: "弱：主观问题。" },
+      { text: "全球变暖如何影响北极熊数量？", isStrong: true, explanation: "强：因果研究。" },
+      { text: "数学为什么难？", isStrong: false, explanation: "弱：主观。" },
+      { text: "音乐疗法如何影响焦虑水平？", isStrong: true, explanation: "强：有研究证据支持。" }
+    ],
+    hard: [
+      { text: "数字时代的知识产权法律如何影响西欧与东亚独立音乐人的经济生存？", isStrong: true, explanation: "强：复杂比较研究。" },
+      { text: "这些数据能证明气候变化完全由工业化造成吗？", isStrong: false, explanation: "弱：引导性问题。" },
+      { text: "没有语言支持的难民儿童长期心理影响如何？", isStrong: true, explanation: "强：比较研究。" },
+      { text: "自动化对德国和美国蓝领工人的冲击有何不同？", isStrong: true, explanation: "强：跨国比较。" },
+      { text: "民主是最好的政府形式吗？", isStrong: false, explanation: "弱：价值判断。" },
+      { text: "区块链技术如何影响非洲的金融普惠？", isStrong: true, explanation: "强：经济社会分析。" },
+      { text: "人们现在比过去更快乐吗？", isStrong: false, explanation: "弱：难以测量。" },
+      { text: "女性科学家在新冠疫苗研发中扮演了什么角色？", isStrong: true, explanation: "强：历史研究。" },
+      { text: "资本主义是邪恶的吗？", isStrong: false, explanation: "弱：情绪化问题。" },
+      { text: "微塑料如何影响海洋食物链？", isStrong: true, explanation: "强：科学研究。" },
+      { text: "人类为何存在？", isStrong: false, explanation: "弱：哲学问题。" },
+      { text: "基本收入试点项目如何影响心理健康？", isStrong: true, explanation: "强：政策评估。" },
+      { text: "战争应该合法吗？", isStrong: false, explanation: "弱：道德争论。" },
+      { text: "城市热岛如何影响低收入人群？", isStrong: true, explanation: "强：环境不公研究。" },
+      { text: "拿破仑是英雄还是恶人？", isStrong: false, explanation: "弱：主观看法。" },
+      { text: "媒体框架如何影响公众对移民政策的看法？", isStrong: true, explanation: "强：因果关系研究。" },
+      { text: "有些国家更富有公平吗？", isStrong: false, explanation: "弱：价值判断。" },
+      { text: "东亚出生率下降的长期经济影响是什么？", isStrong: true, explanation: "强：经济预测研究。" },
+      { text: "错误信息在加密与公开社交平台上的传播有何不同？", isStrong: true, explanation: "强：对比研究。" },
+      { text: "外星人存在吗？", isStrong: false, explanation: "弱：无可验证证据。" }
+    ]
+            }
+        };
+
+        const POINTS = { easy: 10, medium: 20, hard: 30 };
+        
+        // --- DOM Elements ---
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        
+        const startBtn = document.getElementById('start-btn');
+        const strongBtn = document.getElementById('strong-btn');
+        const weakBtn = document.getElementById('weak-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const languageSelect = document.getElementById('language-select');
+        const difficultyButtons = document.querySelectorAll('.btn-difficulty');
+        
+        const progressText = document.getElementById('progress-text');
+        const progressBar = document.getElementById('progress-bar');
+        const questionText = document.getElementById('question-text');
+        const scoreDisplay = document.getElementById('score-display');
+        const scoreText = document.getElementById('score-text');
+        const finalMessage = document.getElementById('final-message');
+
+        const feedbackModal = document.getElementById('feedback-modal');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackExplanation = document.getElementById('feedback-explanation');
+
+        // --- Game State ---
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let selectedDifficulty = null;
+        let selectedLanguage = 'en';
+        let currentQuestions = [];
+        
+        // --- UI Text Elements Map ---
+        const uiElements = {
+            title: document.getElementById('ui-title'),
+            subtitle: document.getElementById('ui-subtitle'),
+            languageLabel: document.getElementById('ui-language-label'),
+            difficultyLabel: document.getElementById('ui-difficulty-label'),
+            easy: document.getElementById('ui-easy'),
+            medium: document.getElementById('ui-medium'),
+            hard: document.getElementById('ui-hard'),
+            instructions: document.getElementById('ui-instructions'),
+            startGame: startBtn,
+            gamePrompt: document.getElementById('ui-game-prompt'),
+            strong: strongBtn,
+            weak: weakBtn,
+            next: nextBtn,
+            endTitle: document.getElementById('ui-end-title'),
+            endSubtitle: document.getElementById('ui-end-subtitle'),
+            playAgain: restartBtn,
+        };
+        
+        // --- Event Listeners ---
+        startBtn.addEventListener('click', startGame);
+        strongBtn.addEventListener('click', () => checkAnswer(true));
+        weakBtn.addEventListener('click', () => checkAnswer(false));
+        nextBtn.addEventListener('click', nextQuestion);
+        restartBtn.addEventListener('click', () => {
+             endScreen.classList.add('hidden');
+             startScreen.classList.remove('hidden');
+             resetDifficultySelection();
+        });
+        languageSelect.addEventListener('change', (e) => {
+            selectedLanguage = e.target.value;
+            updateUIText();
+        });
+
+        difficultyButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                selectedDifficulty = button.dataset.difficulty;
+                difficultyButtons.forEach(btn => btn.classList.remove('selected'));
+                button.classList.add('selected');
+                startBtn.disabled = false;
+            });
+        });
+        
+        // --- Functions ---
+        function updateUIText() {
+            const uiText = gameData[selectedLanguage].ui;
+            for (const key in uiElements) {
+                if (uiElements[key]) {
+                    uiElements[key].textContent = uiText[key];
+                }
+            }
+        }
+
+        function resetDifficultySelection() {
+            selectedDifficulty = null;
+            startBtn.disabled = true;
+            difficultyButtons.forEach(btn => btn.classList.remove('selected'));
+        }
+
+        function startGame() {
+            if (!selectedDifficulty) return;
+            currentQuestionIndex = 0;
+            score = 0;
+            currentQuestions = [...gameData[selectedLanguage][selectedDifficulty]];
+            currentQuestions.sort(() => Math.random() - 0.5); // Shuffle questions
+            
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            scoreDisplay.textContent = `${gameData[selectedLanguage].ui.endSubtitle.replace("Here's your final score:", 'Score')}: ${score}`;
+            if (currentQuestionIndex < currentQuestions.length) {
+                const question = currentQuestions[currentQuestionIndex];
+                questionText.textContent = question.text;
+                progressText.textContent = `Question ${currentQuestion-index + 1} / ${currentQuestions.length}`;
+                progressBar.style.width = `${((currentQuestionIndex + 1) / currentQuestions.length) * 100}%`;
+            } else {
+                showEndScreen();
+            }
+        }
+
+        function checkAnswer(userAnswer) {
+            const question = currentQuestions[currentQuestionIndex];
+            const isCorrect = userAnswer === question.isStrong;
+            const uiText = gameData[selectedLanguage].ui;
+
+            if (isCorrect) {
+                score += POINTS[selectedDifficulty];
+                feedbackTitle.textContent = uiText.correct;
+                feedbackTitle.className = "text-3xl sm:text-4xl font-bold mb-4 text-emerald-500";
+            } else {
+                feedbackTitle.textContent = uiText.incorrect;
+                feedbackTitle.className = "text-3xl sm:text-4xl font-bold mb-4 text-red-500";
+            }
+            
+            feedbackExplanation.innerHTML = question.explanation;
+            feedbackModal.style.display = "flex";
+        }
+        
+        function nextQuestion() {
+            currentQuestionIndex++;
+            feedbackModal.style.display = "none";
+            displayQuestion();
+        }
+
+        function showEndScreen() {
+            gameScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+            scoreText.textContent = score;
+
+            const totalPossibleScore = currentQuestions.length * POINTS[selectedDifficulty];
+            const percentage = totalPossibleScore > 0 ? score / totalPossibleScore : 0;
+            const uiText = gameData[selectedLanguage].ui;
+            
+            let message = "";
+            if (percentage === 1) {
+                message = uiText.perfectScoreMsg;
+            } else if (percentage >= 0.7) {
+                message = uiText.greatJobMsg;
+            } else if (percentage >= 0.5) {
+                message = uiText.niceTryMsg;
+            } else {
+                message = uiText.goodEffortMsg;
+            }
+            finalMessage.textContent = message;
+        }
+        
+        // --- Initial Load ---
+        updateUIText(); // Set default language on load
+
+    </script>
+</body>
+</html>
+
