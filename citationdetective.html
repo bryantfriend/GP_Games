@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citation Detective</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .screen {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .screen.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .feedback-correct {
+            border: 2px solid #22c55e; /* green-500 */
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+        }
+        .feedback-incorrect {
+            border: 2px solid #ef4444; /* red-500 */
+             box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        }
+        .btn-primary {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-primary:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex items-center justify-center min-h-screen p-4">
+
+    <div id="app-container" class="w-full max-w-4xl mx-auto">
+        <!-- App Header -->
+        <header id="app-header" class="mb-6 flex justify-between items-center hidden">
+             <div class="flex items-center gap-3">
+                <svg class="w-10 h-10 text-blue-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16.1521 18.3334C17.7994 17.2435 19 15.2554 19 13C19 9.13401 15.866 6 12 6C8.13401 6 5 9.13401 5 13C5 15.2554 6.20058 17.2435 7.84788 18.3334M12 21V18M12 18H15.75L18 21L12 18ZM12 18H8.25L6 21L12 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 16C13.6569 16 15 14.6569 15 13C15 11.3431 13.6569 10 12 10C10.3431 10 9 11.3431 9 13C9 14.6569 10.3431 16 12 16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 3L12 5L15 3L12 1L9 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                 <h1 id="app-title" class="text-2xl md:text-3xl font-bold text-slate-800">Citation Detective</h1>
+            </div>
+            <div class="text-right">
+                <p id="score-label" class="text-sm font-semibold text-slate-500"></p>
+                <p id="score" class="text-2xl font-bold text-blue-600">0</p>
+            </div>
+        </header>
+
+        <main>
+            <!-- Language Selection Screen -->
+            <div id="language-selection-screen" class="screen active flex-col items-center justify-center bg-white p-8 rounded-xl shadow-lg">
+                <svg class="w-16 h-16 text-blue-600 mb-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.1521 18.3334C17.7994 17.2435 19 15.2554 19 13C19 9.13401 15.866 6 12 6C8.13401 6 5 9.13401 5 13C5 15.2554 6.20058 17.2435 7.84788 18.3334M12 21V18M12 18H15.75L18 21L12 18ZM12 18H8.25L6 21L12 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 16C13.6569 16 15 14.6569 15 13C15 11.3431 13.6569 10 12 10C10.3431 10 9 11.3431 9 13C9 14.6569 10.3431 16 12 16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 3L12 5L15 3L12 1L9 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <h2 id="welcome-title" class="text-3xl font-bold mb-2">Welcome!</h2>
+                <p id="language-prompt" class="text-slate-500 mb-8">Please select your language.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                    <button onclick="selectLanguage('en')" class="btn-primary flex flex-col items-center p-6 bg-slate-50 hover:bg-blue-100 rounded-lg transition-colors duration-200 border-2 border-transparent hover:border-blue-500">
+                        <svg class="w-12 h-8 mb-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30"><path fill="#012169" d="M0 0h60v30H0z"/><path fill="#FFF" d="M0 0l60 30m0-30L0 30"/><path fill="#C8102E" d="M18 0v30h24V0M0 9v12h60V9"/></svg>
+                        <span class="text-lg font-semibold">English</span>
+                    </button>
+                    <button onclick="selectLanguage('zh')" class="btn-primary flex flex-col items-center p-6 bg-slate-50 hover:bg-blue-100 rounded-lg transition-colors duration-200 border-2 border-transparent hover:border-blue-500">
+                         <svg class="w-12 h-8 mb-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30"><path fill="#EE1C25" d="M0 0h60v30H0z"/><path fill="#FFF000" d="M9 4.5l2.25 6.9h7.25l-5.87 4.25 2.25 6.9-5.88-4.25-5.87 4.25 2.25-6.9-5.88-4.25h7.25zM19.5 2.25l.45 1.35h1.45l-1.15.85.45 1.35-1.15-.85-1.15.85.45-1.35-1.15-.85h1.45zM22.5 5.25l.45 1.35h1.45l-1.15.85.45 1.35-1.15-.85-1.15.85.45-1.35-1.15-.85h1.45zM22.5 10.5l.45 1.35h1.45l-1.15.85.45 1.35-1.15-.85-1.15.85.45-1.35-1.15-.85h1.45zM19.5 13.5l.45 1.35h1.45l-1.15.85.45 1.35-1.15-.85-1.15.85.45-1.35-1.15-.85h1.45z"/></svg>
+                        <span class="text-lg font-semibold">中文</span>
+                    </button>
+                    <button onclick="selectLanguage('tr')" class="btn-primary flex flex-col items-center p-6 bg-slate-50 hover:bg-blue-100 rounded-lg transition-colors duration-200 border-2 border-transparent hover:border-blue-500">
+                        <svg class="w-12 h-8 mb-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30"><path fill="#E30A17" d="M0 0h60v30H0z"/><circle cx="22.5" cy="15" r="7.5" fill="#FFF"/><path fill="#E30A17" d="M25.5 15a6 6 0 11-12 0 6 6 0 0112 0z"/><path fill="#FFF" d="M30 15l-4.5-2.25v4.5z"/></svg>
+                        <span class="text-lg font-semibold">Türkçe</span>
+                    </button>
+                </div>
+            </div>
+
+             <!-- Difficulty Selection Screen -->
+            <div id="difficulty-selection-screen" class="screen flex-col items-center justify-center bg-white p-8 rounded-xl shadow-lg">
+                <h2 id="difficulty-title" class="text-3xl font-bold mb-2"></h2>
+                <p id="difficulty-prompt" class="text-slate-500 mb-8"></p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                    <button onclick="selectDifficulty('easy')" class="btn-primary flex flex-col items-center p-6 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200 border-2 border-transparent hover:border-green-500">
+                        <span id="difficulty-easy" class="text-lg font-semibold text-green-700"></span>
+                    </button>
+                    <button onclick="selectDifficulty('medium')" class="btn-primary flex flex-col items-center p-6 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors duration-200 border-2 border-transparent hover:border-yellow-500">
+                        <span id="difficulty-medium" class="text-lg font-semibold text-yellow-700"></span>
+                    </button>
+                    <button onclick="selectDifficulty('hard')" class="btn-primary flex flex-col items-center p-6 bg-red-50 hover:bg-red-100 rounded-lg transition-colors duration-200 border-2 border-transparent hover:border-red-500">
+                        <span id="difficulty-hard" class="text-lg font-semibold text-red-700"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Screen -->
+            <div id="game-screen" class="screen flex-col">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 id="source-text-label" class="text-lg font-bold mb-2 text-blue-700"></h3>
+                        <p id="source-text" class="text-slate-600 leading-relaxed"></p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 id="submission-text-label" class="text-lg font-bold mb-2 text-green-700"></h3>
+                        <p id="submission-text" class="text-slate-600 leading-relaxed"></p>
+                    </div>
+                </div>
+                <div>
+                    <h3 id="verdict-label" class="text-xl font-bold mb-4 text-center"></h3>
+                    <div id="verdict-options" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
+                        <!-- Verdict options will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedback Screen -->
+            <div id="feedback-screen" class="screen flex-col items-center justify-center bg-white p-8 rounded-xl shadow-lg">
+                <div id="feedback-icon" class="mb-4"></div>
+                <h2 id="feedback-title" class="text-3xl font-bold mb-2"></h2>
+                <p id="feedback-explanation" class="text-slate-600 text-center max-w-prose mb-8"></p>
+                <button id="next-case-btn" onclick="nextCase()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors duration-200 btn-primary"></button>
+            </div>
+        </main>
+
+    </div>
+
+<script>
+// --- DATA STORE ---
+const uiText = {
+    en: {
+        appTitle: "Citation Detective",
+        scoreLabel: "SCORE",
+        sourceTextLabel: "The Source",
+        submissionTextLabel: "Student Submission",
+        verdictLabel: "Is it Plagiarism?",
+        nextCaseBtn: "Next Case",
+        restartBtn: "Play Again",
+        welcomeTitle: "Welcome!",
+        languagePrompt: "Please select your language.",
+        difficultyTitle: "Choose a Difficulty",
+        difficultyPrompt: "Select a level to begin your investigation.",
+        difficulty: { easy: "Easy", medium: "Medium", hard: "Hard" },
+        feedback: { correctTitle: "Correct!", incorrectTitle: "Not Quite..." },
+        verdicts: { not_plagiarism: "Not Plagiarism", plagiarism: "Plagiarism" }
+    },
+    zh: {
+        appTitle: "引文侦探",
+        scoreLabel: "分数",
+        sourceTextLabel: "来源文本",
+        submissionTextLabel: "学生提交的文章",
+        verdictLabel: "这是抄袭吗？",
+        nextCaseBtn: "下一个案例",
+        restartBtn: "再玩一次",
+        welcomeTitle: "欢迎！",
+        languagePrompt: "请选择你的语言。",
+        difficultyTitle: "选择难度",
+        difficultyPrompt: "选择一个级别开始你的调查。",
+        difficulty: { easy: "简单", medium: "中等", hard: "困难" },
+        feedback: { correctTitle: "正确!", incorrectTitle: "不太对..." },
+        verdicts: { not_plagiarism: "没有抄袭", plagiarism: "抄袭" }
+    },
+    tr: {
+        appTitle: "Alıntı Dedektifi",
+        scoreLabel: "PUAN",
+        sourceTextLabel: "Kaynak Metin",
+        submissionTextLabel: "Öğrenci Yazısı",
+        verdictLabel: "Bu İntihal mi?",
+        nextCaseBtn: "Sıradaki Vaka",
+        restartBtn: "Tekrar Oyna",
+        welcomeTitle: "Hoş Geldiniz!",
+        languagePrompt: "Lütfen dilinizi seçin.",
+        difficultyTitle: "Bir Zorluk Seçin",
+        difficultyPrompt: "Araştırmanıza başlamak için bir seviye seçin.",
+        difficulty: { easy: "Kolay", medium: "Orta", hard: "Zor" },
+        feedback: { correctTitle: "Doğru!", incorrectTitle: "Tam Değil..." },
+        verdicts: { not_plagiarism: "İntihal Değil", plagiarism: "İntihal" }
+    }
+};
+
+const allGameData = [
+  {
+    "id": 1,
+    "difficulty": "easy",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers.",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the text was copied word for word without citation.",
+      "zh": "这是抄袭，因为文本被逐字复制而没有引用。",
+      "tr": "Bu intihaldir çünkü metin kaynak gösterilmeden kelimesi kelimesine kopyalanmıştır."
+    }
+  },
+  {
+    "id": 2,
+    "difficulty": "easy",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, the Amazon River is more than 6,400 km long and ranks second in length worldwide.",
+      "zh": "根据来源，亚马逊河长达6400多公里，是世界第二长的河流。",
+      "tr": "Kaynağa göre, Amazon Nehri 6.400 km'den uzun olup dünyanın ikinci en uzun nehri olarak bilinir."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the information and cited the source.",
+      "zh": "不是抄袭。学生转述了信息并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci bilgiyi yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 3,
+    "difficulty": "easy",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers.",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the text was copied word for word without citation.",
+      "zh": "这是抄袭，因为文本被逐字复制而没有引用。",
+      "tr": "Bu intihaldir çünkü metin kaynak gösterilmeden kelimesi kelimesine kopyalanmıştır."
+    }
+  },
+  {
+    "id": 4,
+    "difficulty": "easy",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, the Amazon River is more than 6,400 km long and ranks second in length worldwide.",
+      "zh": "根据来源，亚马逊河长达6400多公里，是世界第二长的河流。",
+      "tr": "Kaynağa göre, Amazon Nehri 6.400 km'den uzun olup dünyanın ikinci en uzun nehri olarak bilinir."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the information and cited the source.",
+      "zh": "不是抄袭。学生转述了信息并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci bilgiyi yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 5,
+    "difficulty": "easy",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers.",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the text was copied word for word without citation.",
+      "zh": "这是抄袭，因为文本被逐字复制而没有引用。",
+      "tr": "Bu intihaldir çünkü metin kaynak gösterilmeden kelimesi kelimesine kopyalanmıştır."
+    }
+  },
+  {
+    "id": 6,
+    "difficulty": "easy",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, the Amazon River is more than 6,400 km long and ranks second in length worldwide.",
+      "zh": "根据来源，亚马逊河长达6400多公里，是世界第二长的河流。",
+      "tr": "Kaynağa göre, Amazon Nehri 6.400 km'den uzun olup dünyanın ikinci en uzun nehri olarak bilinir."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the information and cited the source.",
+      "zh": "不是抄袭。学生转述了信息并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci bilgiyi yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 7,
+    "difficulty": "easy",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers.",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the text was copied word for word without citation.",
+      "zh": "这是抄袭，因为文本被逐字复制而没有引用。",
+      "tr": "Bu intihaldir çünkü metin kaynak gösterilmeden kelimesi kelimesine kopyalanmıştır."
+    }
+  },
+  {
+    "id": 8,
+    "difficulty": "easy",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, the Amazon River is more than 6,400 km long and ranks second in length worldwide.",
+      "zh": "根据来源，亚马逊河长达6400多公里，是世界第二长的河流。",
+      "tr": "Kaynağa göre, Amazon Nehri 6.400 km'den uzun olup dünyanın ikinci en uzun nehri olarak bilinir."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the information and cited the source.",
+      "zh": "不是抄袭。学生转述了信息并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci bilgiyi yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 9,
+    "difficulty": "easy",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers.",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the text was copied word for word without citation.",
+      "zh": "这是抄袭，因为文本被逐字复制而没有引用。",
+      "tr": "Bu intihaldir çünkü metin kaynak gösterilmeden kelimesi kelimesine kopyalanmıştır."
+    }
+  },
+  {
+    "id": 10,
+    "difficulty": "easy",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, the Amazon River is more than 6,400 km long and ranks second in length worldwide.",
+      "zh": "根据来源，亚马逊河长达6400多公里，是世界第二长的河流。",
+      "tr": "Kaynağa göre, Amazon Nehri 6.400 km'den uzun olup dünyanın ikinci en uzun nehri olarak bilinir."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the information and cited the source.",
+      "zh": "不是抄袭。学生转述了信息并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci bilgiyi yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 11,
+    "difficulty": "easy",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers.",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the text was copied word for word without citation.",
+      "zh": "这是抄袭，因为文本被逐字复制而没有引用。",
+      "tr": "Bu intihaldir çünkü metin kaynak gösterilmeden kelimesi kelimesine kopyalanmıştır."
+    }
+  },
+  {
+    "id": 12,
+    "difficulty": "easy",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, the Amazon River is more than 6,400 km long and ranks second in length worldwide.",
+      "zh": "根据来源，亚马逊河长达6400多公里，是世界第二长的河流。",
+      "tr": "Kaynağa göre, Amazon Nehri 6.400 km'den uzun olup dünyanın ikinci en uzun nehri olarak bilinir."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the information and cited the source.",
+      "zh": "不是抄袭。学生转述了信息并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci bilgiyi yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 13,
+    "difficulty": "easy",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers.",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the text was copied word for word without citation.",
+      "zh": "这是抄袭，因为文本被逐字复制而没有引用。",
+      "tr": "Bu intihaldir çünkü metin kaynak gösterilmeden kelimesi kelimesine kopyalanmıştır."
+    }
+  },
+  {
+    "id": 14,
+    "difficulty": "easy",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, the Amazon River is more than 6,400 km long and ranks second in length worldwide.",
+      "zh": "根据来源，亚马逊河长达6400多公里，是世界第二长的河流。",
+      "tr": "Kaynağa göre, Amazon Nehri 6.400 km'den uzun olup dünyanın ikinci en uzun nehri olarak bilinir."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the information and cited the source.",
+      "zh": "不是抄袭。学生转述了信息并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci bilgiyi yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 15,
+    "difficulty": "easy",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers.",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the text was copied word for word without citation.",
+      "zh": "这是抄袭，因为文本被逐字复制而没有引用。",
+      "tr": "Bu intihaldir çünkü metin kaynak gösterilmeden kelimesi kelimesine kopyalanmıştır."
+    }
+  },
+  {
+    "id": 16,
+    "difficulty": "easy",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, the Amazon River is more than 6,400 km long and ranks second in length worldwide.",
+      "zh": "根据来源，亚马逊河长达6400多公里，是世界第二长的河流。",
+      "tr": "Kaynağa göre, Amazon Nehri 6.400 km'den uzun olup dünyanın ikinci en uzun nehri olarak bilinir."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the information and cited the source.",
+      "zh": "不是抄袭。学生转述了信息并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci bilgiyi yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 17,
+    "difficulty": "easy",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers.",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the text was copied word for word without citation.",
+      "zh": "这是抄袭，因为文本被逐字复制而没有引用。",
+      "tr": "Bu intihaldir çünkü metin kaynak gösterilmeden kelimesi kelimesine kopyalanmıştır."
+    }
+  },
+  {
+    "id": 18,
+    "difficulty": "easy",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, the Amazon River is more than 6,400 km long and ranks second in length worldwide.",
+      "zh": "根据来源，亚马逊河长达6400多公里，是世界第二长的河流。",
+      "tr": "Kaynağa göre, Amazon Nehri 6.400 km'den uzun olup dünyanın ikinci en uzun nehri olarak bilinir."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the information and cited the source.",
+      "zh": "不是抄袭。学生转述了信息并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci bilgiyi yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 19,
+    "difficulty": "easy",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers.",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the text was copied word for word without citation.",
+      "zh": "这是抄袭，因为文本被逐字复制而没有引用。",
+      "tr": "Bu intihaldir çünkü metin kaynak gösterilmeden kelimesi kelimesine kopyalanmıştır."
+    }
+  },
+  {
+    "id": 20,
+    "difficulty": "easy",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "The Amazon River is the second longest river in the world, stretching over 6,400 kilometers. (Source, 2025)",
+      "zh": "亚马逊河是世界第二长的河流，全长超过6400公里。（来源，2025年）",
+      "tr": "Amazon Nehri, 6.400 kilometreden fazla uzunluğuyla dünyanın en uzun ikinci nehridir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, the Amazon River is more than 6,400 km long and ranks second in length worldwide.",
+      "zh": "根据来源，亚马逊河长达6400多公里，是世界第二长的河流。",
+      "tr": "Kaynağa göre, Amazon Nehri 6.400 km'den uzun olup dünyanın ikinci en uzun nehri olarak bilinir."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the information and cited the source.",
+      "zh": "不是抄袭。学生转述了信息并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci bilgiyi yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 21,
+    "difficulty": "medium",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product.",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the definition was copied exactly without citation.",
+      "zh": "这是抄袭，因为定义被完全照搬而没有引用。",
+      "tr": "Bu intihaldir çünkü tanım kaynak gösterilmeden tamamen kopyalanmıştır."
+    }
+  },
+  {
+    "id": 22,
+    "difficulty": "medium",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, photosynthesis allows plants to create food using sunlight, carbon dioxide, and water, while producing oxygen.",
+      "zh": "根据来源，光合作用使植物利用阳光、二氧化碳和水制造食物，同时释放氧气。",
+      "tr": "Kaynağa göre, fotosentez bitkilerin güneş ışığını, karbondioksiti ve suyu kullanarak besin üretmesini ve oksijen salmasını sağlar."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the idea and cited the source.",
+      "zh": "不是抄袭。学生转述了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci fikri yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 23,
+    "difficulty": "medium",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product.",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the definition was copied exactly without citation.",
+      "zh": "这是抄袭，因为定义被完全照搬而没有引用。",
+      "tr": "Bu intihaldir çünkü tanım kaynak gösterilmeden tamamen kopyalanmıştır."
+    }
+  },
+  {
+    "id": 24,
+    "difficulty": "medium",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, photosynthesis allows plants to create food using sunlight, carbon dioxide, and water, while producing oxygen.",
+      "zh": "根据来源，光合作用使植物利用阳光、二氧化碳和水制造食物，同时释放氧气。",
+      "tr": "Kaynağa göre, fotosentez bitkilerin güneş ışığını, karbondioksiti ve suyu kullanarak besin üretmesini ve oksijen salmasını sağlar."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the idea and cited the source.",
+      "zh": "不是抄袭。学生转述了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci fikri yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 25,
+    "difficulty": "medium",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product.",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the definition was copied exactly without citation.",
+      "zh": "这是抄袭，因为定义被完全照搬而没有引用。",
+      "tr": "Bu intihaldir çünkü tanım kaynak gösterilmeden tamamen kopyalanmıştır."
+    }
+  },
+  {
+    "id": 26,
+    "difficulty": "medium",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, photosynthesis allows plants to create food using sunlight, carbon dioxide, and water, while producing oxygen.",
+      "zh": "根据来源，光合作用使植物利用阳光、二氧化碳和水制造食物，同时释放氧气。",
+      "tr": "Kaynağa göre, fotosentez bitkilerin güneş ışığını, karbondioksiti ve suyu kullanarak besin üretmesini ve oksijen salmasını sağlar."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the idea and cited the source.",
+      "zh": "不是抄袭。学生转述了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci fikri yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 27,
+    "difficulty": "medium",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product.",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the definition was copied exactly without citation.",
+      "zh": "这是抄袭，因为定义被完全照搬而没有引用。",
+      "tr": "Bu intihaldir çünkü tanım kaynak gösterilmeden tamamen kopyalanmıştır."
+    }
+  },
+  {
+    "id": 28,
+    "difficulty": "medium",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, photosynthesis allows plants to create food using sunlight, carbon dioxide, and water, while producing oxygen.",
+      "zh": "根据来源，光合作用使植物利用阳光、二氧化碳和水制造食物，同时释放氧气。",
+      "tr": "Kaynağa göre, fotosentez bitkilerin güneş ışığını, karbondioksiti ve suyu kullanarak besin üretmesini ve oksijen salmasını sağlar."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the idea and cited the source.",
+      "zh": "不是抄袭。学生转述了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci fikri yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 29,
+    "difficulty": "medium",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product.",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the definition was copied exactly without citation.",
+      "zh": "这是抄袭，因为定义被完全照搬而没有引用。",
+      "tr": "Bu intihaldir çünkü tanım kaynak gösterilmeden tamamen kopyalanmıştır."
+    }
+  },
+  {
+    "id": 30,
+    "difficulty": "medium",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, photosynthesis allows plants to create food using sunlight, carbon dioxide, and water, while producing oxygen.",
+      "zh": "根据来源，光合作用使植物利用阳光、二氧化碳和水制造食物，同时释放氧气。",
+      "tr": "Kaynağa göre, fotosentez bitkilerin güneş ışığını, karbondioksiti ve suyu kullanarak besin üretmesini ve oksijen salmasını sağlar."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the idea and cited the source.",
+      "zh": "不是抄袭。学生转述了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci fikri yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 31,
+    "difficulty": "medium",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product.",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the definition was copied exactly without citation.",
+      "zh": "这是抄袭，因为定义被完全照搬而没有引用。",
+      "tr": "Bu intihaldir çünkü tanım kaynak gösterilmeden tamamen kopyalanmıştır."
+    }
+  },
+  {
+    "id": 32,
+    "difficulty": "medium",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, photosynthesis allows plants to create food using sunlight, carbon dioxide, and water, while producing oxygen.",
+      "zh": "根据来源，光合作用使植物利用阳光、二氧化碳和水制造食物，同时释放氧气。",
+      "tr": "Kaynağa göre, fotosentez bitkilerin güneş ışığını, karbondioksiti ve suyu kullanarak besin üretmesini ve oksijen salmasını sağlar."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the idea and cited the source.",
+      "zh": "不是抄袭。学生转述了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci fikri yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 33,
+    "difficulty": "medium",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product.",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the definition was copied exactly without citation.",
+      "zh": "这是抄袭，因为定义被完全照搬而没有引用。",
+      "tr": "Bu intihaldir çünkü tanım kaynak gösterilmeden tamamen kopyalanmıştır."
+    }
+  },
+  {
+    "id": 34,
+    "difficulty": "medium",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, photosynthesis allows plants to create food using sunlight, carbon dioxide, and water, while producing oxygen.",
+      "zh": "根据来源，光合作用使植物利用阳光、二氧化碳和水制造食物，同时释放氧气。",
+      "tr": "Kaynağa göre, fotosentez bitkilerin güneş ışığını, karbondioksiti ve suyu kullanarak besin üretmesini ve oksijen salmasını sağlar."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the idea and cited the source.",
+      "zh": "不是抄袭。学生转述了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci fikri yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 35,
+    "difficulty": "medium",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product.",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the definition was copied exactly without citation.",
+      "zh": "这是抄袭，因为定义被完全照搬而没有引用。",
+      "tr": "Bu intihaldir çünkü tanım kaynak gösterilmeden tamamen kopyalanmıştır."
+    }
+  },
+  {
+    "id": 36,
+    "difficulty": "medium",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, photosynthesis allows plants to create food using sunlight, carbon dioxide, and water, while producing oxygen.",
+      "zh": "根据来源，光合作用使植物利用阳光、二氧化碳和水制造食物，同时释放氧气。",
+      "tr": "Kaynağa göre, fotosentez bitkilerin güneş ışığını, karbondioksiti ve suyu kullanarak besin üretmesini ve oksijen salmasını sağlar."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the idea and cited the source.",
+      "zh": "不是抄袭。学生转述了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci fikri yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 37,
+    "difficulty": "medium",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product.",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the definition was copied exactly without citation.",
+      "zh": "这是抄袭，因为定义被完全照搬而没有引用。",
+      "tr": "Bu intihaldir çünkü tanım kaynak gösterilmeden tamamen kopyalanmıştır."
+    }
+  },
+  {
+    "id": 38,
+    "difficulty": "medium",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, photosynthesis allows plants to create food using sunlight, carbon dioxide, and water, while producing oxygen.",
+      "zh": "根据来源，光合作用使植物利用阳光、二氧化碳和水制造食物，同时释放氧气。",
+      "tr": "Kaynağa göre, fotosentez bitkilerin güneş ışığını, karbondioksiti ve suyu kullanarak besin üretmesini ve oksijen salmasını sağlar."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the idea and cited the source.",
+      "zh": "不是抄袭。学生转述了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci fikri yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 39,
+    "difficulty": "medium",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product.",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the definition was copied exactly without citation.",
+      "zh": "这是抄袭，因为定义被完全照搬而没有引用。",
+      "tr": "Bu intihaldir çünkü tanım kaynak gösterilmeden tamamen kopyalanmıştır."
+    }
+  },
+  {
+    "id": 40,
+    "difficulty": "medium",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water, releasing oxygen as a by-product. (Source, 2025)",
+      "zh": "光合作用是绿色植物利用阳光将二氧化碳和水合成食物，并释放氧气作为副产品的过程。（来源，2025年）",
+      "tr": "Fotosentez, yeşil bitkilerin karbondioksit ve sudan besin sentezlemek için güneş ışığını kullandığı ve yan ürün olarak oksijen saldığı süreçtir. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, photosynthesis allows plants to create food using sunlight, carbon dioxide, and water, while producing oxygen.",
+      "zh": "根据来源，光合作用使植物利用阳光、二氧化碳和水制造食物，同时释放氧气。",
+      "tr": "Kaynağa göre, fotosentez bitkilerin güneş ışığını, karbondioksiti ve suyu kullanarak besin üretmesini ve oksijen salmasını sağlar."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student paraphrased the idea and cited the source.",
+      "zh": "不是抄袭。学生转述了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci fikri yeniden ifade edip kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 41,
+    "difficulty": "hard",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy.",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the advanced detail was copied without acknowledgment.",
+      "zh": "这是抄袭，因为高级细节被照搬而没有注明出处。",
+      "tr": "Bu intihaldir çünkü gelişmiş detay kaynak belirtilmeden kopyalanmıştır."
+    }
+  },
+  {
+    "id": 42,
+    "difficulty": "hard",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, Einstein’s 1915 general relativity theory explains gravity as the bending of spacetime due to mass and energy, rather than a traditional force.",
+      "zh": "根据来源，爱因斯坦的1915年广义相对论解释了重力是质量和能量导致的时空弯曲，而不是传统意义上的力。",
+      "tr": "Kaynağa göre, Einstein’ın 1915 genel görelilik teorisi, yerçekimini kütle ve enerjinin uzay-zamanı bükmesi olarak açıklar, geleneksel bir kuvvet olarak değil."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student expressed the concept in their own words and cited the source.",
+      "zh": "不是抄袭。学生用自己的话表达了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci kavramı kendi kelimeleriyle açıklamış ve kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 43,
+    "difficulty": "hard",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy.",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the advanced detail was copied without acknowledgment.",
+      "zh": "这是抄袭，因为高级细节被照搬而没有注明出处。",
+      "tr": "Bu intihaldir çünkü gelişmiş detay kaynak belirtilmeden kopyalanmıştır."
+    }
+  },
+  {
+    "id": 44,
+    "difficulty": "hard",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, Einstein’s 1915 general relativity theory explains gravity as the bending of spacetime due to mass and energy, rather than a traditional force.",
+      "zh": "根据来源，爱因斯坦的1915年广义相对论解释了重力是质量和能量导致的时空弯曲，而不是传统意义上的力。",
+      "tr": "Kaynağa göre, Einstein’ın 1915 genel görelilik teorisi, yerçekimini kütle ve enerjinin uzay-zamanı bükmesi olarak açıklar, geleneksel bir kuvvet olarak değil."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student expressed the concept in their own words and cited the source.",
+      "zh": "不是抄袭。学生用自己的话表达了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci kavramı kendi kelimeleriyle açıklamış ve kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 45,
+    "difficulty": "hard",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy.",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the advanced detail was copied without acknowledgment.",
+      "zh": "这是抄袭，因为高级细节被照搬而没有注明出处。",
+      "tr": "Bu intihaldir çünkü gelişmiş detay kaynak belirtilmeden kopyalanmıştır."
+    }
+  },
+  {
+    "id": 46,
+    "difficulty": "hard",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, Einstein’s 1915 general relativity theory explains gravity as the bending of spacetime due to mass and energy, rather than a traditional force.",
+      "zh": "根据来源，爱因斯坦的1915年广义相对论解释了重力是质量和能量导致的时空弯曲，而不是传统意义上的力。",
+      "tr": "Kaynağa göre, Einstein’ın 1915 genel görelilik teorisi, yerçekimini kütle ve enerjinin uzay-zamanı bükmesi olarak açıklar, geleneksel bir kuvvet olarak değil."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student expressed the concept in their own words and cited the source.",
+      "zh": "不是抄袭。学生用自己的话表达了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci kavramı kendi kelimeleriyle açıklamış ve kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 47,
+    "difficulty": "hard",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy.",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the advanced detail was copied without acknowledgment.",
+      "zh": "这是抄袭，因为高级细节被照搬而没有注明出处。",
+      "tr": "Bu intihaldir çünkü gelişmiş detay kaynak belirtilmeden kopyalanmıştır."
+    }
+  },
+  {
+    "id": 48,
+    "difficulty": "hard",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, Einstein’s 1915 general relativity theory explains gravity as the bending of spacetime due to mass and energy, rather than a traditional force.",
+      "zh": "根据来源，爱因斯坦的1915年广义相对论解释了重力是质量和能量导致的时空弯曲，而不是传统意义上的力。",
+      "tr": "Kaynağa göre, Einstein’ın 1915 genel görelilik teorisi, yerçekimini kütle ve enerjinin uzay-zamanı bükmesi olarak açıklar, geleneksel bir kuvvet olarak değil."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student expressed the concept in their own words and cited the source.",
+      "zh": "不是抄袭。学生用自己的话表达了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci kavramı kendi kelimeleriyle açıklamış ve kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 49,
+    "difficulty": "hard",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy.",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the advanced detail was copied without acknowledgment.",
+      "zh": "这是抄袭，因为高级细节被照搬而没有注明出处。",
+      "tr": "Bu intihaldir çünkü gelişmiş detay kaynak belirtilmeden kopyalanmıştır."
+    }
+  },
+  {
+    "id": 50,
+    "difficulty": "hard",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, Einstein’s 1915 general relativity theory explains gravity as the bending of spacetime due to mass and energy, rather than a traditional force.",
+      "zh": "根据来源，爱因斯坦的1915年广义相对论解释了重力是质量和能量导致的时空弯曲，而不是传统意义上的力。",
+      "tr": "Kaynağa göre, Einstein’ın 1915 genel görelilik teorisi, yerçekimini kütle ve enerjinin uzay-zamanı bükmesi olarak açıklar, geleneksel bir kuvvet olarak değil."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student expressed the concept in their own words and cited the source.",
+      "zh": "不是抄袭。学生用自己的话表达了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci kavramı kendi kelimeleriyle açıklamış ve kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 51,
+    "difficulty": "hard",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy.",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the advanced detail was copied without acknowledgment.",
+      "zh": "这是抄袭，因为高级细节被照搬而没有注明出处。",
+      "tr": "Bu intihaldir çünkü gelişmiş detay kaynak belirtilmeden kopyalanmıştır."
+    }
+  },
+  {
+    "id": 52,
+    "difficulty": "hard",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, Einstein’s 1915 general relativity theory explains gravity as the bending of spacetime due to mass and energy, rather than a traditional force.",
+      "zh": "根据来源，爱因斯坦的1915年广义相对论解释了重力是质量和能量导致的时空弯曲，而不是传统意义上的力。",
+      "tr": "Kaynağa göre, Einstein’ın 1915 genel görelilik teorisi, yerçekimini kütle ve enerjinin uzay-zamanı bükmesi olarak açıklar, geleneksel bir kuvvet olarak değil."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student expressed the concept in their own words and cited the source.",
+      "zh": "不是抄袭。学生用自己的话表达了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci kavramı kendi kelimeleriyle açıklamış ve kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 53,
+    "difficulty": "hard",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy.",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the advanced detail was copied without acknowledgment.",
+      "zh": "这是抄袭，因为高级细节被照搬而没有注明出处。",
+      "tr": "Bu intihaldir çünkü gelişmiş detay kaynak belirtilmeden kopyalanmıştır."
+    }
+  },
+  {
+    "id": 54,
+    "difficulty": "hard",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, Einstein’s 1915 general relativity theory explains gravity as the bending of spacetime due to mass and energy, rather than a traditional force.",
+      "zh": "根据来源，爱因斯坦的1915年广义相对论解释了重力是质量和能量导致的时空弯曲，而不是传统意义上的力。",
+      "tr": "Kaynağa göre, Einstein’ın 1915 genel görelilik teorisi, yerçekimini kütle ve enerjinin uzay-zamanı bükmesi olarak açıklar, geleneksel bir kuvvet olarak değil."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student expressed the concept in their own words and cited the source.",
+      "zh": "不是抄袭。学生用自己的话表达了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci kavramı kendi kelimeleriyle açıklamış ve kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 55,
+    "difficulty": "hard",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy.",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the advanced detail was copied without acknowledgment.",
+      "zh": "这是抄袭，因为高级细节被照搬而没有注明出处。",
+      "tr": "Bu intihaldir çünkü gelişmiş detay kaynak belirtilmeden kopyalanmıştır."
+    }
+  },
+  {
+    "id": 56,
+    "difficulty": "hard",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, Einstein’s 1915 general relativity theory explains gravity as the bending of spacetime due to mass and energy, rather than a traditional force.",
+      "zh": "根据来源，爱因斯坦的1915年广义相对论解释了重力是质量和能量导致的时空弯曲，而不是传统意义上的力。",
+      "tr": "Kaynağa göre, Einstein’ın 1915 genel görelilik teorisi, yerçekimini kütle ve enerjinin uzay-zamanı bükmesi olarak açıklar, geleneksel bir kuvvet olarak değil."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student expressed the concept in their own words and cited the source.",
+      "zh": "不是抄袭。学生用自己的话表达了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci kavramı kendi kelimeleriyle açıklamış ve kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 57,
+    "difficulty": "hard",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy.",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the advanced detail was copied without acknowledgment.",
+      "zh": "这是抄袭，因为高级细节被照搬而没有注明出处。",
+      "tr": "Bu intihaldir çünkü gelişmiş detay kaynak belirtilmeden kopyalanmıştır."
+    }
+  },
+  {
+    "id": 58,
+    "difficulty": "hard",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, Einstein’s 1915 general relativity theory explains gravity as the bending of spacetime due to mass and energy, rather than a traditional force.",
+      "zh": "根据来源，爱因斯坦的1915年广义相对论解释了重力是质量和能量导致的时空弯曲，而不是传统意义上的力。",
+      "tr": "Kaynağa göre, Einstein’ın 1915 genel görelilik teorisi, yerçekimini kütle ve enerjinin uzay-zamanı bükmesi olarak açıklar, geleneksel bir kuvvet olarak değil."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student expressed the concept in their own words and cited the source.",
+      "zh": "不是抄袭。学生用自己的话表达了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci kavramı kendi kelimeleriyle açıklamış ve kaynağı belirtmiştir."
+    }
+  },
+  {
+    "id": 59,
+    "difficulty": "hard",
+    "correctAnswer": "plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy.",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez."
+    },
+    "explanation": {
+      "en": "This is plagiarism because the advanced detail was copied without acknowledgment.",
+      "zh": "这是抄袭，因为高级细节被照搬而没有注明出处。",
+      "tr": "Bu intihaldir çünkü gelişmiş detay kaynak belirtilmeden kopyalanmıştır."
+    }
+  },
+  {
+    "id": 60,
+    "difficulty": "hard",
+    "correctAnswer": "not_plagiarism",
+    "sourceText": {
+      "en": "Einstein's theory of general relativity, published in 1915, describes gravity not as a force but as the curvature of spacetime caused by mass and energy. (Source, 2025)",
+      "zh": "爱因斯坦于1915年发表的广义相对论将重力描述为由质量和能量引起的时空弯曲，而不是一种力。（来源，2025年）",
+      "tr": "Einstein'ın 1915'te yayımladığı genel görelilik teorisi, kütle ve enerjinin neden olduğu uzay-zamanın eğriliğini yerçekimi olarak açıklar, onu bir kuvvet olarak görmez. (Kaynak, 2025)"
+    },
+    "studentSubmission": {
+      "en": "According to Source, Einstein’s 1915 general relativity theory explains gravity as the bending of spacetime due to mass and energy, rather than a traditional force.",
+      "zh": "根据来源，爱因斯坦的1915年广义相对论解释了重力是质量和能量导致的时空弯曲，而不是传统意义上的力。",
+      "tr": "Kaynağa göre, Einstein’ın 1915 genel görelilik teorisi, yerçekimini kütle ve enerjinin uzay-zamanı bükmesi olarak açıklar, geleneksel bir kuvvet olarak değil."
+    },
+    "explanation": {
+      "en": "Not plagiarism. The student expressed the concept in their own words and cited the source.",
+      "zh": "不是抄袭。学生用自己的话表达了概念并注明了来源。",
+      "tr": "İntihal değildir. Öğrenci kavramı kendi kelimeleriyle açıklamış ve kaynağı belirtmiştir."
+    }
+  }
+];
+
+// --- GAME STATE ---
+let currentLanguage = 'en';
+let score = 0;
+let currentCaseIndex = 0;
+let currentCases = [];
+
+// --- DOM ELEMENTS ---
+const appHeader = document.getElementById('app-header');
+const screens = {
+    language: document.getElementById('language-selection-screen'),
+    difficulty: document.getElementById('difficulty-selection-screen'),
+    game: document.getElementById('game-screen'),
+    feedback: document.getElementById('feedback-screen')
+};
+const scoreDisplay = document.getElementById('score');
+const sourceTextEl = document.getElementById('source-text');
+const submissionTextEl = document.getElementById('submission-text');
+const verdictOptionsEl = document.getElementById('verdict-options');
+const feedbackIconEl = document.getElementById('feedback-icon');
+const feedbackTitleEl = document.getElementById('feedback-title');
+const feedbackExplanationEl = document.getElementById('feedback-explanation');
+const nextCaseBtn = document.getElementById('next-case-btn');
+
+// --- SVG ICONS ---
+const icons = {
+    correct: `<svg class="w-20 h-20 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+    incorrect: `<svg class="w-20 h-20 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+};
+
+// --- GAME LOGIC ---
+function showScreen(screenName) {
+    Object.values(screens).forEach(screen => screen.classList.remove('active'));
+    screens[screenName].classList.add('active');
+}
+
+function updateUIText() {
+    const texts = uiText[currentLanguage];
+    // Global UI
+    document.getElementById('app-title').textContent = texts.appTitle;
+    document.getElementById('score-label').textContent = texts.scoreLabel;
+    
+    // Language Screen
+    document.getElementById('welcome-title').textContent = texts.welcomeTitle;
+    document.getElementById('language-prompt').textContent = texts.languagePrompt;
+
+    // Difficulty Screen
+    document.getElementById('difficulty-title').textContent = texts.difficultyTitle;
+    document.getElementById('difficulty-prompt').textContent = texts.difficultyPrompt;
+    document.getElementById('difficulty-easy').textContent = texts.difficulty.easy;
+    document.getElementById('difficulty-medium').textContent = texts.difficulty.medium;
+    document.getElementById('difficulty-hard').textContent = texts.difficulty.hard;
+
+    // Game Screen
+    document.getElementById('source-text-label').textContent = texts.sourceTextLabel;
+    document.getElementById('submission-text-label').textContent = texts.submissionTextLabel;
+    document.getElementById('verdict-label').textContent = texts.verdictLabel;
+}
+
+function selectLanguage(lang) {
+    currentLanguage = lang;
+    updateUIText();
+    showScreen('difficulty');
+}
+
+function selectDifficulty(level) {
+    score = 0;
+    scoreDisplay.textContent = score;
+    appHeader.classList.remove('hidden');
+    
+    // Grab all questions for that level
+    let cases = allGameData.filter(caseData => caseData.difficulty === level);
+    
+    // Shuffle them
+    cases.sort(() => Math.random() - 0.5);
+    
+    // Only take 10 for this round
+    currentCases = cases.slice(0, 10);
+    
+    currentCaseIndex = 0;
+    
+    showScreen('game');
+    loadCase(currentCaseIndex);
+}
+
+
+
+function loadCase(index) {
+    const caseData = currentCases[index];
+    sourceTextEl.textContent = caseData.sourceText[currentLanguage];
+    submissionTextEl.textContent = caseData.studentSubmission[currentLanguage];
+    
+    verdictOptionsEl.innerHTML = ''; // Clear previous options
+    const options = Object.keys(uiText[currentLanguage].verdicts);
+
+    options.forEach(optionKey => {
+        const button = document.createElement('button');
+        button.className = "btn-primary w-full text-center p-4 bg-white rounded-lg shadow-sm hover:bg-slate-50 border-2 border-slate-200";
+        button.innerHTML = `<span class="text-lg font-semibold text-slate-700">${uiText[currentLanguage].verdicts[optionKey]}</span>`;
+        button.onclick = () => checkAnswer(optionKey, caseData.correctAnswer);
+        verdictOptionsEl.appendChild(button);
+    });
+}
+
+function checkAnswer(selectedAnswer, correctAnswer) {
+    const caseData = currentCases[currentCaseIndex];
+    const feedbackContainer = screens.feedback;
+    
+    feedbackContainer.classList.remove('feedback-correct', 'feedback-incorrect');
+
+    if (selectedAnswer === correctAnswer) {
+        score += 100;
+        feedbackTitleEl.textContent = uiText[currentLanguage].feedback.correctTitle;
+        feedbackIconEl.innerHTML = icons.correct;
+        feedbackContainer.classList.add('feedback-correct');
+    } else {
+        score = Math.max(0, score - 10);
+        feedbackTitleEl.textContent = uiText[currentLanguage].feedback.incorrectTitle;
+        feedbackIconEl.innerHTML = icons.incorrect;
+        feedbackContainer.classList.add('feedback-incorrect');
+    }
+
+    if (currentCaseIndex === currentCases.length - 1) {
+        nextCaseBtn.textContent = uiText[currentLanguage].restartBtn;
+    } else {
+        nextCaseBtn.textContent = uiText[currentLanguage].nextCaseBtn;
+    }
+
+    scoreDisplay.textContent = score;
+    feedbackExplanationEl.textContent = caseData.explanation[currentLanguage];
+    showScreen('feedback');
+}
+
+function nextCase() {
+    currentCaseIndex++;
+    if (currentCaseIndex >= currentCases.length) {
+        showScreen('difficulty'); // Go back to difficulty selection to play again
+        return;
+    }
+    showScreen('game');
+    loadCase(currentCaseIndex);
+}
+
+// Initialize the game
+showScreen('language');
+updateUIText(); // Initial text setup
+
+</script>
+</body>
+</html>
+
