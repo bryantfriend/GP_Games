@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
                                  {
+            fileName: 'citationdetective.html',
+            title: 'Citation Detective 🕵🏻'
+        }, 
+        {
             fileName: 'questiongarden.html',
             title: 'Inquiry Garden: Ask to Grow 🪴'
         }, 
