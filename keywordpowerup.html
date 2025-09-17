@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyword Power-Up!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Saira:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Saira', sans-serif;
+            background-color: #1a103c;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        .game-container {
+            background: radial-gradient(circle, #2c1a62 0%, #1a103c 100%);
+            border: 2px solid #7f5ad5;
+            box-shadow: 0 0 20px rgba(127, 90, 213, 0.5);
+        }
+        .btn-lang {
+            transition: all 0.3s ease;
+        }
+        .btn-lang:hover {
+            background-color: #7f5ad5;
+            color: #ffffff;
+            transform: scale(1.1);
+        }
+        .power-meter-bg {
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 1px solid #4a3f78;
+        }
+        #power-meter-bar {
+            transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
+            background: linear-gradient(90deg, #f9ce34, #00ff9d);
+        }
+        .btn-keyword {
+            background-color: #4a3f78;
+            border: 2px solid #7f5ad5;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .btn-keyword:hover:not(:disabled) {
+            background-color: #6249a8;
+            transform: translateY(-2px);
+        }
+        .btn-keyword.good-keyword {
+            background-color: #f9ce34;
+            color: #1a103c;
+            border-color: #f9ce34;
+            font-weight: bold;
+        }
+        .btn-keyword.bad-keyword {
+            background-color: #33285e;
+            color: #9d8de0;
+            border-color: #4a3f78;
+            opacity: 0.8;
+        }
+        .btn-keyword:disabled {
+            cursor: not-allowed;
+            filter: grayscale(50%);
+        }
+        
+        #sparky-robot {
+            transition: transform 0.5s ease, filter 0.5s ease;
+        }
+        
+        #sparky-robot.powered-up {
+            animation: power-up-animation 1s ease-in-out;
+        }
+
+        @keyframes power-up-animation {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(-5deg); }
+            50% { transform: scale(0.9) rotate(5deg); }
+            75% { transform: scale(1.2) rotate(0deg); filter: drop-shadow(0 0 15px #f9ce34); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 0px #f9ce34); }
+        }
+
+        .message-box {
+            min-height: 48px;
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <!-- Language Selection Screen -->
+    <div id="language-screen" class="text-center p-8">
+        <h1 class="text-5xl font-bold mb-2 text-white">Keyword Power-Up!</h1>
+        <p class="text-2xl mb-8 text-[#f9ce34]">Help Sparky Explore!</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <button onclick="startGame('en')" class="btn-lang text-xl border-2 border-white rounded-lg px-8 py-4">English</button>
+            <button onclick="startGame('zh')" class="btn-lang text-xl border-2 border-white rounded-lg px-8 py-4">中文 (Chinese)</button>
+            <button onclick="startGame('tr')" class="btn-lang text-xl border-2 border-white rounded-lg px-8 py-4">Türkçe (Turkish)</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="hidden w-full max-w-2xl mx-auto p-6 md:p-8 rounded-2xl shadow-lg game-container">
+        <header class="text-center mb-4">
+             <div class="flex justify-between items-center">
+                <h1 id="game-title" class="text-3xl font-bold text-white"></h1>
+                <div id="score-display" class="text-xl font-bold bg-[#f9ce34] text-[#1a103c] px-4 py-1 rounded-lg"></div>
+            </div>
+            <p id="instruction" class="text-lg text-gray-300 mt-2"></p>
+        </header>
+
+        <main>
+            <!-- Topic Section -->
+            <div class="bg-black/20 p-4 rounded-lg border-2 border-[#4a3f78] mb-4">
+                <h2 id="topic-title" class="text-xl font-bold text-[#f9ce34] mb-2"></h2>
+                <p id="question" class="text-lg text-white"></p>
+            </div>
+            
+            <!-- Keyword Selection Section -->
+            <div id="keyword-selection-area" class="mb-4">
+                <p id="click-instruction" class="text-center text-gray-400 mb-2"></p>
+                <div id="keyword-choices" class="flex flex-wrap justify-center gap-3 p-4 bg-black/20 rounded-lg border-2 border-[#4a3f78] min-h-[100px]">
+                    <!-- Keyword buttons will be generated here -->
+                </div>
+            </div>
+            
+             <!-- Feedback Section -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                <div class="md:col-span-2">
+                    <div id="power-meter-label" class="text-sm uppercase tracking-widest mb-2"></div>
+                    <div class="power-meter-bg w-full h-8 rounded-full overflow-hidden">
+                        <div id="power-meter-bar" class="h-full rounded-full" style="width: 0%;"></div>
+                    </div>
+                     <div class="message-box text-center mt-4 p-2 bg-black/20 rounded-lg">
+                        <p id="feedback-message" class="text-lg font-bold"></p>
+                    </div>
+                </div>
+
+                <!-- Robot Visualization -->
+                <div class="md:col-span-1 flex justify-center">
+                    <div id="sparky-container" class="relative">
+                        <svg id="sparky-robot" class="w-32 h-32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <g>
+                                <!-- Body -->
+                                <rect x="25" y="40" width="50" height="40" rx="10" fill="#B0B0B0"/>
+                                <!-- Head -->
+                                <rect x="35" y="20" width="30" height="25" rx="5" fill="#D0D0D0"/>
+                                <!-- Eye -->
+                                <circle cx="50" cy="32" r="7" fill="#00ff9d"/>
+                                <circle cx="50" cy="32" r="3" fill="#1a103c"/>
+                                <!-- Antenna -->
+                                <line x1="50" y1="20" x2="50" y2="10" stroke="#B0B0B0" stroke-width="2"/>
+                                <circle cx="50" cy="8" r="3" fill="#f9ce34"/>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="next-button" onclick="nextCase()" class="hidden w-full mt-4 bg-[#7f5ad5] text-white font-bold py-3 rounded-lg hover:bg-[#9d7bed] transition-colors"></button>
+        </main>
+    </div>
+
+    <script>
+        const gameData = {
+            en: {
+                title: "Keyword Power-Up!",
+                instruction: "Click keywords to charge Sparky's Discovery Drive!",
+                topicTitle: "Current Topic",
+                clickInstruction: "Which words give the most power?",
+                powerMeterLabel: "Discovery Drive Power",
+                nextButton: "Next Topic",
+                score: "Score: ",
+                levelSuccessMessage: "Full Power!",
+                finalMessageTitle: "Exploration Complete!",
+                finalMessage: "Fantastic work! Sparky explored every topic thanks to your amazing keyword skills. Your final score is ",
+                cases: [
+                    {
+                        question: "Why do people recycle plastic bottles?",
+                        goodKeywords: ["recycle", "plastic", "bottles"],
+                        badKeywords: ["why", "do", "people", "benefits", "the", "a"],
+                    },
+                    {
+                        question: "What are the effects of global warming in Africa?",
+                        goodKeywords: ["effects", "global warming", "africa"],
+                        badKeywords: ["what", "are", "in", "the", "climate"],
+                    },
+                    {
+                        question: "How many people live in Bishkek today?",
+                        goodKeywords: ["population", "bishkek", "today"],
+                        badKeywords: ["how", "many", "people", "live", "in"],
+                    },
+                    {
+                        question: "What is the tallest mountain in the world?",
+                        goodKeywords: ["tallest", "mountain", "world"],
+                        badKeywords: ["what", "is", "the", "in", "of"],
+                    },
+                    {
+                        question: "How do honeybees make honey?",
+                        goodKeywords: ["honeybees", "make", "honey"],
+                        badKeywords: ["how", "do", "from", "what", "process"],
+                    },
+                    {
+                        question: "Who was the first person to walk on the moon?",
+                        goodKeywords: ["first", "person", "walk", "moon"],
+                        badKeywords: ["who", "was", "the", "on", "a"],
+                    },
+                    {
+                        question: "What causes the seasons to change on Earth?",
+                        goodKeywords: ["cause", "seasons", "change", "earth"],
+                        badKeywords: ["what", "the", "to", "on", "why"],
+                    },
+                    {
+                        question: "What are the main ingredients to make bread?",
+                        goodKeywords: ["main", "ingredients", "make", "bread"],
+                        badKeywords: ["what", "are", "the", "to", "recipe"],
+                    },
+                    {
+                        question: "How long does it take for the Earth to orbit the sun?",
+                        goodKeywords: ["earth", "orbit", "sun", "time"],
+                        badKeywords: ["how", "long", "does", "it", "take", "for"],
+                    },
+                    {
+                        question: "Which country is home to the kangaroo?",
+                        goodKeywords: ["country", "home", "kangaroo"],
+                        badKeywords: ["which", "is", "to", "the", "live"],
+                    },
+                    {
+                        question: "Why does it rain?",
+                        goodKeywords: ["why", "rain", "cause"],
+                        badKeywords: ["does", "it", "what", "is", "how"],
+                    }
+                ]
+            },
+            zh: {
+                title: "关键词充能！",
+                instruction: "点击关键词为“火花”的发现驱动器充能！",
+                topicTitle: "当前主题",
+                clickInstruction: "哪些词提供的能量最多？",
+                powerMeterLabel: "发现驱动器能量",
+                nextButton: "下一个主题",
+                score: "分数：",
+                levelSuccessMessage: "能量已满！",
+                finalMessageTitle: "探索完成！",
+                finalMessage: "太棒了！感谢你高超的关键词技巧，“火花”探索了所有主题。你的最终分数是 ",
+                cases: [
+                    {
+                        question: "人们为什么要回收塑料瓶？",
+                        goodKeywords: ["回收", "塑料瓶"],
+                        badKeywords: ["人们", "为什么", "原因", "的", "一个", "好处"],
+                    },
+                    {
+                        question: "全球变暖在非洲有什么影响？",
+                        goodKeywords: ["全球变暖", "非洲", "影响"],
+                        badKeywords: ["什么", "是", "在", "的", "气候变化"],
+                    },
+                    {
+                        question: "今天比什凯克有多少人居住？",
+                        goodKeywords: ["人口", "比什凯克", "今天"],
+                        badKeywords: ["多少", "人", "居住", "在", "当前"],
+                    },
+                    {
+                        question: "世界上最高的山是什么？",
+                        goodKeywords: ["最高", "山", "世界"],
+                        badKeywords: ["什么", "是", "的", "在", "哪座"],
+                    },
+                    {
+                        question: "蜜蜂如何酿造蜂蜜？",
+                        goodKeywords: ["蜜蜂", "酿造", "蜂蜜"],
+                        badKeywords: ["如何", "制作", "从", "什么", "过程"],
+                    },
+                    {
+                        question: "谁是第一个在月球上行走的人？",
+                        goodKeywords: ["第一个", "人", "行走", "月球"],
+                        badKeywords: ["谁", "是", "在", "上", "的"],
+                    },
+                    {
+                        question: "是什么导致地球季节变化？",
+                        goodKeywords: ["原因", "季节", "变化", "地球"],
+                        badKeywords: ["什么", "导致", "的", "在", "为什么"],
+                    },
+                    {
+                        question: "制作面包的主要成分是什么？",
+                        goodKeywords: ["主要", "成分", "制作", "面包"],
+                        badKeywords: ["什么", "是", "的", "来", "食谱"],
+                    },
+                    {
+                        question: "地球绕太阳公转需要多长时间？",
+                        goodKeywords: ["地球", "公转", "太阳", "时间"],
+                        badKeywords: ["多长", "时间", "需要", "为了", "多久"],
+                    },
+                    {
+                        question: "哪个国家是袋鼠的家园？",
+                        goodKeywords: ["国家", "家园", "袋鼠"],
+                        badKeywords: ["哪个", "是", "的", "在", "居住"],
+                    },
+                    {
+                        question: "为什么会下雨？",
+                        goodKeywords: ["为什么", "下雨", "原因"],
+                        badKeywords: ["会", "什么", "是", "如何"],
+                    }
+                ]
+            },
+            tr: {
+                title: "Anahtar Kelime Güçlendirme!",
+                instruction: "Sparky'nin Keşif Sürücüsünü şarj etmek için anahtar kelimelere tıkla!",
+                topicTitle: "Mevcut Konu",
+                clickInstruction: "Hangi kelimeler en çok gücü veriyor?",
+                powerMeterLabel: "Keşif Sürücüsü Gücü",
+                nextButton: "Sıradaki Konu",
+                score: "Puan: ",
+                levelSuccessMessage: "Tam Güç!",
+                finalMessageTitle: "Keşif Tamamlandı!",
+                finalMessage: "Harika iş! İnanılmaz anahtar kelime becerilerin sayesinde Sparky her konuyu keşfetti. Final puanın ",
+                cases: [
+                    {
+                        question: "İnsanlar neden plastik şişeleri geri dönüştürür?",
+                        goodKeywords: ["geri dönüşüm", "plastik şişe"],
+                        badKeywords: ["insanlar", "neden", "faydaları", "önemi", "bir", "ve"],
+                    },
+                    {
+                        question: "Küresel ısınmanın Afrika'daki etkileri nelerdir?",
+                        goodKeywords: ["küresel ısınma", "afrika", "etkileri"],
+                        badKeywords: ["ne", "nelerdir", "deki", "için", "iklim"],
+                    },
+                    {
+                        question: "Bugün Bişkek'te kaç kişi yaşıyor?",
+                        goodKeywords: ["nüfus", "bişkek", "bugün"],
+                        badKeywords: ["kaç", "kişi", "yaşıyor", "de", "güncel"],
+                    },
+                    {
+                        question: "Dünyanın en yüksek dağı hangisidir?",
+                        goodKeywords: ["en yüksek", "dağ", "dünya"],
+                        badKeywords: ["hangisidir", "nedir", "olan", "ve", "ismi"],
+                    },
+                    {
+                        question: "Bal arıları nasıl bal yapar?",
+                        goodKeywords: ["bal arıları", "bal", "yapar"],
+                        badKeywords: ["nasıl", "yapıyor", "neden", "ile", "süreç"],
+                    },
+                    {
+                        question: "Aya ilk ayak basan kişi kimdi?",
+                        goodKeywords: ["aya", "ilk", "ayak basan", "kişi"],
+                        badKeywords: ["kimdi", "ne zaman", "olan", "ve", "astronot"],
+                    },
+                    {
+                        question: "Dünya'da mevsimlerin değişmesinin nedeni nedir?",
+                        goodKeywords: ["neden", "mevsimler", "değişir", "dünya"],
+                        badKeywords: ["ne", "için", "olan", "ve", "sebep"],
+                    },
+                    {
+                        question: "Ekmek yapmanın ana malzemeleri nelerdir?",
+                        goodKeywords: ["ana", "malzemeler", "ekmek", "yapmak"],
+                        badKeywords: ["nelerdir", "için", "olan", "ve", "tarif"],
+                    },
+                    {
+                        question: "Dünya'nın Güneş etrafında dönmesi ne kadar sürer?",
+                        goodKeywords: ["dünya", "güneş", "yörünge", "süre"],
+                        badKeywords: ["ne kadar", "sürer", "için", "olan", "zaman"],
+                    },
+                    {
+                        question: "Kanguruların anavatanı hangi ülkedir?",
+                        goodKeywords: ["ülke", "anavatanı", "kanguru"],
+                        badKeywords: ["hangi", "nerede", "olan", "ve", "yaşar"],
+                    },
+                    {
+                        question: "Neden yağmur yağar?",
+                        goodKeywords: ["neden", "yağmur", "yağar"],
+                        badKeywords: ["nasıl", "için", "olan", "ve", "sebep"],
+                    }
+                ]
+            }
+        };
+
+        let currentLanguage = 'en';
+        let currentCaseIndex = 0;
+        let score = 0;
+        let currentPower = 0;
+
+        const languageScreen = document.getElementById('language-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const keywordChoicesContainer = document.getElementById('keyword-choices');
+        const powerMeterBar = document.getElementById('power-meter-bar');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const nextButton = document.getElementById('next-button');
+        const sparkyRobot = document.getElementById('sparky-robot');
+        
+        function startGame(lang) {
+            currentLanguage = lang;
+            languageScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            currentCaseIndex = 0;
+            score = 0;
+            updateUIForLanguage();
+            loadCase(currentCaseIndex);
+        }
+
+        function updateUIForLanguage() {
+            const t = gameData[currentLanguage];
+            document.getElementById('game-title').textContent = t.title;
+            document.getElementById('instruction').textContent = t.instruction;
+            document.getElementById('topic-title').textContent = t.topicTitle;
+            document.getElementById('click-instruction').textContent = t.clickInstruction;
+            document.getElementById('power-meter-label').textContent = t.powerMeterLabel;
+            document.getElementById('next-button').textContent = t.nextButton;
+            updateScoreDisplay();
+        }
+        
+        function updateScoreDisplay() {
+             document.getElementById('score-display').textContent = gameData[currentLanguage].score + score;
+        }
+
+        function loadCase(index) {
+            if (index >= gameData[currentLanguage].cases.length) {
+                showFinalMessage();
+                return;
+            }
+            const currentCase = gameData[currentLanguage].cases[index];
+            document.getElementById('question').textContent = currentCase.question;
+            
+            keywordChoicesContainer.innerHTML = '';
+            const allChoices = [...currentCase.goodKeywords, ...currentCase.badKeywords];
+            const shuffledChoices = allChoices.sort(() => Math.random() - 0.5);
+            
+            shuffledChoices.forEach(choice => {
+                const button = document.createElement('button');
+                button.textContent = choice;
+                button.className = 'btn-keyword text-white font-semibold py-2 px-4 rounded-lg';
+                const isGood = currentCase.goodKeywords.includes(choice);
+                button.dataset.type = isGood ? 'good' : 'bad';
+
+                button.onclick = () => handleKeywordClick(button);
+                keywordChoicesContainer.appendChild(button);
+            });
+
+            resetState();
+        }
+
+        function resetState() {
+            currentPower = 0;
+            updatePowerMeter();
+            feedbackMessage.textContent = '';
+            nextButton.classList.add('hidden');
+            sparkyRobot.classList.remove('powered-up');
+        }
+
+        function handleKeywordClick(button) {
+            if (button.disabled) return;
+            button.disabled = true;
+
+            const type = button.dataset.type;
+            if (type === 'good') {
+                currentPower += 35;
+                score += 10;
+                button.classList.add('good-keyword');
+            } else {
+                currentPower += 5;
+                button.classList.add('bad-keyword');
+            }
+            
+            updatePowerMeter();
+            updateScoreDisplay();
+
+            if (currentPower >= 100) {
+                levelComplete();
+            }
+        }
+        
+        function updatePowerMeter() {
+            const powerPercentage = Math.min(100, currentPower);
+            powerMeterBar.style.width = `${powerPercentage}%`;
+        }
+        
+        function levelComplete() {
+            sparkyRobot.classList.add('powered-up');
+            feedbackMessage.textContent = gameData[currentLanguage].levelSuccessMessage;
+            feedbackMessage.style.color = '#00ff9d';
+            nextButton.classList.remove('hidden');
+
+            // Disable all remaining buttons
+            const buttons = keywordChoicesContainer.querySelectorAll('.btn-keyword');
+            buttons.forEach(btn => btn.disabled = true);
+        }
+
+        function nextCase() {
+            currentCaseIndex++;
+            loadCase(currentCaseIndex);
+        }
+        
+        function showFinalMessage() {
+            const t = gameData[currentLanguage];
+            const mainContent = document.querySelector('main');
+            mainContent.innerHTML = `
+                <div class="text-center p-8 bg-black/30 rounded-lg">
+                    <h2 class="text-3xl font-bold text-[#f9ce34] mb-4">${t.finalMessageTitle}</h2>
+                    <p class="text-xl">${t.finalMessage}${score}.</p>
+                </div>
+            `;
+        }
+
+    </script>
+</body>
+</html>
+
+
