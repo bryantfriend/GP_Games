@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Evasion: A Global Perspectives Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #0c0a18;
+            color: #ffffff;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #game-container {
+            border: 4px solid #7e22ce;
+            border-radius: 1rem;
+            box-shadow: 0 0 20px #7e22ce, 0 0 40px #7e22ce inset;
+            overflow: hidden;
+            position: relative;
+            background: #0c0a18 url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><g fill-opacity="0.3"><circle fill="%23FFFFFF" cx="10" cy="10" r="1"/><circle fill="%23FFFFFF" cx="30" cy="30" r="1"/><circle fill="%23FFFFFF" cx="50" cy="50" r="1.5"/><circle fill="%23FFFFFF" cx="70" cy="70" r="1"/><circle fill="%23FFFFFF" cx="90" cy="90" r="1"/><circle fill="%23FFFFFF" cx="10" cy="90" r="1.5"/><circle fill="%23FFFFFF" cx="90" cy="10" r="1"/><circle fill="%23FFFFFF" cx="50" cy="10" r="1"/><circle fill="%23FFFFFF" cx="10" cy="50" r="1.5"/><circle fill="%23FFFFFF" cx="90" cy="50" r="1"/><circle fill="%23FFFFFF" cx="50" cy="90" r="1.5"/></g></svg>');
+            width: 100%;
+            max-width: 1024px; /* Max width for desktop */
+            max-height: 95vh; /* Max height to fit in viewport */
+        }
+        canvas {
+            display: block;
+            background: transparent;
+            width: 100%;
+            height: 100%;
+        }
+        .ui-element {
+            position: absolute;
+            top: 1rem;
+            padding: 0.5rem 1rem;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px solid #7e22ce;
+            border-radius: 0.5rem;
+            font-size: clamp(0.7rem, 2.5vw, 1rem); /* Responsive font size */
+            text-shadow: 2px 2px #000;
+        }
+        #fuel-bar-container {
+            width: clamp(8rem, 20vw, 12rem);
+            height: 1.5rem;
+            background-color: #333;
+            border: 2px solid #7e22ce;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        #fuel-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10B981, #34D399);
+            transition: width 0.3s ease;
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Changed to start content from top */
+            align-items: center;
+            text-align: center;
+            padding: 2rem 1rem; /* Increased vertical padding */
+            overflow-y: auto; /* Added to allow scrolling if content overflows */
+        }
+        .overlay h1 {
+            font-size: clamp(1.5rem, 6vw, 2.5rem); /* Responsive title font size */
+            color: #a78bfa;
+            margin-bottom: 1rem;
+            text-shadow: 3px 3px #5b21b6;
+        }
+        .overlay p {
+            max-width: 600px;
+            line-height: 1.6;
+            font-size: clamp(0.8rem, 2.5vw, 1rem); /* Responsive paragraph font size */
+        }
+        .button {
+            margin-top: 1.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: clamp(0.9rem, 3vw, 1.1rem); /* Responsive button font size */
+            color: #fff;
+            background-color: #7e22ce;
+            border: 2px solid #a78bfa;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            box-shadow: 0 0 10px #a78bfa;
+            transition: all 0.2s ease;
+        }
+        .button:hover {
+            background-color: #a78bfa;
+            color: #0c0a18;
+            box-shadow: 0 0 15px #a78bfa, 0 0 25px #a78bfa;
+        }
+        #modal {
+            background-color: rgba(12, 10, 24, 0.95);
+            border: 4px solid #7e22ce;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 0 20px #7e22ce, 0 0 40px #7e22ce inset;
+        }
+        #modal p {
+            font-size: clamp(0.8rem, 2.5vw, 1rem);
+        }
+        #modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .modal-button {
+            padding: 0.75rem 1.5rem;
+            font-size: clamp(0.7rem, 2.5vw, 0.9rem);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .reliable {
+            background-color: #10B981;
+            border-color: #34D399;
+        }
+        .reliable:hover {
+            background-color: #34D399;
+        }
+        .unreliable {
+            background-color: #EF4444;
+            border-color: #F87171;
+        }
+        .unreliable:hover {
+            background-color: #F87171;
+        }
+        #feedback {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: clamp(0.75rem, 2.5vw, 0.9rem);
+            height: 80px; /* Fixed height to prevent layout shifts */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container" class="relative aspect-[4/3]">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- UI Elements -->
+        <div id="score-label" class="ui-element left-4">SCORE: 0</div>
+        <div class="ui-element right-4 flex items-center gap-2">
+            <span id="fuel-label">FUEL:</span>
+            <div id="fuel-bar-container">
+                <div id="fuel-bar" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <!-- Language Selection Screen -->
+        <div id="language-screen" class="overlay">
+            <h1>Select Language</h1>
+            <p>Please choose your language to begin.</p>
+            <div class="flex flex-col sm:flex-row gap-4 mt-4">
+                <button class="button lang-button" data-lang="en">English</button>
+                <button class="button lang-button" data-lang="zh">中文</button>
+                <button class="button lang-button" data-lang="tr">Türkçe</button>
+            </div>
+        </div>
+
+        <!-- Start Screen Overlay -->
+        <div id="start-screen" class="overlay hidden">
+            <h1 id="start-title"></h1>
+            <p id="start-p1" class="mb-4"></p>
+            <p id="start-p2" class="mb-4"></p>
+            <p id="start-p3"></p>
+            <button id="start-button" class="button"></button>
+        </div>
+
+        <!-- Game Over Screen Overlay -->
+        <div id="game-over-screen" class="overlay hidden">
+            <h1 id="game-over-title"></h1>
+            <p><span id="final-score-label"></span> <span id="final-score">0</span></p>
+            <p id="game-over-p" class="mt-4"></p>
+            <button id="restart-button" class="button"></button>
+        </div>
+        
+        <!-- Website Evaluation Modal -->
+        <div id="modal-container" class="overlay hidden">
+            <div id="modal" class="w-full max-w-2xl">
+                <h2 id="modal-title" class="text-xl mb-4 text-center"></h2>
+                <p id="modal-prompt" class="mb-4 text-center"></p>
+                <div id="modal-buttons">
+                    <button id="reliable-button" class="modal-button reliable"></button>
+                    <button id="unreliable-button" class="modal-button unreliable"></button>
+                </div>
+                <div id="feedback" class="text-center"></div>
+                <button id="continue-button" class="button hidden" style="margin-top: 1rem;"></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameContainer = document.getElementById('game-container');
+
+        // --- UI Elements ---
+        const scoreEl = document.getElementById('score-label');
+        const fuelBarEl = document.getElementById('fuel-bar');
+        const languageScreen = document.getElementById('language-screen');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const modalContainer = document.getElementById('modal-container');
+        const startButton = document.getElementById('start-button');
+        const restartButton = document.getElementById('restart-button');
+        const finalScoreEl = document.getElementById('final-score');
+        const modalPromptEl = document.getElementById('modal-prompt');
+        const reliableButton = document.getElementById('reliable-button');
+        const unreliableButton = document.getElementById('unreliable-button');
+        const feedbackEl = document.getElementById('feedback');
+        const continueButton = document.getElementById('continue-button');
+        
+        let gameWidth, gameHeight;
+
+        let player;
+        let asteroids = [];
+        let websites = [];
+        let score = 0;
+        let fuel = 100;
+        let gameOver = false;
+        let gameRunning = false;
+        let gamePaused = false;
+        let currentWebsiteQuestion = null;
+        let currentLanguage = 'en';
+
+        let keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+        };
+
+        // --- Translations and Questions Database ---
+        const translations = {
+            'en': {
+                score: "SCORE:",
+                fuel: "FUEL:",
+                startTitle: "Website Evasion",
+                startP1: "Welcome, Cadet! Your mission is to navigate the digital galaxy. Dodge the asteroids of misinformation and collect fuel from reliable websites to power your ship.",
+                startP2: "Use ARROW KEYS or TOUCH the sides of the screen to move. When you collect a website, you'll be quizzed. Answer correctly to gain fuel. Answer incorrectly, and you'll lose some!",
+                startP3: "Don't run out of fuel!",
+                startButton: "Start Mission",
+                gameOverTitle: "Mission Over",
+                finalScore: "Your final score is:",
+                gameOverP: "Remember: Just like in space, being careful where you get your information online keeps you safe and on the right track!",
+                restartButton: "Try Again",
+                modalTitle: "Evaluate This Source!",
+                reliable: "Reliable",
+                unreliable: "Unreliable",
+                correct: "Correct!",
+                incorrect: "Oops, that's not quite right.",
+                continueButton: "Continue",
+                questions: [
+                    { prompt: "A site ending in '.gov', like 'nasa.gov', with detailed articles and author names.", isReliable: true, explanation: "'.gov' sites are official government sources. Clear authorship adds credibility." },
+                    { prompt: "A blog called 'SuperSecretAlienFacts.wordpress.com' claims a new planet was found, but cites no sources.", isReliable: false, explanation: "Personal blogs without authors or sources are not trustworthy for factual claims." },
+                    { prompt: "A news article from a major organization like Reuters or The Associated Press.", isReliable: true, explanation: "Major news organizations have editors and fact-checkers to ensure accuracy." },
+                    { prompt: "An article titled 'SHOCKING TRUTH about vegetables!' filled with pop-up ads and spelling errors.", isReliable: false, explanation: "'Clickbait' headlines, ads, and poor grammar are red flags for unreliable sites." },
+                    { prompt: "A research paper on a university's '.edu' website that lists its sources.", isReliable: true, explanation: "'.edu' sites are for educational institutions, and peer-reviewed research is highly reliable." },
+                    { prompt: "A social media post from an anonymous account that makes a wild claim with no proof.", isReliable: false, explanation: "Information on social media without sources should always be questioned." },
+                    { prompt: "A Wikipedia article on a controversial topic with a banner saying it needs more citations.", isReliable: false, explanation: "Even useful sites like Wikipedia can be unreliable if an article lacks proper sources." },
+                    { prompt: "A website selling a 'miracle cure' product, citing only customer testimonials.", isReliable: false, explanation: "Sites trying to sell you something are biased. Real evidence comes from science." },
+                    { prompt: "A .org website for a known charity, like the Red Cross, with financial reports available.", isReliable: true, explanation: "Reputable '.org' sites are often reliable, especially if they are transparent." },
+                    { prompt: "A news article that is sponsored by a company the article is praising.", isReliable: false, explanation: "Sponsored content is a form of advertising and is inherently biased." },
+                    { prompt: "A website that looks like a real news site but has a strange URL like 'abcnews.com.co'.", isReliable: false, explanation: "Fake news sites often mimic real ones with slightly altered URLs. Always check the address bar!" },
+                    { prompt: "A post on a forum like Reddit giving medical advice from a user with no listed medical credentials.", isReliable: false, explanation: "Medical advice should only come from qualified professionals, not anonymous forum users." },
+                    { prompt: "A YouTube video explaining a historical event, which lists its sources (books, academic papers) in the description.", isReliable: true, explanation: "Citing reliable sources is a great sign, even for videos. It shows the creator did their research." },
+                    { prompt: "An article about a political event from a website known for satire, like 'The Onion'.", isReliable: false, explanation: "Satire sites are meant to be funny, not factual. They are not real news sources." },
+                    { prompt: "A website with an 'About Us' page that is vague and doesn't name any authors or staff.", isReliable: false, explanation: "A lack of transparency about who is running a website is a significant red flag." },
+                    { prompt: "A scientific study published in a well-known journal like 'Nature' or 'Science'.", isReliable: true, explanation: "Peer-reviewed scientific journals are among the most reliable sources of information." },
+                    { prompt: "An article from 5 years ago being shared on social media as if it's happening today.", isReliable: false, explanation: "Outdated information can be misleading. Always check the publication date." },
+                    { prompt: "An online store with overwhelmingly positive reviews, but all the reviews were posted on the same day.", isReliable: false, explanation: "This pattern suggests the reviews might be fake. Be skeptical of unnatural review activity." },
+                    { prompt: "A website that requires you to disable your ad blocker to view content because it's full of pop-ups.", isReliable: false, explanation: "Excessive, intrusive advertising is often a sign of a low-quality or untrustworthy website." },
+                    { prompt: "A government database providing public statistics, such as the Bureau of Labor Statistics.", isReliable: true, explanation: "Official government databases are excellent sources for raw data and statistics." },
+                ]
+            },
+            'zh': {
+                score: "分数:",
+                fuel: "燃料:",
+                startTitle: "网站规避",
+                startP1: "欢迎，学员！你的任务是遨游数字银河。躲避错误信息的小行星，并从可靠的网站收集燃料为飞船提供动力。",
+                startP2: "使用箭头键或触摸屏幕两侧来移动。收集到一个网站时，你将接受测验。正确回答以获得燃料。回答错误，则会损失一些燃料！",
+                startP3: "不要耗尽燃料！",
+                startButton: "开始任务",
+                gameOverTitle: "任务结束",
+                finalScore: "你的最终分数是:",
+                gameOverP: "请记住：就像在太空中一样，谨慎选择在线信息来源能让你安全并走上正确的轨道！",
+                restartButton: "再试一次",
+                modalTitle: "评估此来源！",
+                reliable: "可靠",
+                unreliable: "不可靠",
+                correct: "正确！",
+                incorrect: "哎呀，不完全正确。",
+                continueButton: "继续",
+                questions: [
+                    { prompt: "一个以 '.gov.cn' 结尾的网站，如 'miit.gov.cn'，提供详细的政策文件和发布日期。", isReliable: true, explanation: "'.gov.cn' 网站是官方政府来源，非常可靠。" },
+                    { prompt: "一个微信公众号文章，标题耸人听闻，但没有注明作者或信息来源。", isReliable: false, explanation: "没有作者或来源的公众号文章，尤其是标题党，通常不可信。" },
+                    { prompt: "来自新华网或人民网等主要官方新闻机构的新闻报道。", isReliable: true, explanation: "主要官方新闻机构有严格的审查流程以确保准确性。" },
+                    { prompt: "一篇关于健康养生的文章，声称某种食物可以治愈所有疾病，并充满了广告。", isReliable: false, explanation: "夸大其词的健康声明和过多的广告是不可靠网站的危险信号。" },
+                    { prompt: "一所大学 '.edu.cn' 网站上的研究论文，并列出了其引用的参考文献。", isReliable: true, explanation: "'.edu.cn' 网站是教育机构的，经过同行评审的研究是高度可靠的。" },
+                    { prompt: "一个微博匿名账户发布的关于名人的惊人言论，但没有任何证据。", isReliable: false, explanation: "社交媒体上没有来源的信息应该始终受到质疑。" },
+                    { prompt: "百度百科关于一个热门话题的词条，但页面顶部有横幅提示“内容有待完善”。", isReliable: false, explanation: "即使是百度百科，如果词条缺乏适当的来源，也可能是不可靠的。" },
+                    { prompt: "一个销售“神奇”保健品的网站，其引用的唯一证据是客户感言。", isReliable: false, explanation: "试图向你销售产品的网站存在偏见。真正的证据来自科学研究。" },
+                    { prompt: "一个知乎用户的回答，详细分析了一个技术问题，该用户有“优秀回答者”认证。", isReliable: true, explanation: "在知乎等平台上，经过认证的专家的回答通常是可靠的，但仍需谨慎。" },
+                    { prompt: "一个短视频平台上的视频，展示了一个“生活小窍门”，但评论里很多人说这是假的。", isReliable: false, explanation: "用户评论是发现虚假信息的重要线索。" },
+                    { prompt: "一个看起来像官方新闻网站的网站，但网址是 'people.com-1.cn'。", isReliable: false, explanation: "假新闻网站经常模仿真实网站的网址。务必检查地址栏！" },
+                    { prompt: "一个育儿论坛的帖子，建议用某种偏方治疗婴儿发烧。", isReliable: false, explanation: "医疗建议应仅来自合格的专业人士，而不是匿名论坛用户。" },
+                    { prompt: "一个B站UP主制作的历史讲解视频，并在简介中列出了参考书籍和资料。", isReliable: true, explanation: "引用可靠的来源是一个好迹象，这表明创作者做了研究。" },
+                    { prompt: "一篇声称可以通过投资某个虚拟货币快速致富的文章，并承诺高额回报。", isReliable: false, explanation: "承诺不切实际回报的投资建议通常是骗局。" },
+                    { prompt: "一个“关于我们”页面信息模糊，没有列出任何运营人员或公司信息的网站。", isReliable: false, explanation: "网站运营方信息不透明是一个重要的危险信号。" },
+                    { prompt: "在中国知网 (CNKI) 上发表的学术期刊文章。", isReliable: true, explanation: "像知网这样的学术数据库是查找可靠研究信息的最佳来源之一。" },
+                    { prompt: "几年前的旧新闻在微信群里被当作今天发生的事情转发。", isReliable: false, explanation: "过时的信息可能具有误导性。务必检查发布日期。" },
+                    { prompt: "一个淘宝店铺，商品好评如潮，但所有好评都集中在同一天发布。", isReliable: false, explanation: "这种模式表明评论可能是刷的。要对不自然的评论活动持怀疑态度。" },
+                    { prompt: "一个充满“弹窗广告”的游戏下载网站，要求你安装多个程序。", isReliable: false, explanation: "过多的侵入性广告和捆绑安装通常是低质量或恶意网站的标志。" },
+                    { prompt: "国家统计局网站，提供各种公开的统计数据。", isReliable: true, explanation: "官方政府数据库是获取原始数据和统计信息的绝佳来源。" },
+                ]
+            },
+            'tr': {
+                score: "SKOR:",
+                fuel: "YAKIT:",
+                startTitle: "Web Sitesinden Kaçınma",
+                startP1: "Hoş geldin, Harbiyeli! Görevin dijital galakside gezinmek. Yanlış bilginin asteroitlerinden kaç ve gemine güç sağlamak için güvenilir web sitelerinden yakıt topla.",
+                startP2: "Hareket etmek için OK TUŞLARINI kullan veya ekranın kenarlarına DOKUN. Bir web sitesi topladığında, bir soruyla karşılaşacaksın. Yakıt kazanmak için doğru cevap ver. Yanlış cevap verirsen biraz yakıt kaybedersin!",
+                startP3: "Yakıtın bitmesin!",
+                startButton: "Görevi Başlat",
+                gameOverTitle: "Görev Tamamlandı",
+                finalScore: "Nihai skorun:",
+                gameOverP: "Unutma: Tıpkı uzayda olduğu gibi, çevrimiçi bilgilerini nereden aldığına dikkat etmek seni güvende tutar ve doğru yolda ilerlemeni sağlar!",
+                restartButton: "Tekrar Dene",
+                modalTitle: "Bu Kaynağı Değerlendir!",
+                reliable: "Güvenilir",
+                unreliable: "Güvenilmez",
+                correct: "Doğru!",
+                incorrect: "Hayır, pek doğru değil.",
+                continueButton: "Devam Et",
+                questions: [
+                    { prompt: "'.gov.tr' ile biten, 'saglik.gov.tr' gibi, detaylı makaleler ve yazar isimleri içeren bir site.", isReliable: true, explanation: "'.gov.tr' siteleri resmi hükümet kaynaklarıdır. Açık yazarlık güvenilirliği artırır." },
+                    { prompt: "'GizliGercekler.blogspot.com' adlı, kaynak belirtmeden sansasyonel iddialarda bulunan bir blog.", isReliable: false, explanation: "Yazar veya kaynak belirtmeyen kişisel bloglar gerçekler için güvenilir değildir." },
+                    { prompt: "Anadolu Ajansı veya büyük, tanınmış bir haber kuruluşundan güncel bir olay hakkında bir haber.", isReliable: true, explanation: "Büyük haber kuruluşlarının doğruluğu sağlamak için editörleri ve denetçileri vardır." },
+                    { prompt: "'ŞOK GERÇEK!' başlıklı, açılır pencereler ve yazım hatalarıyla dolu bir makale.", isReliable: false, explanation: "'Tıklama tuzağı' başlıklar, aşırı reklamlar ve dilbilgisi hataları güvenilmez sitelerin işaretidir." },
+                    { prompt: "Bir üniversitenin '.edu.tr' web sitesinde, kaynaklarını listeleyen bir araştırma makalesi.", isReliable: true, explanation: "'.edu.tr' siteleri eğitim kurumlarına aittir ve hakemli araştırmalar son derece güvenilirdir." },
+                    { prompt: "Anonim bir sosyal medya hesabından kanıt olmadan yapılan çılgınca bir iddia.", isReliable: false, explanation: "Sosyal medyadaki kaynaksız bilgiler her zaman sorgulanmalıdır." },
+                    { prompt: "Ekşi Sözlük gibi bir sitede, tartışmalı bir konuda yazılmış, kaynak gösterilmeyen bir entry.", isReliable: false, explanation: "Ekşi Sözlük gibi siteler kullanıcı tarafından oluşturulur, ansiklopedi değildir. Kaynaksız bilgiler güvenilmezdir." },
+                    { prompt: "'Mucize tedavi' ürünü satan bir web sitesi, tek kanıt olarak müşteri yorumlarını gösteriyor.", isReliable: false, explanation: "Size bir şey satmaya çalışan siteler taraflıdır. Gerçek kanıt bilimden gelir." },
+                    { prompt: "TÜBİTAK gibi bilinen bir kurumun, projeleri ve yayınları listeleyen resmi sitesi.", isReliable: true, explanation: "Saygın kurumların resmi siteleri genellikle güvenilirdir." },
+                    { prompt: "Bir şirketi öven bir haber makalesi, ancak makalenin o şirket tarafından 'sponsorlu içerik' olduğu belirtiliyor.", isReliable: false, explanation: "Sponsorlu içerik bir reklam biçimidir ve doğası gereği taraflıdır." },
+                    { prompt: "Gerçek bir haber sitesi gibi görünen ancak 'haberturk.com.tv' gibi garip bir URL'ye sahip bir site.", isReliable: false, explanation: "Sahte haber siteleri genellikle gerçek siteleri biraz değiştirilmiş URL'lerle taklit eder. Adres çubuğunu daima kontrol edin!" },
+                    { prompt: "DonanımHaber forumunda, tıp diploması olmayan bir kullanıcının verdiği tıbbi tavsiye.", isReliable: false, explanation: "Tıbbi tavsiye sadece nitelikli profesyonellerden alınmalıdır, anonim forum kullanıcılarından değil." },
+                    { prompt: "Tarihi bir olayı anlatan ve açıklama kısmında kaynaklarını (kitaplar, makaleler) listeleyen bir YouTube videosu.", isReliable: true, explanation: "Güvenilir kaynaklara atıfta bulunmak, video içerikleri için bile harika bir işarettir." },
+                    { prompt: "Sadece 'Son Dakika' başlıklarıyla dikkat çekmeye çalışan ve içi boş haberler yapan bir haber sitesi.", isReliable: false, explanation: "Sürekli ve yanıltıcı 'Son Dakika' başlıkları genellikle düşük kaliteli sitelerin bir özelliğidir." },
+                    { prompt: "'Hakkımızda' sayfası belirsiz olan ve herhangi bir yazar veya yönetici adı belirtmeyen bir web sitesi.", isReliable: false, explanation: "Bir web sitesini kimin yönettiği konusunda şeffaflık olmaması önemli bir tehlike işaretidir." },
+                    { prompt: "Dergipark gibi akademik bir platformda yayınlanmış bir bilimsel makale.", isReliable: true, explanation: "Hakemli bilimsel dergiler en güvenilir bilgi kaynakları arasındadır." },
+                    { prompt: "5 yıl önceki bir haberin WhatsApp gruplarında bugün oluyormuş gibi paylaşılması.", isReliable: false, explanation: "Eski bilgiler yanıltıcı olabilir. Her zaman yayın tarihini kontrol edin." },
+                    { prompt: "Bir e-ticaret sitesinde, bir ürüne yapılan çok olumlu yorumların hepsinin aynı gün yapılmış olması.", isReliable: false, explanation: "Bu durum, yorumların sahte olabileceğini düşündürür. Doğal olmayan yorum aktivitelerine şüpheyle yaklaşın." },
+                    { prompt: "İçeriği görmek için reklam engelleyicinizi devre dışı bırakmanızı isteyen, açılır pencerelerle dolu bir site.", isReliable: false, explanation: "Aşırı, rahatsız edici reklamlar genellikle düşük kaliteli veya güvenilmez bir web sitesinin işaretidir." },
+                    { prompt: "e-Devlet Kapısı üzerinden erişilen resmi bir belge veya bilgi.", isReliable: true, explanation: "e-Devlet gibi resmi hükümet portalları, kişisel ve kamusal bilgiler için en güvenilir kaynaklardır." }
+                ]
+            }
+        };
+
+        // --- Game Classes ---
+        class Player {
+            constructor() {
+                this.width = 40;
+                this.height = 50;
+                this.x = gameWidth / 2 - this.width / 2;
+                this.y = gameHeight - this.height - 20;
+                this.speed = 7;
+                this.dx = 0;
+            }
+
+            draw() {
+                ctx.fillStyle = '#a78bfa'; // Ship body
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.width / 2, this.y);
+                ctx.lineTo(this.x, this.y + this.height);
+                ctx.lineTo(this.x + this.width, this.y + this.height);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#ffffff'; // Cockpit
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, this.y + this.height / 3, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            update() {
+                if (keys.ArrowLeft && this.x > 0) {
+                    this.x -= this.speed;
+                }
+                if (keys.ArrowRight && this.x < gameWidth - this.width) {
+                    this.x += this.speed;
+                }
+                this.draw();
+            }
+        }
+
+        class GameObject {
+            constructor(x, y, radius, speed, type) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.speed = speed;
+                this.type = type; // 'asteroid' or 'website'
+            }
+
+            draw() {
+                ctx.save();
+                if (this.type === 'asteroid') {
+                    ctx.fillStyle = '#9CA3AF'; // Gray for asteroid
+                    ctx.strokeStyle = '#4B5563';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                } else { // 'website'
+                    ctx.fillStyle = '#34D399'; // Green for website
+                    ctx.strokeStyle = '#10B981';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.rect(this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    // Document icon lines
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(this.x - this.radius * 0.6, this.y - this.radius * 0.5 + i * 8);
+                        ctx.lineTo(this.x + this.radius * 0.6, this.y - this.radius * 0.5 + i * 8);
+                        ctx.stroke();
+                    }
+                }
+                ctx.restore();
+            }
+
+            update() {
+                this.y += this.speed;
+                this.draw();
+            }
+        }
+        
+        // --- Game Logic Functions ---
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            const t = translations[lang];
+
+            // Update UI Text
+            document.getElementById('fuel-label').textContent = t.fuel;
+            
+            document.getElementById('start-title').textContent = t.startTitle;
+            document.getElementById('start-p1').textContent = t.startP1;
+            document.getElementById('start-p2').textContent = t.startP2;
+            document.getElementById('start-p3').textContent = t.startP3;
+            document.getElementById('start-button').textContent = t.startButton;
+            
+            document.getElementById('game-over-title').textContent = t.gameOverTitle;
+            document.getElementById('final-score-label').textContent = t.finalScore;
+            document.getElementById('game-over-p').textContent = t.gameOverP;
+            document.getElementById('restart-button').textContent = t.restartButton;
+            
+            document.getElementById('modal-title').textContent = t.modalTitle;
+            document.getElementById('reliable-button').textContent = t.reliable;
+            document.getElementById('unreliable-button').textContent = t.unreliable;
+
+            languageScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        }
+
+        function init() {
+            resizeCanvas();
+            player = new Player();
+            asteroids = [];
+            websites = [];
+            score = 0;
+            fuel = 100;
+            gameOver = false;
+            gameRunning = true;
+            gamePaused = false;
+            updateUI();
+            
+            for(let i = 0; i < 5; i++) {
+                 spawnAsteroid();
+            }
+            spawnWebsite();
+
+            gameLoop();
+        }
+
+        function spawnAsteroid() {
+            const radius = Math.random() * 20 + 10;
+            const x = Math.random() * (gameWidth - radius * 2) + radius;
+            const y = Math.random() * -gameHeight;
+            const speed = Math.random() * 2 + 2;
+            asteroids.push(new GameObject(x, y, radius, speed, 'asteroid'));
+        }
+
+        function spawnWebsite() {
+            const radius = 15;
+            const x = Math.random() * (gameWidth - radius * 2) + radius;
+            const y = Math.random() * -gameHeight - 200;
+            const speed = 3;
+            websites.push(new GameObject(x, y, radius, speed, 'website'));
+        }
+
+        function gameLoop() {
+            if (gameOver) return;
+
+            if (!gamePaused) {
+                ctx.clearRect(0, 0, gameWidth, gameHeight);
+
+                player.update();
+                
+                asteroids.forEach((asteroid, index) => {
+                    asteroid.update();
+                    if (asteroid.y > gameHeight + asteroid.radius) {
+                        asteroids.splice(index, 1);
+                        spawnAsteroid();
+                    }
+                    if (checkCollision(player, asteroid)) {
+                         endGame();
+                    }
+                });
+
+                websites.forEach((website, index) => {
+                    website.update();
+                    if (website.y > gameHeight + website.radius) {
+                        websites.splice(index, 1);
+                        spawnWebsite();
+                    }
+                    if (checkCollision(player, website)) {
+                        websites.splice(index, 1);
+                        handleWebsiteCollection();
+                    }
+                });
+
+                fuel -= 0.05;
+                if (fuel <= 0) {
+                    fuel = 0;
+                    endGame();
+                }
+                
+                score++;
+                updateUI();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function checkCollision(player, object) {
+            const playerCenterX = player.x + player.width / 2;
+            const playerCenterY = player.y + player.height / 2;
+            const distX = Math.abs(playerCenterX - object.x);
+            const distY = Math.abs(playerCenterY - object.y);
+            if (distX > (player.width / 2 + object.radius)) { return false; }
+            if (distY > (player.height / 2 + object.radius)) { return false; }
+            if (distX <= (player.width / 2)) { return true; }
+            if (distY <= (player.height / 2)) { return true; }
+            const dx = distX - player.width / 2;
+            const dy = distY - player.height / 2;
+            return (dx * dx + dy * dy <= (object.radius * object.radius));
+        }
+
+        function handleWebsiteCollection() {
+            gamePaused = true;
+            const questions = translations[currentLanguage].questions;
+            const questionIndex = Math.floor(Math.random() * questions.length);
+            currentWebsiteQuestion = questions[questionIndex];
+            
+            modalPromptEl.textContent = currentWebsiteQuestion.prompt;
+            feedbackEl.textContent = '';
+            feedbackEl.style.backgroundColor = 'transparent';
+
+            // Reset button visibility
+            document.getElementById('modal-buttons').classList.remove('hidden');
+            continueButton.classList.add('hidden');
+
+            modalContainer.classList.remove('hidden');
+        }
+        
+        function handleQuizAnswer(isReliableGuess) {
+             if (!currentWebsiteQuestion) return;
+             
+             const t = translations[currentLanguage];
+
+             // Toggle button visibility
+             document.getElementById('modal-buttons').classList.add('hidden');
+             continueButton.textContent = t.continueButton;
+             continueButton.classList.remove('hidden');
+
+             if (isReliableGuess === currentWebsiteQuestion.isReliable) {
+                 feedbackEl.textContent = t.correct + " " + currentWebsiteQuestion.explanation;
+                 feedbackEl.style.backgroundColor = 'rgba(16, 185, 129, 0.5)'; // Green tint
+                 fuel = Math.min(100, fuel + 25);
+             } else {
+                 feedbackEl.textContent = t.incorrect + " " + currentWebsiteQuestion.explanation;
+                 feedbackEl.style.backgroundColor = 'rgba(239, 68, 68, 0.5)'; // Red tint
+                 fuel = Math.max(0, fuel - 15);
+             }
+             
+             updateUI();
+        }
+
+        function resumeGame() {
+            modalContainer.classList.add('hidden');
+            gamePaused = false;
+            currentWebsiteQuestion = null;
+            spawnWebsite();
+        }
+
+        function updateUI() {
+            scoreEl.textContent = `${translations[currentLanguage].score} ${score}`;
+            fuelBarEl.style.width = `${fuel}%`;
+        }
+
+        function endGame() {
+            gameOver = true;
+            gameRunning = false;
+            finalScoreEl.textContent = score;
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        function resizeCanvas() {
+            const rect = gameContainer.getBoundingClientRect();
+            gameWidth = canvas.width = rect.width;
+            gameHeight = canvas.height = rect.height;
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            if (player) {
+                player.y = gameHeight - player.height - 20; // Reposition player on resize
+            }
+        });
+        
+        window.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.key)) {
+                keys[e.key] = true;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.key)) {
+                keys[e.key] = false;
+            }
+        });
+        
+        gameContainer.addEventListener('touchstart', (e) => {
+            if (!gameRunning || gamePaused) return;
+            handleTouch(e.touches[0].clientX);
+            e.preventDefault();
+        });
+        gameContainer.addEventListener('touchmove', (e) => {
+            if (!gameRunning || gamePaused) return;
+            handleTouch(e.touches[0].clientX);
+            e.preventDefault();
+        });
+        gameContainer.addEventListener('touchend', (e) => {
+            if (!gameRunning || gamePaused) return;
+            keys.ArrowLeft = false;
+            keys.ArrowRight = false;
+             e.preventDefault();
+        });
+
+        function handleTouch(touchX) {
+            const rect = gameContainer.getBoundingClientRect();
+            const touchPosition = touchX - rect.left;
+            if (touchPosition < player.x + player.width / 2) {
+                keys.ArrowLeft = true;
+                keys.ArrowRight = false;
+            } else {
+                keys.ArrowLeft = false;
+                keys.ArrowRight = true;
+            }
+        }
+
+        document.querySelectorAll('.lang-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                setLanguage(e.target.dataset.lang);
+            });
+        });
+
+        startButton.addEventListener('click', () => {
+            startScreen.classList.add('hidden');
+            init();
+        });
+
+        restartButton.addEventListener('click', () => {
+            // Reset to language selection
+            gameOverScreen.classList.add('hidden');
+            languageScreen.classList.remove('hidden');
+        });
+        
+        reliableButton.addEventListener('click', () => handleQuizAnswer(true));
+        unreliableButton.addEventListener('click', () => handleQuizAnswer(false));
+        continueButton.addEventListener('click', resumeGame);
+        
+        resizeCanvas();
+    </script>
+</body>
+</html>
+
