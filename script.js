@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'reliablewebsites.html',
+            title: 'Space Website Adventure ☄️'
+        }, 
+        {
             fileName: 'keywordpowerup.html',
             title: 'Keyword Powerup 🤖'
         }, 
