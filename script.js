@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'spottingbias.html',
+            title: 'Spotting Bias 🕵🏻‍♀️'
+        }, 
+        {
             fileName: 'sourceslasher.html',
             title: 'Source Slasher 🤺'
         }, 
