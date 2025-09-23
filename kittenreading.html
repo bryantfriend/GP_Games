@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fact Cat</title>
+    <style>
+        :root {
+            --bg-color: #f0f8ff;
+            --text-color: #333;
+            --accent-color: #ff69b4;
+            --fact-color: #4682b4;
+            --opinion-color: #9370db;
+            --correct-color: #32cd32;
+            --incorrect-color: #dc143c;
+            --border-radius: 12px;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #game-container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #header {
+            padding: 15px 20px;
+            background-color: var(--accent-color);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        #lang-select {
+            padding: 5px;
+            border-radius: 5px;
+            border: none;
+        }
+        #main-content {
+            display: flex;
+            flex-direction: row;
+            padding: 20px;
+            gap: 20px;
+        }
+        #article-container {
+            flex: 2;
+        }
+        #kitten-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #fdf5e6;
+            padding: 20px;
+            border-radius: var(--border-radius);
+        }
+        #article-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--fact-color);
+        }
+        #article-content {
+            line-height: 1.6;
+            font-size: 1.1em;
+        }
+        .clickable {
+            background-color: #fffacd;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .clickable:hover {
+            background-color: #fff0a0;
+        }
+        #progress-bar-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        #progress-bar {
+            width: 0%;
+            height: 20px;
+            background-color: var(--correct-color);
+            border-radius: 10px;
+            transition: width 0.5s;
+        }
+        #kitten-svg {
+            width: 150px;
+            height: auto;
+        }
+        #kitten-status {
+            font-weight: bold;
+            margin-top: 10px;
+            color: var(--accent-color);
+        }
+
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
+        }
+        .modal-content h2 { margin-top: 0; }
+        .modal-buttons { margin-top: 20px; }
+        .modal-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: transform 0.2s;
+        }
+        .modal-buttons button:hover {
+            transform: scale(1.05);
+        }
+        #fact-btn { background-color: var(--fact-color); }
+        #opinion-btn { background-color: var(--opinion-color); }
+
+        /* Feedback styling */
+        #feedback-modal .modal-content { border-top: 10px solid; }
+        #feedback-text { font-size: 1.1em; margin-top: 15px; }
+        #next-btn {
+            margin-top: 20px;
+            padding: 10px 30px;
+            border: none;
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        #completion-modal .modal-content {
+            border-top: 10px solid var(--correct-color);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="header">
+            <h1 id="game-title">Fact Cat 🐱</h1>
+            <select id="lang-select">
+                <option value="en">English</option>
+                <option value="zh">中文 (Chinese)</option>
+                <option value="tr">Türkçe (Turkish)</option>
+            </select>
+        </div>
+        <div id="main-content">
+            <div id="article-container">
+                <h2 id="article-title"></h2>
+                <p id="article-content"></p>
+            </div>
+            <div id="kitten-container">
+                <svg id="kitten-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <g id="kitten-body" style="transition: transform 0.3s ease;">
+                        <path d="M 50,95 C 20,95 20,60 50,60 C 80,60 80,95 50,95 Z" fill="#ffcc99"/>
+                        <path id="kitten-head" d="M 50,25 C 25,25 25,60 50,60 C 75,60 75,25 50,25 Z" fill="#ffcc99"/>
+                        <path d="M 35,25 L 25,10 L 40,25 Z" fill="#ffcc99" stroke="#333" stroke-width="1"/>
+                        <path d="M 65,25 L 75,10 L 60,25 Z" fill="#ffcc99" stroke="#333" stroke-width="1"/>
+                        <circle id="left-eye" cx="40" cy="40" r="3" fill="#333"/>
+                        <circle id="right-eye" cx="60" cy="40" r="3" fill="#333"/>
+                        <path id="mouth" d="M 45,50 Q 50,55 55,50" stroke="#333" stroke-width="1" fill="none"/>
+                    </g>
+                </svg>
+                <p id="kitten-status"></p>
+                <div id="progress-bar-container">
+                    <div id="progress-bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="choice-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-question"></h2>
+            <div class="modal-buttons">
+                <button id="fact-btn"></button>
+                <button id="opinion-btn"></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="feedback-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="feedback-title"></h2>
+            <p id="feedback-text"></p>
+            <button id="next-btn"></button>
+        </div>
+    </div>
+    
+    <div id="completion-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="completion-title"></h2>
+            <p id="completion-text"></p>
+            <button id="play-again-btn"></button>
+        </div>
+    </div>
+
+<script>
+const gameData = {
+    // UI TEXTS
+    ui: {
+        gameTitle: { en: "Fact Cat 🐱", zh: "事实小猫 🐱", tr: "Gerçek Kedi 🐱" },
+        kittenStatusHappy: { en: "The kitten is purring!", zh: "小猫在咕噜咕噜叫！", tr: "Kedicik mırıldıyor!" },
+        kittenStatusNeutral: { en: "The kitten is waiting.", zh: "小猫在等待。", tr: "Kedicik bekliyor." },
+        kittenStatusSad: { en: "The kitten is confused.", zh: "小猫很困惑。", tr: "Kedicik şaşkın." },
+        modalQuestion: { en: "Is this a Fact or an Opinion?", zh: "这是事实还是观点？", tr: "Bu bir Gerçek mi yoksa Fikir mi?" },
+        factBtn: { en: "Fact", zh: "事实", tr: "Gerçek" },
+        opinionBtn: { en: "Opinion", zh: "Fikir", tr: "Fikir" },
+        correctTitle: { en: "Correct!", zh: "正确！", tr: "Doğru!" },
+        incorrectTitle: { en: "Not Quite!", zh: "不太对！", tr: "Tam Değil!" },
+        nextBtn: { en: "Continue", zh: "继续", tr: "Devam" },
+        completionTitle: { en: "Article Complete!", zh: "文章完成！", tr: "Makale Tamamlandı!" },
+        completionText: { en: "Great job! You helped the kitten understand the news.", zh: "做得好！你帮助小猫理解了新闻。", tr: "Harika iş! Kediciğin haberleri anlamasına yardımcı oldun." },
+        playAgainBtn: { en: "Next Article", zh: "下一篇文章", tr: "Sonraki Makale" },
+    },
+    // ARTICLES DATA
+    articles: [
+        {
+            "title": {
+                "en": "The Best Way to Raise a Kitten",
+                "zh": "抚养小猫的最佳方式",
+                "tr": "Bir Yavru Kedi Yetiştirmenin En İyi Yolu"
+            },
+            "content": {
+                "en": "Bringing a new kitten home is an exciting experience. <span class='clickable' data-type='fact' data-id='0'>Kittens require a diet rich in protein to grow.</span> This is because they are natural carnivores. <span class='clickable' data-type='opinion' data-id='1'>In my view, dry food is better for their teeth than wet food.</span> Furthermore, providing lots of toys is essential. <span class='clickable'data-type='opinion' data-id='2'>The most entertaining toys are laser pointers.</span> Finally, <span class='clickable' data-type='fact' data-id='3'>all kittens need access to fresh water at all times.</span> Taking care of a kitten is the most rewarding job in the world.",
+                "zh": "带一只新小猫回家是一次激动人心的经历。<span class='clickable' data-type='fact' data-id='0'>小猫需要富含蛋白质的饮食才能成长。</span>这是因为它们是天生的食肉动物。<span class='clickable' data-type='opinion' data-id='1'>在我看来，干粮比湿粮对它们的牙齿更好。</span>此外，提供大量玩具至关重要。<span class='clickable' data-type='opinion' data-id='2'>最有趣的玩具是激光笔。</span>最后，<span class='clickable' data-type='fact' data-id='3'>所有小猫都需要随时能喝到新鲜的水。</span>照顾小猫是世界上最有意义的工作。",
+                "tr": "Evinize yeni bir yavru kedi getirmek heyecan verici bir deneyimdir. <span class='clickable' data-type='fact' data-id='0'>Yavru kedilerin büyümek için protein açısından zengin bir beslenmeye ihtiyacı vardır.</span> Çünkü onlar doğal etoburlardır. <span class='clickable' data-type='opinion' data-id='1'>Bence kuru mama, dişleri için yaş mamadan daha iyidir.</span> Ayrıca, bol miktarda oyuncak sağlamak çok önemlidir. <span class='clickable' data-type='opinion' data-id='2'>En eğlenceli oyuncaklar lazer işaretleyicilerdir.</span> Son olarak, <span class='clickable' data-type='fact' data-id='3'>tüm yavru kedilerin her zaman temiz suya erişimi olması gerekir.</span> Bir yavru kediye bakmak dünyadaki en ödüllendirici iştir."
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact**. A kitten's need for a high-protein diet is a verifiable biological requirement.",
+                    "This is an **Opinion**. The phrase 'In my view' signals a personal belief, not a proven fact. Others might believe wet food is better.",
+                    "This is an **Opinion**. 'Most entertaining' is subjective. Another kitten might prefer a toy mouse.",
+                    "This is a **Fact**. Access to fresh water is a fundamental need for all animals, which can be verified by veterinarians and biologists."
+                ],
+                "zh": [
+                    "这是一个**事实**。小猫需要高蛋白饮食是一个可以验证的生物学要求。",
+                    "这是一个**观点**。短语“在我看来”表示个人信念，而非已证实的事实。其他人可能认为湿粮更好。",
+                    "这是一个**观点**。“最有趣”是主观的。另一只小猫可能更喜欢玩具老鼠。",
+                    "这是一个**事实**。能够获得淡水是所有动物的基本需求，这一点可以由兽医和生物学家证实。"
+                ],
+                "tr": [
+                    "Bu bir **Gerçektir**. Bir kedinin yüksek proteinli bir diyete olan ihtiyacı, doğrulanabilir biyolojik bir gerekliliktir.",
+                    "Bu bir **Fikirdir**. 'Bence' ifadesi kişisel bir inancı belirtir, kanıtlanmış bir gerçeği değil. Başkaları yaş mamanın daha iyi olduğuna inanabilir.",
+                    "Bu bir **Fikirdir**. 'En eğlenceli' öznel bir ifadedir. Başka bir kedi oyuncak bir fareyi tercih edebilir.",
+                    "Bu bir **Gerçektir**. Temiz suya erişim, veterinerler ve biyologlar tarafından doğrulanabilen tüm hayvanlar için temel bir ihtiyaçtır."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Sleep Habits",
+                "zh": "小猫的睡眠习惯",
+                "tr": "Yavru Kedi Uyku Alışkanlıkları"
+            },
+            "content": {
+                "en": "Kittens are known for sleeping a lot. <span class='clickable' data-type='fact' data-id='0'>Newborn kittens can sleep for over 20 hours a day.</span> This is crucial for their development. <span class='clickable' data-type='opinion' data-id='1'>A fluffy bed is the best place for a kitten to sleep.</span> They often twitch in their sleep, which is adorable. <span class='clickable' data-type='fact' data-id='2'>This twitching is associated with the REM (Rapid Eye Movement) stage of sleep.</span> Everyone should own a kitten just to watch them nap.",
+                "zh": "众所周知，小猫很能睡。<span class='clickable' data-type='fact' data-id='0'>新生小猫一天能睡超过20个小时。</span>这对它们的发育至关重要。<span class='clickable' data-type='opinion' data-id='1'>毛茸茸的床是小猫睡觉的最佳地点。</span>它们睡觉时经常抽搐，非常可爱。<span class='clickable' data-type='fact' data-id='2'>这种抽搐与快速眼动（REM）睡眠阶段有关。</span>每个人都应该养一只小猫，只为看它们打盹。",
+                "tr": "Yavru kediler çok uyumalarıyla bilinir. <span class='clickable' data-type='fact' data-id='0'>Yeni doğan yavrular günde 20 saatten fazla uyuyabilir.</span> Bu, onların gelişimi için çok önemlidir. <span class='clickable' data-type='opinion' data-id='1'>Yavru bir kedinin uyuması için en iyi yer yumuşacık bir yataktır.</span> Uykularında sık sık seğirirler, ki bu çok sevimlidir. <span class='clickable' data-type='fact' data-id='2'>Bu seğirme, uykunun REM (Hızlı Göz Hareketi) evresi ile ilişkilidir.</span> Sırf onları uyurken izlemek için herkesin bir yavru kedisi olmalı."
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact**. The sleep duration of newborn kittens is a measurable and documented biological phenomenon.",
+                    "This is an **Opinion**. 'Best place' is a value judgment. A kitten might be just as happy in a cardboard box.",
+                    "This is a **Fact**. The connection between twitching and REM sleep in mammals is a scientifically studied subject."
+                ],
+                "zh": [
+                    "这是一个**事实**。新生小猫的睡眠时长是可测量和记录的生物现象。",
+                    "这是一个**观点**。“最佳地点”是一种价值判断。小猫可能在纸板箱里也同样快乐。",
+                    "这是一个**事实**。哺乳动物的抽搐与快速眼动睡眠之间的联系是经过科学研究的课题。"
+                ],
+                "tr": [
+                    "Bu bir **Gerçektir**. Yeni doğan yavruların uyku süresi, ölçülebilir ve belgelenmiş biyolojik bir olgudur.",
+                    "Bu bir **Fikirdir**. 'En iyi yer' bir değer yargısıdır. Bir kedi karton bir kutuda da aynı derecede mutlu olabilir.",
+                    "Bu bir **Gerçektir**. Memelilerde seğirme ile REM uykusu arasındaki bağlantı bilimsel olarak araştırılmış bir konudur."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 3",
+                "zh": "小猫文章3",
+                "tr": "Yavru Kedi Makalesi 3"
+            },
+            "content": {
+                "en": "This is article 3. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 3.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 3 about kittens.</span>",
+                "zh": "这是文章3。<span class='clickable' data-type='fact' data-id='0'>小猫事实3。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点3。</span>",
+                "tr": "Bu makale 3. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 3.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 3.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 3.",
+                    "This is an **Opinion** for article 3."
+                ],
+                "zh": [
+                    "这是文章3的**事实**。",
+                    "这是文章3的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 3 için bir **Gerçektir**.",
+                    "Bu makale 3 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 4",
+                "zh": "小猫文章4",
+                "tr": "Yavru Kedi Makalesi 4"
+            },
+            "content": {
+                "en": "This is article 4. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 4.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 4 about kittens.</span>",
+                "zh": "这是文章4。<span class='clickable' data-type='fact' data-id='0'>小猫事实4。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点4。</span>",
+                "tr": "Bu makale 4. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 4.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 4.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 4.",
+                    "This is an **Opinion** for article 4."
+                ],
+                "zh": [
+                    "这是文章4的**事实**。",
+                    "这是文章4的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 4 için bir **Gerçektir**.",
+                    "Bu makale 4 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 5",
+                "zh": "小猫文章5",
+                "tr": "Yavru Kedi Makalesi 5"
+            },
+            "content": {
+                "en": "This is article 5. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 5.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 5 about kittens.</span>",
+                "zh": "这是文章5。<span class='clickable' data-type='fact' data-id='0'>小猫事实5。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点5。</span>",
+                "tr": "Bu makale 5. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 5.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 5.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 5.",
+                    "This is an **Opinion** for article 5."
+                ],
+                "zh": [
+                    "这是文章5的**事实**。",
+                    "这是文章5的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 5 için bir **Gerçektir**.",
+                    "Bu makale 5 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 6",
+                "zh": "小猫文章6",
+                "tr": "Yavru Kedi Makalesi 6"
+            },
+            "content": {
+                "en": "This is article 6. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 6.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 6 about kittens.</span>",
+                "zh": "这是文章6。<span class='clickable' data-type='fact' data-id='0'>小猫事实6。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点6。</span>",
+                "tr": "Bu makale 6. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 6.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 6.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 6.",
+                    "This is an **Opinion** for article 6."
+                ],
+                "zh": [
+                    "这是文章6的**事实**。",
+                    "这是文章6的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 6 için bir **Gerçektir**.",
+                    "Bu makale 6 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 7",
+                "zh": "小猫文章7",
+                "tr": "Yavru Kedi Makalesi 7"
+            },
+            "content": {
+                "en": "This is article 7. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 7.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 7 about kittens.</span>",
+                "zh": "这是文章7。<span class='clickable' data-type='fact' data-id='0'>小猫事实7。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点7。</span>",
+                "tr": "Bu makale 7. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 7.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 7.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 7.",
+                    "This is an **Opinion** for article 7."
+                ],
+                "zh": [
+                    "这是文章7的**事实**。",
+                    "这是文章7的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 7 için bir **Gerçektir**.",
+                    "Bu makale 7 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 8",
+                "zh": "小猫文章8",
+                "tr": "Yavru Kedi Makalesi 8"
+            },
+            "content": {
+                "en": "This is article 8. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 8.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 8 about kittens.</span>",
+                "zh": "这是文章8。<span class='clickable' data-type='fact' data-id='0'>小猫事实8。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点8。</span>",
+                "tr": "Bu makale 8. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 8.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 8.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 8.",
+                    "This is an **Opinion** for article 8."
+                ],
+                "zh": [
+                    "这是文章8的**事实**。",
+                    "这是文章8的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 8 için bir **Gerçektir**.",
+                    "Bu makale 8 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 9",
+                "zh": "小猫文章9",
+                "tr": "Yavru Kedi Makalesi 9"
+            },
+            "content": {
+                "en": "This is article 9. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 9.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 9 about kittens.</span>",
+                "zh": "这是文章9。<span class='clickable' data-type='fact' data-id='0'>小猫事实9。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点9。</span>",
+                "tr": "Bu makale 9. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 9.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 9.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 9.",
+                    "This is an **Opinion** for article 9."
+                ],
+                "zh": [
+                    "这是文章9的**事实**。",
+                    "这是文章9的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 9 için bir **Gerçektir**.",
+                    "Bu makale 9 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 10",
+                "zh": "小猫文章10",
+                "tr": "Yavru Kedi Makalesi 10"
+            },
+            "content": {
+                "en": "This is article 10. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 10.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 10 about kittens.</span>",
+                "zh": "这是文章10。<span class='clickable' data-type='fact' data-id='0'>小猫事实10。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点10。</span>",
+                "tr": "Bu makale 10. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 10.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 10.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 10.",
+                    "This is an **Opinion** for article 10."
+                ],
+                "zh": [
+                    "这是文章10的**事实**。",
+                    "这是文章10的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 10 için bir **Gerçektir**.",
+                    "Bu makale 10 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 11",
+                "zh": "小猫文章11",
+                "tr": "Yavru Kedi Makalesi 11"
+            },
+            "content": {
+                "en": "This is article 11. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 11.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 11 about kittens.</span>",
+                "zh": "这是文章11。<span class='clickable' data-type='fact' data-id='0'>小猫事实11。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点11。</span>",
+                "tr": "Bu makale 11. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 11.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 11.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 11.",
+                    "This is an **Opinion** for article 11."
+                ],
+                "zh": [
+                    "这是文章11的**事实**。",
+                    "这是文章11的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 11 için bir **Gerçektir**.",
+                    "Bu makale 11 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 12",
+                "zh": "小猫文章12",
+                "tr": "Yavru Kedi Makalesi 12"
+            },
+            "content": {
+                "en": "This is article 12. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 12.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 12 about kittens.</span>",
+                "zh": "这是文章12。<span class='clickable' data-type='fact' data-id='0'>小猫事实12。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点12。</span>",
+                "tr": "Bu makale 12. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 12.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 12.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 12.",
+                    "This is an **Opinion** for article 12."
+                ],
+                "zh": [
+                    "这是文章12的**事实**。",
+                    "这是文章12的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 12 için bir **Gerçektir**.",
+                    "Bu makale 12 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 13",
+                "zh": "小猫文章13",
+                "tr": "Yavru Kedi Makalesi 13"
+            },
+            "content": {
+                "en": "This is article 13. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 13.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 13 about kittens.</span>",
+                "zh": "这是文章13。<span class='clickable' data-type='fact' data-id='0'>小猫事实13。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点13。</span>",
+                "tr": "Bu makale 13. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 13.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 13.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 13.",
+                    "This is an **Opinion** for article 13."
+                ],
+                "zh": [
+                    "这是文章13的**事实**。",
+                    "这是文章13的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 13 için bir **Gerçektir**.",
+                    "Bu makale 13 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 14",
+                "zh": "小猫文章14",
+                "tr": "Yavru Kedi Makalesi 14"
+            },
+            "content": {
+                "en": "This is article 14. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 14.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 14 about kittens.</span>",
+                "zh": "这是文章14。<span class='clickable' data-type='fact' data-id='0'>小猫事实14。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点14。</span>",
+                "tr": "Bu makale 14. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 14.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 14.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 14.",
+                    "This is an **Opinion** for article 14."
+                ],
+                "zh": [
+                    "这是文章14的**事实**。",
+                    "这是文章14的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 14 için bir **Gerçektir**.",
+                    "Bu makale 14 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 15",
+                "zh": "小猫文章15",
+                "tr": "Yavru Kedi Makalesi 15"
+            },
+            "content": {
+                "en": "This is article 15. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 15.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 15 about kittens.</span>",
+                "zh": "这是文章15。<span class='clickable' data-type='fact' data-id='0'>小猫事实15。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点15。</span>",
+                "tr": "Bu makale 15. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 15.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 15.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 15.",
+                    "This is an **Opinion** for article 15."
+                ],
+                "zh": [
+                    "这是文章15的**事实**。",
+                    "这是文章15的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 15 için bir **Gerçektir**.",
+                    "Bu makale 15 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 16",
+                "zh": "小猫文章16",
+                "tr": "Yavru Kedi Makalesi 16"
+            },
+            "content": {
+                "en": "This is article 16. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 16.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 16 about kittens.</span>",
+                "zh": "这是文章16。<span class='clickable' data-type='fact' data-id='0'>小猫事实16。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点16。</span>",
+                "tr": "Bu makale 16. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 16.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 16.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 16.",
+                    "This is an **Opinion** for article 16."
+                ],
+                "zh": [
+                    "这是文章16的**事实**。",
+                    "这是文章16的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 16 için bir **Gerçektir**.",
+                    "Bu makale 16 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 17",
+                "zh": "小猫文章17",
+                "tr": "Yavru Kedi Makalesi 17"
+            },
+            "content": {
+                "en": "This is article 17. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 17.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 17 about kittens.</span>",
+                "zh": "这是文章17。<span class='clickable' data-type='fact' data-id='0'>小猫事实17。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点17。</span>",
+                "tr": "Bu makale 17. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 17.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 17.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 17.",
+                    "This is an **Opinion** for article 17."
+                ],
+                "zh": [
+                    "这是文章17的**事实**。",
+                    "这是文章17的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 17 için bir **Gerçektir**.",
+                    "Bu makale 17 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 18",
+                "zh": "小猫文章18",
+                "tr": "Yavru Kedi Makalesi 18"
+            },
+            "content": {
+                "en": "This is article 18. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 18.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 18 about kittens.</span>",
+                "zh": "这是文章18。<span class='clickable' data-type='fact' data-id='0'>小猫事实18。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点18。</span>",
+                "tr": "Bu makale 18. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 18.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 18.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 18.",
+                    "This is an **Opinion** for article 18."
+                ],
+                "zh": [
+                    "这是文章18的**事实**。",
+                    "这是文章18的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 18 için bir **Gerçektir**.",
+                    "Bu makale 18 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 19",
+                "zh": "小猫文章19",
+                "tr": "Yavru Kedi Makalesi 19"
+            },
+            "content": {
+                "en": "This is article 19. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 19.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 19 about kittens.</span>",
+                "zh": "这是文章19。<span class='clickable' data-type='fact' data-id='0'>小猫事实19。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点19。</span>",
+                "tr": "Bu makale 19. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 19.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 19.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 19.",
+                    "This is an **Opinion** for article 19."
+                ],
+                "zh": [
+                    "这是文章19的**事实**。",
+                    "这是文章19的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 19 için bir **Gerçektir**.",
+                    "Bu makale 19 için bir **Fikirdir**."
+                ]
+            }
+        },
+        {
+            "title": {
+                "en": "Kitten Article 20",
+                "zh": "小猫文章20",
+                "tr": "Yavru Kedi Makalesi 20"
+            },
+            "content": {
+                "en": "This is article 20. <span class='clickable' data-type='fact' data-id='0'>Kittens fact 20.</span> <span class='clickable' data-type='opinion' data-id='1'>Opinion 20 about kittens.</span>",
+                "zh": "这是文章20。<span class='clickable' data-type='fact' data-id='0'>小猫事实20。</span><span class='clickable' data-type='opinion' data-id='1'>关于小猫的观点20。</span>",
+                "tr": "Bu makale 20. <span class='clickable' data-type='fact' data-id='0'>Yavru kedi gerçeği 20.</span> <span class='clickable' data-type='opinion' data-id='1'>Yavru kediler hakkında görüş 20.</span>"
+            },
+            "explanations": {
+                "en": [
+                    "This is a **Fact** for article 20.",
+                    "This is an **Opinion** for article 20."
+                ],
+                "zh": [
+                    "这是文章20的**事实**。",
+                    "这是文章20的**观点**。"
+                ],
+                "tr": [
+                    "Bu makale 20 için bir **Gerçektir**.",
+                    "Bu makale 20 için bir **Fikirdir**."
+                ]
+            }
+        }
+    ]
+};
+
+// State variables
+let currentLang = 'en';
+let currentArticleIndex = 0;
+let answeredCount = 0;
+let totalClickables = 0;
+let currentClickable = null;
+
+// DOM Elements
+const langSelect = document.getElementById('lang-select');
+const gameTitle = document.getElementById('game-title');
+const articleTitle = document.getElementById('article-title');
+const articleContent = document.getElementById('article-content');
+const kittenStatus = document.getElementById('kitten-status');
+const progressBar = document.getElementById('progress-bar');
+
+// Modal Elements
+const choiceModal = document.getElementById('choice-modal');
+const feedbackModal = document.getElementById('feedback-modal');
+const completionModal = document.getElementById('completion-modal');
+const modalQuestion = document.getElementById('modal-question');
+const factBtn = document.getElementById('fact-btn');
+const opinionBtn = document.getElementById('opinion-btn');
+const feedbackTitle = document.getElementById('feedback-title');
+const feedbackText = document.getElementById('feedback-text');
+const nextBtn = document.getElementById('next-btn');
+const completionTitle = document.getElementById('completion-title');
+const completionText = document.getElementById('completion-text');
+const playAgainBtn = document.getElementById('play-again-btn');
+
+// Kitten SVG elements
+const kittenHead = document.getElementById('kitten-head');
+const mouth = document.getElementById('mouth');
+
+// --- Functions ---
+function setLanguage(lang) {
+    currentLang = lang;
+    // Update all UI text
+    gameTitle.textContent = gameData.ui.gameTitle[lang];
+    kittenStatus.textContent = gameData.ui.kittenStatusNeutral[lang];
+    modalQuestion.textContent = gameData.ui.modalQuestion[lang];
+    factBtn.textContent = gameData.ui.factBtn[lang];
+    opinionBtn.textContent = gameData.ui.opinionBtn[lang];
+    nextBtn.textContent = gameData.ui.nextBtn[lang];
+    completionTitle.textContent = gameData.ui.completionTitle[lang];
+    completionText.textContent = gameData.ui.completionText[lang];
+    playAgainBtn.textContent = gameData.ui.playAgainBtn[lang];
+    loadArticle(currentArticleIndex);
+}
+
+function loadArticle(index) {
+    const article = gameData.articles[index];
+    articleTitle.textContent = article.title[currentLang];
+    articleContent.innerHTML = article.content[currentLang];
+    
+    answeredCount = 0;
+    const clickables = articleContent.querySelectorAll('.clickable');
+    totalClickables = clickables.length;
+    
+    clickables.forEach(span => {
+        span.addEventListener('click', handleWordClick);
+    });
+    
+    updateProgressBar();
+    setKittenMood('neutral');
+}
+
+function handleWordClick(event) {
+    currentClickable = event.target;
+    choiceModal.style.display = 'flex';
+}
+
+function checkAnswer(choice) {
+    const correctType = currentClickable.dataset.type;
+    const isCorrect = choice === correctType;
+    
+    choiceModal.style.display = 'none';
+    showFeedback(isCorrect);
+}
+
+function showFeedback(isCorrect) {
+    const article = gameData.articles[currentArticleIndex];
+    const explanationId = currentClickable.dataset.id;
+    const explanation = article.explanations[currentLang][explanationId];
+    
+    feedbackModal.style.display = 'flex';
+    const modalContent = feedbackModal.querySelector('.modal-content');
+
+    if (isCorrect) {
+        feedbackTitle.textContent = gameData.ui.correctTitle[currentLang];
+        modalContent.style.borderColor = 'var(--correct-color)';
+        feedbackText.innerHTML = explanation;
+        setKittenMood('happy');
+        answeredCount++;
+        currentClickable.style.backgroundColor = '#c8e6c9'; // Light green
+        currentClickable.style.pointerEvents = 'none';
+    } else {
+        feedbackTitle.textContent = gameData.ui.incorrectTitle[currentLang];
+        modalContent.style.borderColor = 'var(--incorrect-color)';
+        feedbackText.innerHTML = explanation;
+        setKittenMood('sad');
+    }
+    updateProgressBar();
+}
+
+function updateProgressBar() {
+    const percentage = totalClickables > 0 ? (answeredCount / totalClickables) * 100 : 0;
+    progressBar.style.width = percentage + '%';
+    
+    if (answeredCount === totalClickables && totalClickables > 0) {
+        setTimeout(() => {
+            completionModal.style.display = 'flex';
+        }, 500);
+    }
+}
+
+function setKittenMood(mood) {
+    kittenStatus.textContent = gameData.ui[`kittenStatus${mood.charAt(0).toUpperCase() + mood.slice(1)}`][currentLang];
+    if (mood === 'happy') {
+        mouth.setAttribute('d', 'M 45,50 Q 50,58 55,50'); // Smile
+        kittenHead.style.transform = 'rotate(-5deg)';
+    } else if (mood === 'sad') {
+        mouth.setAttribute('d', 'M 45,55 Q 50,50 55,55'); // Frown
+        kittenHead.style.transform = 'rotate(5deg)';
+    } else { // neutral
+        mouth.setAttribute('d', 'M 45,50 Q 50,55 55,50');
+        kittenHead.style.transform = 'none';
+    }
+}
+
+// --- Event Listeners ---
+langSelect.addEventListener('change', (e) => setLanguage(e.target.value));
+factBtn.addEventListener('click', () => checkAnswer('fact'));
+opinionBtn.addEventListener('click', () => checkAnswer('opinion'));
+nextBtn.addEventListener('click', () => {
+    feedbackModal.style.display = 'none';
+    setKittenMood('neutral');
+});
+playAgainBtn.addEventListener('click', () => {
+    completionModal.style.display = 'none';
+    currentArticleIndex = (currentArticleIndex + 1) % gameData.articles.length;
+    loadArticle(currentArticleIndex);
+});
+
+
+// --- Initial Load ---
+setLanguage('en');
+
+</script>
+
+</body>
+</html>
