@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'kittenreading.html',
+            title: 'Fact vs. Opinion 😺'
+        }, 
+        {
             fileName: 'spottingbias.html',
             title: 'Spotting Bias 🕵🏻‍♀️'
         }, 
