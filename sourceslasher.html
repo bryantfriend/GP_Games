@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source Slasher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            overflow: hidden;
+            touch-action: none; /* Disables pinch-zoom and other touch gestures */
+        }
+        .game-container {
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><g fill="%23a78bfa" fill-opacity="0.1"><rect x="0" y="0" width="10" height="10"/><rect x="20" y="20" width="10" height="10"/><rect x="40" y="40" width="10" height="10"/><rect x="60" y="60" width="10" height="10"/><rect x="80" y="80" width="10" height="10"/><rect x="10" y="90" width="10" height="10"/><rect x="90" y="10" width="10" height="10"/><rect x="30" y="70" width="10" height="10"/><rect x="70" y="30" width="10" height="10"/><rect x="50" y="0" width="10" height="10"/><rect x="0" y="50" width="10" height="10"/><rect x="50" y="100" width="10" height="10"/><rect x="100" y="50" width="10" height="10"/><rect x="20" y="0" width="10" height="10"/><rect x="0" y="20" width="10" height="10"/><rect x="80" y="0" width="10" height="10"/><rect x="0" y="80" width="10" height="10"/><rect x="40" y="100" width="10" height="10"/><rect x="100" y="40" width="10" height="10"/><rect x="60" y="100" width="10" height="10"/><rect x="100" y="60" width="10" height="10"/></g></svg>');
+            background-color: #f3e8ff;
+        }
+        #game-area {
+            overflow: hidden;
+        }
+        .source-item {
+            position: absolute;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-align: center;
+            color: #3730a3;
+            font-size: 14px;
+            white-space: nowrap;
+            transition: transform 0.1s ease-out, box-shadow 0.2s;
+            border: 3px solid #3730a3;
+            box-shadow: 4px 4px 0px #3730a3;
+            background-color: #fff;
+        }
+        .source-item.primary { background-color: #dbeafe; }
+        .source-item.secondary { background-color: #d1fae5; }
+        .source-item.highlight {
+            box-shadow: 0px 0px 20px 5px #fef08a;
+            transform: scale(1.05);
+        }
+        #player-character {
+            position: absolute;
+            width: 100px;
+            height: 120px;
+            pointer-events: none;
+            transition: transform 0.1s;
+            transform-origin: center center;
+        }
+        #sword {
+            transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+            transform-origin: 90% 90%;
+        }
+        /* Directional Styling */
+
+        #player-character.facing-right #sword,
+        #player-character.facing-left #sword { transform: rotate(20deg); }
+        #player-character.facing-up #sword { transform: translate(15px, -35px) rotate(-90deg); }
+        #player-character.facing-down #sword { transform: translate(-15px, 35px) rotate(90deg); }
+
+        /* Slicing Animations */
+        #player-character.slicing.facing-right #sword,
+        #player-character.slicing.facing-left #sword {
+            transform: rotate(-90deg) translate(20px, -20px);
+        }
+        #player-character.slicing.facing-up #sword {
+            transform: translate(45px, -30px) rotate(0deg); /* Slice sideways */
+        }
+        #player-character.slicing.facing-down #sword {
+            transform: translate(-45px, 30px) rotate(180deg); /* Slice sideways */
+        }
+
+        .button {
+             background-color: #4f46e5; color: white; padding: 1rem 2rem; border-radius: 0.5rem;
+             border: 3px solid #3730a3; box-shadow: 4px 4px 0px #3730a3; transition: all 0.1s ease-in-out;
+        }
+        .button:hover { transform: translateY(-2px); box-shadow: 6px 6px 0px #3730a3; }
+        .button:active { transform: translateY(2px); box-shadow: 2px 2px 0px #3730a3; }
+        .feedback-text {
+            position: absolute; font-size: 24px; font-weight: bold; opacity: 0;
+            transition: opacity 0.5s, transform 0.5s; transform: translateY(0); pointer-events: none;
+        }
+        .feedback-text.show { opacity: 1; transform: translateY(-50px); }
+        #xp-bar-container { background-color: #e0e7ff; border: 3px solid #3730a3; border-radius: 10px; overflow: hidden; box-shadow: 2px 2px 0 #3730a3; }
+        #xp-bar-fill { background-color: #f59e0b; height: 100%; width: 0%; transition: width 0.3s ease-in-out; }
+        #level-up-screen { z-index: 100; }
+        .powerup-card {
+            border: 4px solid #4338ca; background-color: #fff; box-shadow: 6px 6px 0 #4338ca;
+            transition: all 0.2s ease; cursor: pointer;
+        }
+        .powerup-card:hover { transform: translateY(-4px) scale(1.02); box-shadow: 10px 10px 0 #4338ca; }
+    </style>
+</head>
+<body class="bg-purple-100 text-indigo-900 flex items-center justify-center h-screen game-container">
+
+    <div id="start-screen" class="text-center p-8 bg-white/80 backdrop-blur-sm rounded-lg shadow-xl border-4 border-indigo-900">
+        <h1 class="text-4xl md:text-6xl mb-4 text-indigo-900">Source Slasher</h1>
+        <p class="mb-2 max-w-lg">A historian's work is never done! Help Scholar the Swordmaster sort through historical sources.</p>
+        <p class="mb-6 max-w-lg text-sm text-indigo-700">Use Arrow/WASD keys or the virtual joystick to move. Click or tap to slice sources.</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <button id="start-easy-button" class="button text-xl">Easy Mode</button>
+            <button id="start-hard-button" class="button text-xl bg-red-600 border-red-800 shadow-[4px_4px_0px_#b91c1c] hover:shadow-[6px_6px_0px_#b91c1c]">Hard Mode</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="hidden w-full h-full">
+        <div class="absolute top-0 left-0 right-0 p-4 flex justify-between items-center bg-white/50 backdrop-blur-sm z-10 text-xl">
+            <div class="flex flex-col items-center">
+                <span>Score: <span id="score">0</span></span>
+                <span>Level: <span id="level">1</span></span>
+            </div>
+            <div class="w-1/3">
+                 <div id="xp-bar-container" class="w-full h-6"><div id="xp-bar-fill"></div></div>
+            </div>
+            <div>
+                <span class="text-2xl">Lives: <span id="lives">❤️❤️❤️</span></span>
+            </div>
+        </div>
+         <div id="objective-text" class="absolute top-20 left-1/2 -translate-x-1/2 text-2xl text-center font-bold px-4 py-2 rounded-lg bg-white border-4 border-indigo-900 shadow-lg transition-colors duration-300">Slice Primary Sources!</div>
+        <div id="game-area" class="relative w-full h-full"></div>
+        <div id="joystick-container" class="absolute bottom-8 left-8 hidden z-20">
+            <div id="joystick-base" class="w-32 h-32 bg-gray-500/40 rounded-full flex items-center justify-center border-4 border-gray-500/60">
+                <div id="joystick-handle" class="w-16 h-16 bg-gray-700/60 rounded-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over-screen" class="hidden text-center p-8 bg-white/80 backdrop-blur-sm rounded-lg shadow-xl border-4 border-indigo-900 z-50">
+        <h2 class="text-5xl mb-4">Game Over!</h2>
+        <p class="text-2xl mb-2">Final Score: <span id="final-score">0</span></p>
+        <p class="text-2xl mb-2">Highest Level: <span id="final-level">1</span></p>
+        <p id="game-over-message" class="mb-6 max-w-md text-indigo-700"></p>
+        <button id="restart-button" class="button text-2xl">Play Again</button>
+    </div>
+    
+    <div id="level-up-screen" class="hidden absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-4 z-[100]">
+        <h2 class="text-5xl text-white mb-2">LEVEL UP!</h2>
+        <p class="text-xl text-amber-300 mb-6">Choose a Power-Up!</p>
+        <div id="powerup-choices" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Power-up cards will be inserted here -->
+        </div>
+        <p id="level-up-tip" class="text-base text-white/80 italic mt-8 max-w-xl text-center"></p>
+    </div>
+
+    <div id="explanation-modal" class="hidden absolute inset-0 bg-black/75 flex flex-col items-center justify-center p-4 z-[101]">
+        <div class="bg-white p-8 rounded-lg shadow-xl border-4 border-red-800 max-w-lg text-center">
+            <h2 class="text-3xl text-red-700 mb-4">Mistake!</h2>
+            <p class="text-lg mb-2">The source was:</p>
+            <p id="explanation-source-text" class="text-xl font-bold p-2 bg-gray-200 rounded mb-4"></p>
+            <p id="explanation-text" class="text-lg text-indigo-900 mb-6"></p>
+            <button id="explanation-continue-button" class="button text-xl">Continue</button>
+        </div>
+    </div>
+
+
+<script>
+    // --- DOM Elements ---
+    const startScreen = document.getElementById('start-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const levelUpScreen = document.getElementById('level-up-screen');
+    const explanationModal = document.getElementById('explanation-modal');
+    const explanationSourceText = document.getElementById('explanation-source-text');
+    const explanationText = document.getElementById('explanation-text');
+    const explanationContinueButton = document.getElementById('explanation-continue-button');
+    const startEasyButton = document.getElementById('start-easy-button');
+    const startHardButton = document.getElementById('start-hard-button');
+    const restartButton = document.getElementById('restart-button');
+    const gameArea = document.getElementById('game-area');
+    const scoreDisplay = document.getElementById('score');
+    const livesDisplay = document.getElementById('lives');
+    const finalScoreDisplay = document.getElementById('final-score');
+    const finalLevelDisplay = document.getElementById('final-level');
+    const objectiveText = document.getElementById('objective-text');
+    const gameOverMessage = document.getElementById('game-over-message');
+    const joystickContainer = document.getElementById('joystick-container');
+    const joystickBase = document.getElementById('joystick-base');
+    const joystickHandle = document.getElementById('joystick-handle');
+    const levelDisplay = document.getElementById('level');
+    const xpBarFill = document.getElementById('xp-bar-fill');
+    const powerupChoicesContainer = document.getElementById('powerup-choices');
+    const levelUpTipElement = document.getElementById('level-up-tip');
+
+    // --- Game State ---
+    let score = 0, lives = 3, maxLives = 3, level = 1, xp = 0, xpToNextLevel = 5, difficulty = 'easy';
+    let gameLoopInterval, sourceGenerationInterval, speedIncreaseInterval;
+    let gameActive = false, gamePaused = false;
+    let currentObjective = 'primary';
+    let playerCharacter, playerX = 0, playerY = 0, playerSpeed = 5, playerDirection = 'right', playerScale = 1;
+    const keysPressed = {};
+    let joystick = { dx: 0, dy: 0, active: false, touchId: null };
+    let sources = [];
+    let baseGameSpeed = 2;
+    let currentSourceInterval = 1500;
+    
+    // --- Source Content ---
+    const sourceData = {
+        primary: [
+            "A soldier's diary", "Original photograph", "A personal letter", "Cleopatra's autobiography",
+            "Live speech recording", "Government census data", "An eyewitness interview", "Ancient pottery shard",
+            "Declaration of Independence", "A birth certificate", "Meeting minutes", "Original research study",
+            "Video of an event", "A personal blog post", "An artifact from a dig", "Sheet music",
+            "A company's financial report", "Court records", "A patent document", "Architectural blueprints",
+            "A map from the era", "An audio interview", "Field notes from a scientist"
+        ],
+        secondary: [
+            "A history textbook", "An encyclopedia entry", "Biography of a king", "A documentary film",
+            "A magazine article", "Wikipedia page", "Book review", "A historical analysis",
+            "A scholarly article", "A report on a study", "A biography of a musician", "A review of a scientific paper",
+            "A critical analysis of a novel", "A historical documentary", "A commentary on a speech",
+            "A textbook chapter", "A news report about a study", "A book about a war",
+            "An article summarizing research", "A meta-analysis", "A literature review"
+        ]
+    };
+    
+    const levelUpTips = [
+        "Primary sources are the raw ingredients of history. They are a direct link to the past.",
+        "If it's an original document or object from the time period, it's likely a primary source.",
+        "Secondary sources analyze, interpret, or summarize information from primary sources.",
+        "Think of secondary sources as one step removed from the original event.",
+        "A textbook is a classic example of a secondary source.",
+        "An eyewitness account is primary. A reporter writing about that account is secondary.",
+        "Ask yourself: Was the creator of this source present at the event or a participant?",
+        "Diaries, letters, and photos are usually primary sources because they offer a personal, direct perspective."
+    ];
+
+    // --- Power-ups State ---
+    const powerUps = [
+        { id: 'swiftScholar', name: 'Swift Scholar', description: 'Permanently increase movement speed.' },
+        { id: 'extraLife', name: 'Extra Life', description: 'Gain one extra life (max hearts).' },
+        { id: 'biggerSword', name: 'Mighty Blade', description: 'Permanently increase sword slice area.' },
+        { id: 'slowerSources', name: 'Time Warp', description: 'Permanently slow down all sources.' },
+        { id: 'sourceScry', name: 'Source Scry', description: 'Highlights correct sources for 10 seconds.' },
+        { id: 'shield', name: 'Scholar\'s Shield', description: 'Block the next incorrect slice. One-time use.' },
+        { id: 'sourceCull', name: 'Source Cull', description: 'Immediately slice all incorrect sources on screen.' },
+        { id: 'sourceFreeze', name: 'Source Freeze', description: 'Freezes all sources on screen for 4 seconds.'},
+        { id: 'comboMaster', name: 'Combo Master', description: 'For 15s, each correct slice in a row grants more score.'},
+        { id: 'heal', name: 'Hearty Meal', description: 'Restore one lost life.' }
+    ];
+    let hasShield = false;
+    let sourcesAreBigger = false;
+    let comboActive = false;
+    let comboCount = 0;
+    let comboTimeout;
+    let sourcesFrozen = false;
+
+    // --- Player Character SVG ---
+    const playerSVG = `
+        <svg id="player-character" viewBox="-40 -40 180 200">
+            <!-- Sword -->
+            <g id="sword">
+                <rect x="80" y="-15" width="8" height="60" fill="#c0c0c0" rx="2"/>
+                <rect x="75" y="40" width="18" height="8" fill="#8d5b2d" rx="2"/>
+                <circle cx="84" cy="52" r="5" fill="#ffd700"/>
+            </g>
+            <!-- Body -->
+            <rect x="30" y="50" width="40" height="50" fill="#4f46e5" rx="10"/>
+            <!-- Head -->
+            <circle cx="50" cy="30" r="25" fill="#f5d0a9"/>
+            <circle cx="42" cy="28" r="3" fill="#000"/>
+            <circle cx="58" cy="28" r="3" fill="#000"/>
+            <path d="M 45 40 Q 50 45 55 40" stroke="#000" fill="none" stroke-width="2"/>
+             <!-- Legs -->
+            <rect x="35" y="100" width="10" height="20" fill="#3730a3" rx="5"/>
+            <rect x="55" y="100" width="10" height="20" fill="#3730a3" rx="5"/>
+        </svg>
+    `;
+
+    // --- Game Initialization ---
+    function init() {
+        gameArea.innerHTML = playerSVG;
+        playerCharacter = document.getElementById('player-character');
+        
+        startEasyButton.addEventListener('click', () => startGame('easy'));
+        startHardButton.addEventListener('click', () => startGame('hard'));
+        restartButton.addEventListener('click', () => {
+            gameOverScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        });
+        explanationContinueButton.addEventListener('click', () => {
+            explanationModal.classList.add('hidden');
+            gamePaused = false;
+        });
+
+        window.addEventListener('keydown', (e) => { keysPressed[e.key.toLowerCase()] = true; });
+        window.addEventListener('keyup', (e) => { keysPressed[e.key.toLowerCase()] = false; });
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (isTouchDevice) {
+            joystickContainer.addEventListener('touchstart', handleJoystickStart, { passive: false });
+            joystickContainer.addEventListener('touchmove', handleJoystickMove, { passive: false });
+            window.addEventListener('touchend', handleJoystickEnd, { passive: false });
+        }
+        gameArea.addEventListener('mousedown', slice);
+        gameArea.addEventListener('touchstart', (e) => {
+            if (e.target.closest('#joystick-container')) return;
+            slice();
+            e.preventDefault();
+        });
+    }
+    
+    // --- Game Logic ---
+    function startGame(selectedDifficulty) {
+        difficulty = selectedDifficulty;
+        // Reset game state
+        score = 0; lives = 3; maxLives = 3; level = 1, xp = 0, xpToNextLevel = 5;
+        playerSpeed = 5; baseGameSpeed = 2; currentSourceInterval = 1500;
+        playerScale = 1;
+        
+        // Reset power-ups state
+        hasShield = false; sourcesAreBigger = false;
+        comboActive = false; comboCount = 0; sourcesFrozen = false;
+        if (comboTimeout) clearTimeout(comboTimeout);
+        
+        gameActive = true;
+        gamePaused = false;
+        sources.forEach(s => s.element.remove());
+        sources = [];
+        
+        // UI Setup
+        startScreen.classList.add('hidden');
+        gameOverScreen.classList.add('hidden');
+        levelUpScreen.classList.add('hidden');
+        gameScreen.classList.remove('hidden');
+
+        // Player Setup
+        playerX = gameArea.offsetWidth / 2 - 50;
+        playerY = gameArea.offsetHeight - 150;
+        playerCharacter.style.left = `${playerX}px`;
+        playerCharacter.style.top = `${playerY}px`;
+        playerCharacter.className = ""; // Clear all classes
+        playerCharacter.classList.add("facing-right"); // Set default direction
+        playerCharacter.style.transform = 'scale(1)';
+
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (isTouchDevice) joystickContainer.classList.remove('hidden');
+
+        currentObjective = Math.random() > 0.5 ? 'primary' : 'secondary';
+        updateObjectiveText();
+        updateHUD();
+        
+        // Start game loops
+        gameLoopInterval = setInterval(gameLoop, 1000 / 60);
+        startSpawningSources();
+        speedIncreaseInterval = setInterval(() => { if(!gamePaused) baseGameSpeed += 0.1; }, 5000);
+    }
+    
+    function startSpawningSources() {
+        if (sourceGenerationInterval) clearInterval(sourceGenerationInterval);
+        sourceGenerationInterval = setInterval(createSource, currentSourceInterval);
+    }
+
+    function stopGame(reason) {
+        gameActive = false;
+        clearInterval(gameLoopInterval);
+        clearInterval(sourceGenerationInterval);
+        clearInterval(speedIncreaseInterval);
+        joystickContainer.classList.add('hidden');
+        
+        gameScreen.classList.add('hidden');
+        gameOverScreen.classList.remove('hidden');
+        finalScoreDisplay.textContent = score;
+        finalLevelDisplay.textContent = level;
+        gameOverMessage.textContent = reason;
+    }
+
+    function gameLoop() {
+        if (!gameActive || gamePaused) return;
+        updatePlayerPosition();
+        moveSources();
+    }
+
+    function checkSlice(source) {
+         if (source.sliced) return;
+
+        if (source.type === currentObjective) {
+            source.sliced = true;
+            if (comboActive) {
+                comboCount++;
+                score += comboCount;
+                createFeedbackText(`+${comboCount}`, source.element.style.left, source.element.style.top, 'text-purple-500');
+            } else {
+                score++;
+            }
+            gainXP(1);
+            createFeedbackText('Correct!', source.element.style.left, source.element.style.top, 'text-green-500');
+        } else {
+             if (comboActive) comboCount = 0;
+             source.sliced = true;
+            if(hasShield) {
+                hasShield = false;
+                createFeedbackText('Shielded!', source.element.style.left, source.element.style.top, 'text-blue-500');
+            } else {
+                lives--;
+                if (lives <= 0) {
+                    stopGame('You ran out of lives!');
+                } else {
+                    showExplanation(source.element.textContent, source.type, 'sliced-incorrect');
+                }
+            }
+        }
+        
+        source.element.style.transform = 'scale(0)';
+        setTimeout(() => source.element.remove(), 100);
+        updateHUD();
+        if (lives <= 0) stopGame('You ran out of lives!');
+    }
+    
+    function gainXP(amount) {
+        if(gamePaused) return;
+        xp += amount;
+        if (xp >= xpToNextLevel) {
+            levelUp();
+        }
+        updateHUD();
+    }
+
+    function levelUp() {
+        xp -= xpToNextLevel;
+        level++;
+        gamePaused = true;
+        showPowerupSelection();
+    }
+
+    function showPowerupSelection() {
+        powerupChoicesContainer.innerHTML = '';
+        const randomTip = levelUpTips[Math.floor(Math.random() * levelUpTips.length)];
+        levelUpTipElement.textContent = `Tip: ${randomTip}`;
+        
+        const availablePowerups = [...powerUps];
+        for (let i = 0; i < 3; i++) {
+            if (availablePowerups.length === 0) break;
+            const randomIndex = Math.floor(Math.random() * availablePowerups.length);
+            const choice = availablePowerups.splice(randomIndex, 1)[0];
+
+            const card = document.createElement('div');
+            card.className = 'powerup-card p-4 rounded-lg text-center';
+            card.innerHTML = `<h3 class="text-2xl mb-2">${choice.name}</h3><p class="text-indigo-700 text-sm">${choice.description}</p>`;
+            card.addEventListener('click', () => selectPowerup(choice.id));
+            powerupChoicesContainer.appendChild(card);
+        }
+        levelUpScreen.classList.remove('hidden');
+    }
+
+    function selectPowerup(powerupId) {
+        applyPowerup(powerupId);
+        levelUpScreen.classList.add('hidden');
+        gamePaused = false;
+    }
+
+    function applyPowerup(id) {
+        switch (id) {
+            case 'swiftScholar': playerSpeed += 2; break;
+            case 'extraLife': maxLives++; lives++; break;
+            case 'biggerSword': 
+                 playerScale *= 1.2;
+                 break;
+            case 'slowerSources': baseGameSpeed = Math.max(1, baseGameSpeed * 0.85); break;
+            case 'sourceScry': 
+                document.querySelectorAll('.source-item').forEach(s => {
+                    if (s.dataset.type === currentObjective) s.classList.add('highlight');
+                });
+                setTimeout(() => document.querySelectorAll('.highlight').forEach(s => s.classList.remove('highlight')), 10000);
+                break;
+            case 'shield': hasShield = true; break;
+            case 'sourceCull':
+                sources = sources.filter(s => {
+                    if (s.type !== currentObjective && !s.sliced) {
+                        s.sliced = true;
+                        s.element.style.transform = 'scale(0)';
+                        setTimeout(() => s.element.remove(), 100);
+                        return false;
+                    }
+                    return true;
+                });
+                break;
+            case 'sourceFreeze':
+                sourcesFrozen = true;
+                setTimeout(() => { sourcesFrozen = false; }, 4000);
+                break;
+            case 'comboMaster':
+                comboActive = true;
+                comboCount = 0;
+                objectiveText.classList.add('animate-pulse', 'text-purple-500');
+                if(comboTimeout) clearTimeout(comboTimeout);
+                comboTimeout = setTimeout(() => {
+                    comboActive = false;
+                    comboCount = 0;
+                    objectiveText.classList.remove('animate-pulse', 'text-purple-500');
+                }, 15000);
+                break;
+            case 'heal':
+                if(lives < maxLives) lives++;
+                break;
+        }
+        updateHUD();
+    }
+
+    function showExplanation(sourceText, sourceType, reason) {
+        gamePaused = true;
+        explanationSourceText.textContent = `"${sourceText}"`;
+        let explanation = '';
+        if (reason === 'sliced-incorrect') {
+            explanation = `This is a ${sourceType} source. You were supposed to be slicing ${currentObjective} sources. `;
+        } else if (reason === 'missed-correct') {
+            explanation = `You missed this ${sourceType} source! You need to slice all ${currentObjective} sources. `;
+        }
+
+        if (sourceType === 'primary') {
+            explanation += 'Primary sources are direct, firsthand accounts from the time period, like a diary or a photograph.';
+        } else { // secondary
+            explanation += 'Secondary sources analyze or interpret primary sources, like a textbook or an article about an event.';
+        }
+
+        explanationText.textContent = explanation;
+        explanationModal.classList.remove('hidden');
+    }
+
+    function createSource() {
+        if (!gameActive || gamePaused) return;
+        const type = Math.random() > 0.5 ? 'primary' : 'secondary';
+        const textOptions = sourceData[type];
+        const text = textOptions[Math.floor(Math.random() * textOptions.length)];
+        const element = document.createElement('div');
+        element.textContent = text;
+        element.classList.add('source-item');
+        element.dataset.type = type;
+        if (difficulty === 'easy') element.classList.add(type);
+        const gameAreaWidth = gameArea.offsetWidth;
+        gameArea.appendChild(element);
+        const elementWidth = element.offsetWidth;
+        const x = Math.random() * (gameAreaWidth - elementWidth);
+        const y = -50;
+        element.style.left = `${x}px`;
+        element.style.top = `${y}px`;
+        if(sourcesAreBigger) element.style.transform = 'scale(1.2)';
+        sources.push({ element, type, sliced: false });
+    }
+
+    function moveSources() {
+        if (sourcesFrozen) return;
+        sources = sources.filter(source => {
+            const currentTop = parseFloat(source.element.style.top);
+            const newTop = currentTop + baseGameSpeed;
+            if (newTop > window.innerHeight) {
+                if (!source.sliced && source.type === currentObjective) {
+                    if (hasShield) { 
+                        hasShield = false; 
+                    } else { 
+                        lives--; 
+                        if (lives <= 0) {
+                            stopGame(`You ran out of lives!`);
+                        } else {
+                            showExplanation(source.element.textContent, source.type, 'missed-correct');
+                        }
+                    }
+                    updateHUD();
+                }
+                source.element.remove(); return false;
+            } else { source.element.style.top = `${newTop}px`; return true; }
+        });
+    }
+
+    function updatePlayerPosition() {
+        if (!gameActive || !playerCharacter) return;
+        let moveDx = 0; let moveDy = 0;
+        if (keysPressed['arrowup'] || keysPressed['w']) moveDy = -1;
+        if (keysPressed['arrowdown'] || keysPressed['s']) moveDy = 1;
+        if (keysPressed['arrowleft'] || keysPressed['a']) moveDx = -1;
+        if (keysPressed['arrowright'] || keysPressed['d']) moveDx = 1;
+        if (joystick.active) { moveDx = joystick.dx; moveDy = joystick.dy; }
+        
+        const lastDirection = playerDirection;
+        
+        // Update direction based on movement priority: horizontal > vertical
+        if (Math.abs(moveDx) > 0.1) {
+            playerDirection = moveDx > 0 ? 'right' : 'left';
+        } else if (Math.abs(moveDy) > 0.1) {
+            playerDirection = moveDy > 0 ? 'down' : 'up';
+        }
+
+        if (lastDirection !== playerDirection) {
+            playerCharacter.classList.remove(`facing-${lastDirection}`);
+            playerCharacter.classList.add(`facing-${playerDirection}`);
+        }
+
+        // Apply directional flip via transform, combined with power-up scale
+        const scaleX = playerDirection === 'left' ? -1 : 1;
+        // We only flip left/right. Up/Down keep the previous horizontal orientation.
+        let finalScaleX;
+        if (playerDirection === 'left') {
+            finalScaleX = -1;
+        } else if (playerDirection === 'right') {
+            finalScaleX = 1;
+        } else { // up or down
+            const currentTransform = playerCharacter.style.transform;
+            const match = currentTransform.match(/scale\(([^,]+),/);
+            finalScaleX = match ? parseFloat(match[1]) / playerScale : 1;
+        }
+        playerCharacter.style.transform = `scale(${finalScaleX * playerScale}, ${playerScale})`;
+
+        const magnitude = Math.sqrt(moveDx * moveDx + moveDy * moveDy);
+        if (magnitude > 0) {
+            const normalizedDx = (moveDx / magnitude) * playerSpeed;
+            const normalizedDy = (moveDy / magnitude) * playerSpeed;
+            playerX += normalizedDx; playerY += normalizedDy;
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            playerX = Math.max(0, Math.min(playerX, gameAreaRect.width - 100));
+            playerY = Math.max(0, Math.min(playerY, gameAreaRect.height - 120));
+            playerCharacter.style.left = `${playerX}px`;
+            playerCharacter.style.top = `${playerY}px`;
+        }
+    }
+    function slice() {
+        if (!gameActive || !playerCharacter || gamePaused) return;
+        playerCharacter.classList.add('slicing');
+        setTimeout(() => playerCharacter.classList.remove('slicing'), 150);
+        const playerRect = playerCharacter.getBoundingClientRect();
+        sources.forEach(source => {
+            const sourceRect = source.element.getBoundingClientRect();
+            if (playerRect.left < sourceRect.right && playerRect.right > sourceRect.left &&
+                playerRect.top < sourceRect.bottom && playerRect.bottom > sourceRect.top) {
+                checkSlice(source);
+            }
+        });
+    }
+    function updateHUD() {
+        scoreDisplay.textContent = score;
+        livesDisplay.textContent = '❤️'.repeat(Math.max(0, lives));
+        levelDisplay.textContent = level;
+        xpBarFill.style.width = `${(xp / xpToNextLevel) * 100}%`;
+    }
+    function updateObjectiveText() {
+        objectiveText.textContent = `Slice ${currentObjective.charAt(0).toUpperCase() + currentObjective.slice(1)} Sources!`;
+        if (difficulty === 'easy') {
+            objectiveText.classList.toggle('bg-blue-200', currentObjective === 'primary');
+            objectiveText.classList.toggle('border-blue-800', currentObjective === 'primary');
+            objectiveText.classList.toggle('bg-green-200', currentObjective === 'secondary');
+            objectiveText.classList.toggle('border-green-800', currentObjective === 'secondary');
+        } else {
+            objectiveText.className = 'absolute top-20 left-1/2 -translate-x-1/2 text-2xl text-center font-bold px-4 py-2 rounded-lg bg-white border-4 border-indigo-900 shadow-lg transition-colors duration-300';
+        }
+    }
+    function createFeedbackText(text, x, y, colorClass) {
+        const feedback = document.createElement('div');
+        feedback.textContent = text;
+        feedback.className = `feedback-text ${colorClass}`;
+        feedback.style.left = x;
+        feedback.style.top = y;
+        gameArea.appendChild(feedback);
+        setTimeout(() => { feedback.classList.add('show'); }, 10);
+        setTimeout(() => { feedback.remove(); }, 600);
+    }
+    function handleJoystickStart(e) {
+        if (joystick.active) return;
+        e.preventDefault();
+        joystick.active = true;
+        joystick.touchId = e.changedTouches[0].identifier;
+        joystickHandle.style.transition = 'none';
+        handleJoystickMove(e);
+    }
+    function handleJoystickMove(e) {
+        if (!joystick.active) return;
+        e.preventDefault();
+        let touch;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === joystick.touchId) { touch = e.changedTouches[i]; break; }
+        }
+        if (!touch) return;
+        const baseRect = joystickBase.getBoundingClientRect();
+        const centerX = baseRect.left + baseRect.width / 2;
+        const centerY = baseRect.top + baseRect.height / 2;
+        const dx = touch.clientX - centerX;
+        const dy = touch.clientY - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const maxDistance = baseRect.width / 2;
+        const handleMaxDistance = maxDistance - joystickHandle.offsetWidth / 2;
+        const angle = Math.atan2(dy, dx);
+        if (distance > handleMaxDistance) {
+            const newX = handleMaxDistance * Math.cos(angle);
+            const newY = handleMaxDistance * Math.sin(angle);
+            joystickHandle.style.transform = `translate(${newX}px, ${newY}px)`;
+        } else {
+            joystickHandle.style.transform = `translate(${dx}px, ${dy}px)`;
+        }
+        joystick.dx = Math.cos(angle) * (Math.min(distance, maxDistance) / maxDistance);
+        joystick.dy = Math.sin(angle) * (Math.min(distance, maxDistance) / maxDistance);
+    }
+    function handleJoystickEnd(e) {
+        if (!joystick.active) return;
+        let touchEnded = false;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === joystick.touchId) { touchEnded = true; break; }
+        }
+        if (!touchEnded) return;
+        e.preventDefault();
+        joystick.active = false;
+        joystick.dx = 0;
+        joystick.dy = 0;
+        joystick.touchId = null;
+        joystickHandle.style.transition = 'transform 0.2s ease-out';
+        joystickHandle.style.transform = `translate(0px, 0px)`;
+    }
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
+
