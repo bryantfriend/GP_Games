@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'sourceslasher.html',
+            title: 'Source Slasher 🤺'
+        }, 
+        {
             fileName: 'reliablewebsites.html',
             title: 'Space Website Adventure ☄️'
         }, 
