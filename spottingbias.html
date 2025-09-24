@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bias Bamboo Learning Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation; /* Prevents double tap zoom on mobile */
+        }
+        .bamboo-stalk {
+            transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+        }
+        .panda-mouth {
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        .panda-chew .panda-mouth {
+            transform: scaleY(0.5) translateY(5px);
+        }
+        .panda-arm {
+             transition: transform 0.4s ease-in-out;
+        }
+        .panda-chew .panda-arm-left {
+            transform: rotate(-20deg) translate(-5px, 5px);
+        }
+        .panda-chew .panda-arm-right {
+            transform: rotate(20deg) translate(5px, 5px);
+        }
+        .feedback-correct {
+            animation: feedback-pop 0.5s ease-out forwards;
+        }
+        .feedback-incorrect {
+            animation: feedback-shake 0.5s ease-in-out forwards;
+        }
+        @keyframes feedback-pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes feedback-shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .hide {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-emerald-50 text-gray-800 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Language Selection Screen -->
+    <div id="language-screen" class="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8 text-center">
+        <h1 class="text-3xl md:text-4xl font-bold text-emerald-700 mb-4">Welcome!</h1>
+        <p class="text-lg text-gray-600 mb-8">Please select your language.</p>
+        <div class="space-y-4">
+            <button data-lang="en" class="lang-btn w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-md transition-transform transform hover:scale-105">English</button>
+            <button data-lang="zh" class="lang-btn w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-md transition-transform transform hover:scale-105">中文 (Chinese)</button>
+            <button data-lang="tr" class="lang-btn w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-md transition-transform transform hover:scale-105">Türkçe (Turkish)</button>
+        </div>
+    </div>
+
+    <div id="game-container" class="hide w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8 text-center">
+
+        <!-- Start Screen -->
+        <div id="start-screen">
+            <h1 id="title" class="text-3xl md:text-4xl font-bold text-emerald-700 mb-2">Bias Bamboo</h1>
+            <p id="instructions-title" class="text-lg text-gray-600 mb-6">Help the panda eat bamboo by identifying cognitive biases!</p>
+            <div class="w-48 h-48 mx-auto mb-6">
+                <!-- Panda SVG -->
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <g id="panda-start">
+                        <circle cx="50" cy="55" r="30" fill="#FFFFFF"/>
+                        <path d="M40,35 a15,12 0 0,1 20,0 a15,12 0 0,1 -20,0" fill="#000000"/>
+                        <path d="M35,25 a12,15 0 0,0 0,30" fill="#000000"/>
+                        <path d="M65,25 a12,15 0 0,1 0,30" fill="#000000"/>
+                        <circle cx="43" cy="45" r="4" fill="#FFFFFF"/>
+                        <circle cx="57" cy="45" r="4" fill="#FFFFFF"/>
+                        <circle cx="44" cy="46" r="2" fill="#000000"/>
+                        <circle cx="56" cy="46" r="2" fill="#000000"/>
+                        <circle cx="50" cy="55" r="5" fill="#000000"/>
+                        <path d="M45,62 a5,3 0 0,0 10,0 Z" fill="#FFFFFF"/>
+                    </g>
+                </svg>
+            </div>
+            <p id="instructions-body" class="mb-6">Read the scenario and choose the bias it describes. Answer correctly to feed the panda!</p>
+            <button id="start-button" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-md transition-transform transform hover:scale-105">
+                Start Game
+            </button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hide">
+            <div id="stats" class="flex justify-between items-center mb-4 text-lg">
+                <div class="flex items-center gap-4">
+                    <button id="help-button" class="text-emerald-600 hover:text-emerald-800 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" class="bi bi-question-circle-fill" viewBox="0 0 16 16">
+                            <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.496 6.033h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286a.237.237 0 0 0 .241.247zm2.325 5.443c-.584 0-1.009-.394-1.009-.925 0-.542.425-.94 1.01-.94.609 0 1.028.398 1.028.94 0 .531-.42.925-1.029.925z"/>
+                        </svg>
+                    </button>
+                    <div id="score-display" class="font-semibold text-emerald-600">Score: 0</div>
+                </div>
+                <div id="question-counter" class="text-gray-500">1 / 20</div>
+            </div>
+
+            <div class="relative w-full h-48 mb-4">
+                <div id="feedback-container" class="absolute inset-0 flex items-center justify-center pointer-events-none"></div>
+                 <!-- Panda and Bamboo SVG area -->
+                <svg id="panda-area" class="w-full h-full" viewBox="0 0 200 100">
+                    <g id="panda-game" transform="translate(130, 15) scale(0.8)">
+                        <!-- Body -->
+                        <path d="M50 95 C 20 95, 10 65, 10 50 C 10 20, 20 5, 50 5 C 80 5, 90 20, 90 50 C 90 65, 80 95, 50 95 Z" fill="white" stroke="black" stroke-width="2"/>
+                        <!-- Ears -->
+                        <circle cx="25" cy="20" r="12" fill="black"/>
+                        <circle cx="75" cy="20" r="12" fill="black"/>
+                        <!-- Eye Patches -->
+                        <ellipse cx="40" cy="45" rx="12" ry="15" fill="black" transform="rotate(-20, 40, 45)"/>
+                        <ellipse cx="60" cy="45" rx="12" ry="15" fill="black" transform="rotate(20, 60, 45)"/>
+                        <!-- Eyes -->
+                        <circle cx="40" cy="45" r="3" fill="white"/>
+                        <circle cx="60" cy="45" r="3" fill="white"/>
+                        <!-- Nose -->
+                        <ellipse cx="50" cy="58" rx="5" ry="3" fill="black"/>
+                        <!-- Mouth -->
+                        <g class="panda-mouth">
+                           <path d="M 45 65 Q 50 70, 55 65" stroke="black" stroke-width="2" fill="transparent"/>
+                        </g>
+                        <!-- Arms -->
+                        <path class="panda-arm panda-arm-left" d="M30 60 C 10 70, 10 90, 25 90 C 35 90, 35 70, 30 60 Z" fill="black"/>
+                        <path class="panda-arm panda-arm-right" d="M70 60 C 90 70, 90 90, 75 90 C 65 90, 65 70, 70 60 Z" fill="black"/>
+                    </g>
+                    <!-- Bamboo -->
+                    <g id="bamboo-container" class="bamboo-stalk" transform="translate(20, -100)">
+                        <rect x="50" y="0" width="10" height="100" fill="#6CBF57" rx="3"/>
+                        <path d="M50 20 L 40 15 L 50 20" stroke="#4C9A2A" stroke-width="2" fill="none"/>
+                        <path d="M60 40 L 70 35 L 60 40" stroke="#4C9A2A" stroke-width="2" fill="none"/>
+                        <path d="M50 60 L 40 55 L 50 60" stroke="#4C9A2A" stroke-width="2" fill="none"/>
+                    </g>
+                </svg>
+            </div>
+            
+            <div id="qa-container" class="bg-emerald-50 rounded-lg p-4">
+                <p id="scenario-text" class="text-gray-700 text-base md:text-lg mb-4 min-h-[6rem] flex items-center justify-center"></p>
+                <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Options will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="hide">
+            <h2 id="end-title" class="text-3xl font-bold text-emerald-700 mb-4">Game Over!</h2>
+            <p id="end-score-text" class="text-xl text-gray-600 mb-2">Your final score is:</p>
+            <p id="final-score" class="text-5xl font-bold mb-8"></p>
+            <button id="restart-button" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-md transition-transform transform hover:scale-105">
+                Play Again
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="hide fixed inset-0 bg-black bg-opacity-50 items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] relative flex flex-col">
+             <div class="p-6 border-b">
+                <h2 id="help-title" class="text-2xl font-bold text-emerald-700 text-center">Bias Glossary</h2>
+                <button id="close-modal-button" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-x-lg pointer-events-none" viewBox="0 0 16 16">
+                        <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708-.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="help-content" class="p-6 overflow-y-auto">
+                <!-- Bias descriptions will be injected here -->
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const i18n = {
+            en: {
+                title: "Bias Bamboo",
+                instructions_title: "Help the panda eat bamboo by identifying cognitive biases!",
+                instructions_body: "Read the scenario and choose the bias it describes. Answer correctly to feed the panda!",
+                start_button: "Start Game",
+                score_text: "Score",
+                correct: "Correct!",
+                incorrect: "Not quite!",
+                end_title: "Game Over!",
+                end_score_text: "Your final score is:",
+                restart_button: "Play Again",
+                help_title: "Bias Glossary",
+            },
+            zh: {
+                title: "偏见竹子",
+                instructions_title: "通过识别认知偏见，帮助熊猫吃竹子！",
+                instructions_body: "阅读场景并选择它所描述的偏见。回答正确即可喂熊猫！",
+                start_button: "开始游戏",
+                score_text: "分数",
+                correct: "正确!",
+                incorrect: "不太对!",
+                end_title: "游戏结束!",
+                end_score_text: "你的最终分数是：",
+                restart_button: "再玩一次",
+                help_title: "偏见词汇表",
+            },
+            tr: {
+                title: "Önyargı Bambusu",
+                instructions_title: "Bilişsel önyargıları belirleyerek pandanın bambu yemesine yardım et!",
+                instructions_body: "Senaryoyu okuyun ve tanımladığı önyargıyı seçin. Pandayı beslemek için doğru cevap verin!",
+                start_button: "Oyuna Başla",
+                score_text: "Puan",
+                correct: "Doğru!",
+                incorrect: "Pek sayılmaz!",
+                end_title: "Oyun Bitti!",
+                end_score_text: "Nihai puanınız:",
+                restart_button: "Tekrar Oyna",
+                help_title: "Önyargı Sözlüğü",
+            }
+        };
+
+        const biases = [
+            { id: 'confirmation', en: { name: 'Confirmation Bias', scenario: 'You only search for news articles that support your opinion on a topic, ignoring any that disagree.', description: 'The tendency to look for, interpret, and remember information that confirms what you already believe.' }, zh: { name: '确认偏见', scenario: '你只搜索支持你对某个话题观点的新闻文章，而忽略任何不同意的文章。', description: '寻找、解释和记住证实你已有信念的信息的倾向。' }, tr: { name: 'Doğrulama Önyargısı', scenario: 'Bir konu hakkındaki görüşünüzü destekleyen haber makalelerini arar, karşıt görüşleri görmezden gelirsiniz.', description: 'Zaten inandığınız şeyi doğrulayan bilgileri arama, yorumlama ve hatırlama eğilimi.' } },
+            { id: 'bandwagon', en: { name: 'Bandwagon Effect', scenario: 'All your friends are obsessed with a new video game, so you decide you have to get it too.', description: 'Doing something primarily because other people are doing it, regardless of your own beliefs.' }, zh: { name: '从众效应', scenario: '你所有的朋友都迷上了一款新的视频游戏，所以你决定也必须买一个。', description: '主要因为别人都在做某事而去做，而不管你自己的信念如何。' }, tr: { name: 'Sürü Etkisi', scenario: 'Tüm arkadaşların yeni bir video oyununa takıntılı, bu yüzden sen de alman gerektiğine karar veriyorsun.', description: 'Kendi inançlarınızdan bağımsız olarak, öncelikle başkaları yaptığı için bir şeyi yapmak.' } },
+            { id: 'anchoring', en: { name: 'Anchoring Bias', scenario: 'The first price you see for a jacket is $200. Later, you see it on sale for $100 and think it\'s a fantastic deal, without considering its actual value.', description: 'Relying too heavily on the first piece of information offered when making decisions.' }, zh: { name: '锚定偏见', scenario: '你看到一件夹克的第一个价格是200美元。后来，你看到它打折到100美元，觉得这是一个极好的交易，而没有考虑它的实际价值。', description: '在做决定时过分依赖最初提供的信息。' }, tr: { name: 'Çıpalama Önyargısı', scenario: 'Bir ceket için gördüğünüz ilk fiyat 200 TL. Daha sonra 100 TL\'ye indirimde görünce, gerçek değerini düşünmeden harika bir anlaşma olduğunu düşünürsünüz.', description: 'Karar verirken sunulan ilk bilgiye çok fazla güvenmek.' } },
+            { id: 'stereotyping', en: { name: 'Stereotyping', scenario: 'You assume someone is good at math just because they wear glasses.', description: 'Assuming that a person has certain qualities based on the group they belong to, without knowing them personally.' }, zh: { name: '刻板印象', scenario: '你因为某人戴眼镜就认为他数学很好。', description: '在不了解个人的情况下，根据他们所属的群体来假设他们具有某些特质。' }, tr: { name: 'Kalıpyargı', scenario: 'Sadece gözlük taktığı için birinin matematikte iyi olduğunu varsayıyorsunuz.', description: 'Bir kişiyi şahsen tanımadan, ait olduğu gruba dayanarak belirli niteliklere sahip olduğunu varsaymak.' } },
+            { id: 'survivorship', en: { name: 'Survivorship Bias', scenario: 'You hear stories of a few people who dropped out of college to become successful billionaires and think it\'s a common and wise path.', description: 'Focusing on the people or things that "survived" a process and inadvertently overlooking those that did not.' }, zh: { name: '幸存者偏见', scenario: '你听到少数人大学辍学成为成功亿万富翁的故事，并认为这是一条普遍而明智的道路。', description: '只关注那些在某个过程中“幸存”下来的人或事，而无意中忽略了那些没有幸存的。' }, tr: { name: 'Hayatta Kalma Önyargısı', scenario: 'Okulu bırakıp başarılı milyarder olan birkaç kişinin hikayesini duyar ve bunun yaygın ve akıllıca bir yol olduğunu düşünürsünüz.', description: 'Bir süreçten "sağ çıkan" insanlara veya şeylere odaklanıp, çıkamayanları istemeden göz ardı etmek.' } },
+            { id: 'availability', en: { name: 'Availability Heuristic', scenario: 'After watching a news report about a shark attack, you become convinced that shark attacks are very common and refuse to swim in the ocean.', description: 'Overestimating the likelihood of events that are more easily recalled in memory, often because they are recent or shocking.' }, zh: { name: '可用性启发', scenario: '在看了一篇关于鲨鱼袭击的新闻报道后，你深信鲨鱼袭击非常普遍，并拒绝在海里游泳。', description: '高估那些更容易在记忆中回忆起来的事件的可能性，通常因为它们是最近发生的或令人震惊的。' }, tr: { name: 'Bulunabilirlik Keşfi', scenario: 'Bir köpekbalığı saldırısı haberini izledikten sonra, köpekbalığı saldırılarının çok yaygın olduğuna ikna olur ve okyanusta yüzmeyi reddedersiniz.', description: 'Hafızada daha kolay hatırlanan olayların olasılığını abartmak, genellikle yeni veya şok edici oldukları için.' } },
+            { id: 'dunning_kruger', en: { name: 'Dunning-Kruger Effect', scenario: 'After playing guitar for only two weeks, someone believes they are skilled enough to perform in a concert.', description: 'When people with low ability at a task overestimate their own ability.' }, zh: { name: '邓宁-克鲁格效应', scenario: '只弹了两周吉他，有人就认为自己有足够的技术在音乐会上表演。', description: '在某项任务上能力较低的人高估自己能力的情况。' }, tr: { name: 'Dunning-Kruger Etkisi', scenario: 'Sadece iki hafta gitar çaldıktan sonra, birisi bir konserde performans sergileyecek kadar yetenekli olduğuna inanır.', description: 'Bir görevde düşük yeteneğe sahip kişilerin kendi yeteneklerini abartması durumu.' } },
+            { id: 'attribution', en: { name: 'Fundamental Attribution Error', scenario: 'When someone else trips on the sidewalk, you think they are clumsy. When you trip, it\'s because the sidewalk was uneven.', description: 'The tendency to judge others based on their character or personality, but judge yourself based on the situation.' }, zh: { name: '基本归因错误', scenario: '当别人在人行道上绊倒时，你认为他们很笨拙。当你绊倒时，那是因为人行道不平。', description: '根据他人的性格或个性来评判他们，但根据情况来评判自己的倾向。' }, tr: { name: 'Temel Atıf Hatası', scenario: 'Başkası kaldırımda tökezlediğinde, sakar olduğunu düşünürsünüz. Siz tökezlediğinizde ise kaldırımın bozuk olduğunu düşünürsünüz.', description: 'Başkalarını karakterlerine veya kişiliklerine göre, kendinizi ise duruma göre yargılama eğilimi.' } },
+            { id: 'self_serving', en: { name: 'Self-Serving Bias', scenario: 'You get an A on a test and believe it\'s because you\'re smart. You get a D on another test and blame the teacher for making it too hard.', description: 'The tendency to take credit for successes but blame external factors for failures.' }, zh: { name: '自利偏见', scenario: '你在一次考试中得了A，并相信这是因为你聪明。你在另一次考试中得了D，并责怪老师出的题太难。', description: '将成功归功于自己，而将失败归咎于外部因素的倾向。' }, tr: { name: 'Kendine Hizmet Eden Önyargı', scenario: 'Bir sınavdan A alırsınız ve bunun zeki olduğunuz için olduğuna inanırsınız. Başka bir sınavdan D alırsınız ve öğretmeni çok zor yapmakla suçlarsınız.', description: 'Başarılar için övgüyü üstlenme, ancak başarısızlıklar için dış faktörleri suçlama eğilimi.' } },
+            { id: 'negativity', en: { name: 'Negativity Bias', scenario: 'You have a great day, but one person says something slightly mean to you, and you can only focus on that negative comment.', description: 'The tendency to give more attention and weight to negative experiences over positive ones.' }, zh: { name: '消极偏见', scenario: '你度过了美好的一天，但有一个人对你说了一句稍微刻薄的话，你就只能专注于那个负面评论。', description: '与积极经历相比，更关注和重视消极经历的倾向。' }, tr: { name: 'Olumsuzluk Önyargısı', scenario: 'Harika bir gün geçirirsiniz, ama bir kişi size biraz kaba bir şey söyler ve siz sadece o olumsuz yoruma odaklanabilirsiniz.', description: 'Olumlu deneyimlere göre olumsuz deneyimlere daha fazla dikkat ve önem verme eğilimi.' } },
+            { id: 'halo', en: { name: 'Halo Effect', scenario: 'You find out a new student is very good at sports, so you automatically assume they are also popular and a great student.', description: 'When one positive trait of a person influences your perception of their other, unrelated traits.' }, zh: { name: '光环效应', scenario: '你发现一个新生体育很好，所以你自动认为他们也很受欢迎，并且是个好学生。', description: '当一个人的一个积极特质影响你对他们其他不相关特质的看法时。' }, tr: { name: 'Hale Etkisi', scenario: 'Yeni bir öğrencinin sporda çok iyi olduğunu öğrenirsiniz, bu yüzden otomatik olarak popüler ve harika bir öğrenci olduğunu varsayarsınız.', description: 'Bir kişinin bir olumlu özelliğinin, onun diğer, ilgisiz özelliklerine ilişkin algınızı etkilemesi durumu.' } },
+            { id: 'curse_knowledge', en: { name: 'Curse of Knowledge', scenario: 'A math teacher who understands a complex topic easily has trouble explaining it to students who are seeing it for the first time.', description: 'When someone who knows a lot about something finds it difficult to imagine what it\'s like not to know it.' }, zh: { name: '知识的诅咒', scenario: '一个能轻易理解复杂课题的数学老师，却很难向第一次接触这个课题的学生解释清楚。', description: '当一个对某事了解很多的人发现很难想象不知道它是什么样子时。' }, tr: { name: 'Bilginin Laneti', scenario: 'Karmaşık bir konuyu kolayca anlayan bir matematik öğretmeni, bunu ilk kez gören öğrencilere açıklamakta zorlanır.', description: 'Bir konu hakkında çok şey bilen birinin, onu bilmemenin nasıl bir şey olduğunu hayal etmekte zorlanması durumu.' } },
+            { id: 'hindsight', en: { name: 'Hindsight Bias', scenario: 'After your favorite team wins a game, you say, "I knew they were going to win all along!" even though you were unsure before.', description: 'The tendency to see events that have already occurred as having been more predictable than they were before they took place.' }, zh: { name: '后见之明偏见', scenario: '在你最喜欢的球队赢得比赛后，你说：“我早就知道他们会赢！”尽管你之前并不确定。', description: '将已经发生的事件视为比它们发生前更具可预测性的倾向。' }, tr: { name: 'Geriye Dönük Bakış Önyargısı', scenario: 'Favori takımınız bir maçı kazandıktan sonra, "Başından beri kazanacaklarını biliyordum!" dersiniz, öncesinde emin olmasanız bile.', description: 'Zaten olmuş olayları, gerçekleşmeden önce olduğundan daha tahmin edilebilir görme eğilimi.' } },
+            { id: 'optimism', en: { name: 'Optimism Bias', scenario: 'You believe you are less likely to get into a car accident than other drivers, even if you text while driving.', description: 'The belief that you are less likely to experience a negative event compared to other people.' }, zh: { name: '乐观偏见', scenario: '你相信自己比其他司机更不容易出车祸，即使你边开车边发短信。', description: '相信与其他人相比，你经历负面事件的可能性更小。' }, tr: { name: 'İyimserlik Önyargısı', scenario: 'Araba kullanırken mesajlaşsanız bile, diğer sürücülere göre araba kazası geçirme olasılığınızın daha düşük olduğuna inanırsınız.', description: 'Diğer insanlara kıyasla olumsuz bir olay yaşama olasılığınızın daha düşük olduğu inancı.' } },
+            { id: 'pessimism', en: { name: 'Pessimism Bias', scenario: 'Even though you studied hard for a test, you are completely sure that you are going to fail it.', description: 'The tendency to overestimate the likelihood that negative things will happen.' }, zh: { name: '悲观偏见', scenario: '尽管你为考试努力学习了，但你完全确定你会不及格。', description: '高估负面事件发生可能性的倾向。' }, tr: { name: 'Kötümserlik Önyargısı', scenario: 'Bir sınava çok çalışmış olsanız bile, kesinlikle başarısız olacağınızdan eminsinizdir.', description: 'Olumsuz şeylerin olma olasılığını abartma eğilimi.' } },
+            { id: 'reactance', en: { name: 'Reactance', scenario: 'Your parents tell you not to hang out with a certain friend, which only makes you want to hang out with them more.', description: 'The urge to do the opposite of what someone wants you to do out of a need to resist a perceived attempt to constrain your freedom.' }, zh: { name: '逆反心理', scenario: '你的父母告诉你不要和某个朋友出去玩，这只会让你更想和他们出去玩。', description: '出于抵制被认为限制自由的企图的需要，而产生做与某人希望你做的相反事情的冲动。' }, tr: { name: 'Tepkisellik', scenario: 'Aileniz size belirli bir arkadaşla takılmamanızı söyler, bu da sizi onlarla daha fazla takılmaya iter.', description: 'Özgürlüğünüzü kısıtlamaya yönelik algılanan bir girişime direnme ihtiyacından dolayı, birinin sizden yapmanızı istediği şeyin tersini yapma dürtüsü.' } },
+            { id: 'status_quo', en: { name: 'Status Quo Bias', scenario: 'You keep using an old, slow phone even though there are much better options available, just because you\'re used to it.', description: 'A preference for the current state of affairs. The current baseline is taken as a reference point, and any change from that baseline is perceived as a loss.' }, zh: { name: '现状偏见', scenario: '你一直使用一部旧的、慢的手机，尽管有更好的选择，只是因为你习惯了它。', description: '对当前事态的偏好。当前的基线被作为参考点，任何与该基线的偏离都被视为损失。' }, tr: { name: 'Statüko Önyargısı', scenario: 'Sırf alıştığınız için, çok daha iyi seçenekler olmasına rağmen eski, yavaş bir telefonu kullanmaya devam edersiniz.', description: 'Mevcut duruma yönelik bir tercih. Mevcut temel referans noktası olarak alınır ve bu temelden herhangi bir değişiklik kayıp olarak algılanır.' } },
+            { id: 'framing', en: { name: 'Framing Effect', scenario: 'You are more likely to buy a yogurt that says "90% fat-free" than one that says "contains 10% fat".', description: 'Drawing different conclusions from the same information, depending on how it is presented or "framed".' }, zh: { name: '框架效应', scenario: '你更可能购买标明“90%脱脂”的酸奶，而不是标明“含10%脂肪”的酸奶。', description: '根据信息的呈现或“框架”方式，从相同的信息中得出不同的结论。' }, tr: { name: 'Çerçeveleme Etkisi', scenario: '"%10 yağ içerir" diyen bir yoğurt yerine "%90 yağsız" diyen bir yoğurdu satın alma olasılığınız daha yüksektir.', description: 'Aynı bilgiden, nasıl sunulduğuna veya "çerçevelendiğine" bağlı olarak farklı sonuçlar çıkarmak.' } },
+            { id: 'ingroup', en: { name: 'Ingroup Bias', scenario: 'You believe your school\'s sports team is the best, simply because it\'s your school\'s team.', description: 'The tendency to favor members of one\'s own "in-group" over "out-group" members.' }, zh: { name: '内群体偏见', scenario: '你相信你学校的运动队是最好的，仅仅因为那是你学校的队。', description: '偏爱自己“内群体”成员而非“外群体”成员的倾向。' }, tr: { name: 'İç Grup Önyargısı', scenario: 'Sadece sizin okulunuzun takımı olduğu için, okulunuzun spor takımının en iyisi olduğuna inanırsınız.', description: 'Kişinin kendi "iç grubunun" üyelerini "dış grup" üyelerine tercih etme eğilimi.' } },
+            { id: 'zero_sum', en: { name: 'Zero-Sum Bias', scenario: 'You think that if another student gets a good grade, it somehow makes it harder for you to get a good grade.', description: 'A belief that a situation is like a zero-sum game, where one person\'s gain is another person\'s loss.' }, zh: { name: '零和偏见', scenario: '你认为如果另一个学生得了好成绩，这会让你更难得好成绩。', description: '认为情况就像一场零和游戏，一个人的收益就是另一个人的损失。' }, tr: { name: 'Sıfır Toplamlı Önyargı', scenario: 'Başka bir öğrenci iyi bir not alırsa, bunun sizin iyi bir not almanızı bir şekilde zorlaştırdığını düşünürsünüz.', description: 'Bir durumun, bir kişinin kazancının başka bir kişinin kaybı olduğu sıfır toplamlı bir oyun gibi olduğuna dair bir inanç.' } }
+        ];
+
+        class BiasGame {
+            constructor(i18nData, biasesData) {
+                // Data
+                this.i18n = i18nData;
+                this.biases = biasesData;
+
+                // DOM Elements
+                this.dom = {
+                    languageScreen: document.getElementById('language-screen'),
+                    gameContainer: document.getElementById('game-container'),
+                    startScreen: document.getElementById('start-screen'),
+                    gameScreen: document.getElementById('game-screen'),
+                    endScreen: document.getElementById('end-screen'),
+                    startButton: document.getElementById('start-button'),
+                    restartButton: document.getElementById('restart-button'),
+                    langBtns: document.querySelectorAll('.lang-btn'),
+                    scenarioText: document.getElementById('scenario-text'),
+                    optionsGrid: document.getElementById('options-grid'),
+                    scoreDisplay: document.getElementById('score-display'),
+                    questionCounter: document.getElementById('question-counter'),
+                    finalScore: document.getElementById('final-score'),
+                    pandaGame: document.getElementById('panda-game'),
+                    bambooContainer: document.getElementById('bamboo-container'),
+                    feedbackContainer: document.getElementById('feedback-container'),
+                    helpButton: document.getElementById('help-button'),
+                    helpModal: document.getElementById('help-modal'),
+                    closeModalButton: document.getElementById('close-modal-button'),
+                    helpContent: document.getElementById('help-content'),
+                };
+
+                // Game State
+                this.score = 0;
+                this.currentQuestionIndex = 0;
+                this.questions = [];
+                this.currentLanguage = 'en';
+                this.gameEventsBound = false; // Flag to ensure game events are bound only once
+            }
+
+            init() {
+                // This is the fix: Explicitly ensure the modal is hidden on load.
+                this.dom.helpModal.classList.add('hide');
+
+                // Bind only the language selection buttons initially to avoid conflicts.
+                this.dom.langBtns.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.selectLanguage(e.currentTarget.dataset.lang);
+                    });
+                });
+            }
+
+            bindGameEvents() {
+                this.dom.startButton.addEventListener('click', () => this.startGame());
+                this.dom.restartButton.addEventListener('click', () => this.startGame());
+
+                // Modal Event Listeners
+                this.dom.helpButton.addEventListener('click', () => this.showHelpModal());
+                this.dom.closeModalButton.addEventListener('click', () => this.hideHelpModal());
+                this.dom.helpModal.addEventListener('click', (e) => {
+                    if (e.target === this.dom.helpModal) {
+                        this.hideHelpModal();
+                    }
+                });
+            }
+            
+            selectLanguage(lang) {
+                this.currentLanguage = lang;
+                this.updateUIText();
+                this.populateHelpModal();
+                this.dom.languageScreen.classList.add('hide');
+                this.dom.gameContainer.classList.remove('hide');
+                
+                // Bind game-specific events only once after a language is chosen.
+                // This prevents the glossary from being accessible before it's populated.
+                if (!this.gameEventsBound) {
+                    this.bindGameEvents();
+                    this.gameEventsBound = true;
+                }
+            }
+
+            showHelpModal() {
+                this.dom.helpModal.classList.remove('hide');
+            }
+
+            hideHelpModal() {
+                this.dom.helpModal.classList.add('hide');
+            }
+
+            updateUIText() {
+                const lang = this.i18n[this.currentLanguage];
+                document.getElementById('title').textContent = lang.title;
+                document.getElementById('instructions-title').textContent = lang.instructions_title;
+                document.getElementById('instructions-body').textContent = lang.instructions_body;
+                document.getElementById('start-button').textContent = lang.start_button;
+                this.dom.scoreDisplay.textContent = `${lang.score_text}: ${this.score}`;
+                document.getElementById('end-title').textContent = lang.end_title;
+                document.getElementById('end-score-text').textContent = lang.end_score_text;
+                document.getElementById('restart-button').textContent = lang.restart_button;
+                document.getElementById('help-title').textContent = lang.help_title;
+            }
+
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            startGame() {
+                this.score = 0;
+                this.currentQuestionIndex = 0;
+                this.questions = [...this.biases];
+                this.shuffleArray(this.questions);
+                
+                this.dom.startScreen.classList.add('hide');
+                this.dom.endScreen.classList.add('hide');
+                this.dom.gameScreen.classList.remove('hide');
+                
+                this.displayQuestion();
+            }
+
+            displayQuestion() {
+                this.dom.bambooContainer.style.transition = 'none';
+                this.dom.bambooContainer.style.transform = 'translate(20, 0)';
+                this.dom.bambooContainer.style.opacity = '1';
+                this.dom.pandaGame.classList.remove('panda-chew');
+                this.dom.feedbackContainer.innerHTML = '';
+                
+                if (this.currentQuestionIndex >= this.questions.length) {
+                    this.endGame();
+                    return;
+                }
+
+                const question = this.questions[this.currentQuestionIndex];
+                this.dom.scenarioText.textContent = question[this.currentLanguage].scenario;
+                
+                this.updateStats();
+
+                const correctAnswer = question[this.currentLanguage].name;
+                const options = [correctAnswer];
+                
+                const distractors = this.biases
+                    .filter(b => b.id !== question.id)
+                    .map(b => b[this.currentLanguage].name);
+                this.shuffleArray(distractors);
+                
+                for (let i = 0; i < 3; i++) {
+                    options.push(distractors[i]);
+                }
+                this.shuffleArray(options);
+
+                this.dom.optionsGrid.innerHTML = '';
+                options.forEach(option => {
+                    const button = document.createElement('button');
+                    button.textContent = option;
+                    button.classList.add('w-full', 'bg-white', 'hover:bg-emerald-100', 'text-emerald-800', 'font-semibold', 'py-3', 'px-4', 'border', 'border-emerald-200', 'rounded-lg', 'shadow-sm', 'transition');
+                    button.onclick = () => this.checkAnswer(option === correctAnswer, button);
+                    this.dom.optionsGrid.appendChild(button);
+                });
+            }
+
+            checkAnswer(isCorrect, button) {
+                this.dom.optionsGrid.querySelectorAll('button').forEach(btn => btn.disabled = true);
+                
+                const lang = this.i18n[this.currentLanguage];
+                const feedback = document.createElement('div');
+                feedback.classList.add('text-2xl', 'font-bold', 'px-6', 'py-3', 'rounded-lg', 'shadow-lg');
+
+                if (isCorrect) {
+                    this.score++;
+                    button.classList.add('bg-green-500', 'text-white', 'border-green-500');
+                    feedback.textContent = lang.correct;
+                    feedback.classList.add('bg-green-500', 'text-white', 'feedback-correct');
+                    this.animatePanda(true);
+                } else {
+                    button.classList.add('bg-red-500', 'text-white', 'border-red-500');
+                    feedback.textContent = lang.incorrect;
+                    feedback.classList.add('bg-red-500', 'text-white', 'feedback-incorrect');
+                    this.animatePanda(false);
+                }
+                
+                this.dom.feedbackContainer.appendChild(feedback);
+                this.updateStats();
+
+                setTimeout(() => {
+                    this.currentQuestionIndex++;
+                    this.displayQuestion();
+                }, 2000);
+            }
+            
+            animatePanda(isCorrect) {
+                if (isCorrect) {
+                    this.dom.bambooContainer.style.transition = 'transform 0.8s ease-in-out';
+                    this.dom.bambooContainer.style.transform = 'translate(100px, 30px) rotate(90deg) scale(0.5)';
+                    setTimeout(() => {
+                        this.dom.pandaGame.classList.add('panda-chew');
+                        this.dom.bambooContainer.style.transition = 'opacity 0.3s ease-in-out';
+                        this.dom.bambooContainer.style.opacity = '0';
+                    }, 800);
+                } else {
+                    this.dom.bambooContainer.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
+                    this.dom.bambooContainer.style.transform = 'translate(20, -150px)';
+                    this.dom.bambooContainer.style.opacity = '0';
+                }
+            }
+
+            updateStats() {
+                this.dom.scoreDisplay.textContent = `${this.i18n[this.currentLanguage].score_text}: ${this.score}`;
+                this.dom.questionCounter.textContent = `${Math.min(this.currentQuestionIndex + 1, this.questions.length)} / ${this.questions.length}`;
+            }
+
+            endGame() {
+                this.dom.gameScreen.classList.add('hide');
+                this.dom.endScreen.classList.remove('hide');
+                this.dom.finalScore.textContent = `${this.score} / ${this.questions.length}`;
+            }
+
+            populateHelpModal() {
+                this.dom.helpContent.innerHTML = '';
+                const sortedBiases = [...this.biases].sort((a, b) => a[this.currentLanguage].name.localeCompare(b[this.currentLanguage].name));
+                
+                sortedBiases.forEach(bias => {
+                    const div = document.createElement('div');
+                    div.classList.add('mb-4');
+                    const term = document.createElement('h3');
+                    term.classList.add('font-bold', 'text-lg', 'text-emerald-700');
+                    term.textContent = bias[this.currentLanguage].name;
+
+                    const definition = document.createElement('p');
+                    definition.classList.add('text-gray-600');
+                    definition.textContent = bias[this.currentLanguage].description;
+                    
+                    div.appendChild(term);
+                    div.appendChild(definition);
+                    this.dom.helpContent.appendChild(div);
+                });
+            }
+        }
+
+        // --- INITIALIZATION ---
+        const game = new BiasGame(i18n, biases);
+        game.init();
+    });
+    </script>
+</body>
+</html>
+
