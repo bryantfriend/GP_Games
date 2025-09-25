@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Mind Map Builder 🌳 (Drag & Drop)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,6 +13,8 @@
             font-family: 'Baloo 2', cursive;
             background-color: #f0fdf4; /* A light, friendly green */
             overflow: hidden;
+            /* Prevent pull-to-refresh and other touch gestures on the whole page */
+            touch-action: none;
         }
         #background-vectors {
             position: fixed;
@@ -33,11 +35,22 @@
             cursor: grab;
             transition: all 0.2s ease-in-out;
             border: 2px solid #a7f3d0; /* Green-200 */
+            /* Prevents browser from scrolling when dragging the card on touch devices */
+            touch-action: none; 
         }
         .idea-card:active {
             cursor: grabbing;
             transform: scale(1.05);
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2), 0 4px 6px -2px rgba(0,0,0,0.1);
+        }
+        /* Style for the visual clone during a drag operation */
+        .dragging-ghost {
+            position: fixed;
+            pointer-events: none;
+            opacity: 0.7;
+            z-index: 1000;
+            transform: scale(1.05);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2), 0 10px 10px -5px rgba(0,0,0,0.1);
         }
         .drop-zone {
             border: 3px dashed #4ade80; /* Green-400 */
@@ -126,7 +139,6 @@
     <!-- Game Container -->
     <div id="game-container" class="w-full max-w-7xl mx-auto hidden relative z-10">
         
-        <!-- Header -->
         <header class="text-center mb-4">
             <h1 id="game-title" class="text-4xl md:text-5xl font-bold text-green-700">Mind Map Builder 🌳</h1>
             <div class="mt-2 flex justify-center items-center flex-wrap gap-x-6 gap-y-2 text-xl">
@@ -137,7 +149,6 @@
             </div>
         </header>
 
-        <!-- Main Game Area -->
         <main class="flex flex-col md:flex-row gap-4">
             <aside class="w-full md:w-1/4 bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-lg border-2 border-gray-200 flex flex-col gap-4">
                 <div><h2 id="main-ideas-label" class="text-2xl font-bold text-center mb-2 text-green-600">Main Ideas</h2><div id="main-ideas-bank" class="space-y-2 bg-green-50 p-2 rounded-lg min-h-[100px]"></div></div><hr/>
@@ -151,12 +162,9 @@
             </div>
         </main>
 
-        <!-- Game Over Modal -->
         <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div class="bg-white p-8 rounded-2xl shadow-2xl text-center transform transition-all scale-95 opacity-0">
-                <div id="star-rating" class="flex justify-center mb-4">
-                    <span class="star">★</span><span class="star">★</span><span class="star">★</span>
-                </div>
+                <div id="star-rating" class="flex justify-center mb-4"><span class="star">★</span><span class="star">★</span><span class="star">★</span></div>
                 <h2 id="modal-title" class="text-4xl font-bold text-green-600 mb-2"></h2>
                 <p id="modal-subtitle" class="text-xl mb-4"></p>
                 <div class="text-2xl font-bold mb-6"><span id="final-score-label">Final Score</span>: <span id="final-score">0</span></div>
@@ -167,205 +175,130 @@
 
     <script>
         // --- TRANSLATIONS with Emojis ---
-        const translations = {
-            'en': {
-                ui: { title: "Mind Map Builder 🌳", level: "Level", time: "Time", score: "Score", combo: "Combo", mainIdeas: "Main Ideas", details: "Details", levelComplete: "Level Complete! 🎉", masterMapper: "You're a master mind-mapper!", timesUp: "Time's Up! ⏰", finalScore: "Final Score", nextLevel: "Next Level", playAgain: "Play Again", tryAgain: "Try Again", gameFinished: "You finished the game! 🏆" },
-                levels: [
-                    { mainTopic: "🏛️ Ancient Rome", subtopics: [{ id: 'sub-gov', text: '🏛️ Government', details: ['Senate', 'Republic'] }, { id: 'sub-arch', text: '🏗️ Architecture', details: ['Colosseum', 'Aqueducts'] }, { id: 'sub-people', text: '👨‍⚖️ Famous People', details: ['Julius Caesar', 'Augustus'] }] },
-                    { mainTopic: "🪐 The Solar System", subtopics: [{ id: 'sub-inner', text: '🔥 Inner Planets', details: ['Mercury', 'Venus', 'Earth', 'Mars'] }, { id: 'sub-outer', text: '🧊 Outer Planets', details: ['Jupiter', 'Saturn', 'Uranus', 'Neptune'] }, { id: 'sub-other', text: '☄️ Other Objects', details: ['Asteroid Belt', 'Comets'] }] },
-                    { mainTopic: "💧 The Water Cycle", subtopics: [{ id: 'sub-evap', text: '☀️ Evaporation', details: ['Sun heats water', 'Turns to vapor'] }, { id: 'sub-cond', text: '☁️ Condensation', details: ['Vapor cools', 'Forms clouds'] }, { id: 'sub-precip', text: '🌧️ Precipitation', details: ['Rain, snow, sleet', 'Water falls to Earth'] }] },
-                    { mainTopic: "🌱 Parts of a Plant", subtopics: [{ id: 'sub-roots', text: '👇 Roots', details: ['Absorb water', 'Anchor plant'] }, { id: 'sub-stem', text: '🌴 Stem', details: ['Supports leaves', 'Carries water'] }, { id: 'sub-leaves', text: '🍃 Leaves', details: ['Photosynthesis', 'Makes food'] }] },
-                    { mainTopic: "🏺 Ancient Egypt", subtopics: [{ id: 'sub-geo', text: '🗺️ Geography', details: ['Nile River', 'Sahara Desert'] }, { id: 'sub-culture', text: '📜 Culture', details: ['Hieroglyphs', 'Pyramids'] }, { id: 'sub-pharaohs', text: '👑 Pharaohs', details: ['Tutankhamun', 'Cleopatra'] }] },
-                    { mainTopic: "📚 Literary Genres", subtopics: [{ id: 'sub-fic', text: '🦄 Fiction', details: ['Fantasy', 'Sci-Fi'] }, { id: 'sub-nonfic', text: '🧐 Non-Fiction', details: ['Biography', 'History'] }, { id: 'sub-poetry', text: '✍️ Poetry', details: ['Haiku', 'Sonnet'] }] },
-                    { mainTopic: "🗳️ Types of Government", subtopics: [{ id: 'sub-dem', text: '🙋 Democracy', details: ['Rule by the people', 'Elections'] }, { id: 'sub-mon', text: '👑 Monarchy', details: ['King or Queen', 'Hereditary rule'] }, { id: 'sub-dict', text: '🎖️ Dictatorship', details: ['One ruler', 'No elections'] }] },
-                    { mainTopic: "🌍 Continents & Oceans", subtopics: [{ id: 'sub-cont', text: '🌎 Continents', details: ['Asia', 'Africa', 'North America'] }, { id: 'sub-oceans', text: '🌊 Oceans', details: ['Pacific', 'Atlantic', 'Indian'] }] },
-                    { mainTopic: "🍎 Food Groups", subtopics: [{ id: 'sub-fruit', text: '🥦 Fruits & Veggies', details: ['Apples', 'Broccoli'] }, { id: 'sub-prot', text: '🍗 Proteins', details: ['Chicken', 'Beans'] }, { id: 'sub-grain', text: '🍞 Grains', details: ['Bread', 'Rice'] }] },
-                    { mainTopic: "📝 Note-Taking Methods", subtopics: [{ id: 'sub-mindmap', text: '🌳 Mind Maps', details: ['Visual', 'Branches'] }, { id: 'sub-bullet', text: '➡️ Bullet Points', details: ['Lists', 'Short phrases'] }, { id: 'sub-cornell', text: '📖 Cornell Method', details: ['Cues', 'Summary'] }] }
-                ]
-            },
-            'tr': {
-                ui: { title: "Zihin Haritası Oluşturucu 🌳", level: "Seviye", time: "Süre", score: "Puan", combo: "Kombo", mainIdeas: "Ana Fikirler", details: "Detaylar", levelComplete: "Seviye Tamamlandı! 🎉", masterMapper: "Harika bir zihin haritacısısın!", timesUp: "Süre Doldu! ⏰", finalScore: "Son Puan", nextLevel: "Sonraki Seviye", playAgain: "Tekrar Oyna", tryAgain: "Tekrar Dene", gameFinished: "Oyunu bitirdin! 🏆" },
-                levels: [
-                    { mainTopic: "🏛️ Antik Roma", subtopics: [{ id: 'sub-gov', text: '🏛️ Yönetim', details: ['Senato', 'Cumhuriyet'] }, { id: 'sub-arch', text: '🏗️ Mimari', details: ['Kolezyum', 'Su kemerleri'] }, { id: 'sub-people', text: '👨‍⚖️ Ünlü Kişiler', details: ['Jül Sezar', 'Augustus'] }] },
-                    { mainTopic: "🪐 Güneş Sistemi", subtopics: [{ id: 'sub-inner', text: '🔥 İç Gezegenler', details: ['Merkür', 'Venüs', 'Dünya', 'Mars'] }, { id: 'sub-outer', text: '🧊 Dış Gezegenler', details: ['Jüpiter', 'Satürn', 'Uranüs', 'Neptün'] }, { id: 'sub-other', text: '☄️ Diğer Nesneler', details: ['Asteroit Kuşağı', 'Kuyruklu Yıldızlar'] }] },
-                    { mainTopic: "💧 Su Döngüsü", subtopics: [{ id: 'sub-evap', text: '☀️ Buharlaşma', details: ['Güneş suyu ısıtır', 'Buğdaya dönüşür'] }, { id: 'sub-cond', text: '☁️ Yoğunlaşma', details: ['Buhar soğur', 'Bulutları oluşturur'] }, { id: 'sub-precip', text: '🌧️ Yağış', details: ['Yağmur, kar, dolu', 'Su yeryüzüne düşer'] }] },
-                ]
-            },
-            'zh': {
-                ui: { title: "思维导图构建器 🌳", level: "等级", time: "时间", score: "分数", combo: "连击", mainIdeas: "主要思想", details: "细节", levelComplete: "完成本级！ 🎉", masterMapper: "你是一位思维导图大师！", timesUp: "时间到！ ⏰", finalScore: "最终得分", nextLevel: "下一级", playAgain: "再玩一次", tryAgain: "再试一次", gameFinished: "你完成了游戏！ 🏆" },
-                levels: [
-                    { mainTopic: "🏛️ 古罗马", subtopics: [{ id: 'sub-gov', text: '🏛️ 政府', details: ['元老院', '共和国'] }, { id: 'sub-arch', text: '🏗️ 建筑', details: ['罗马斗兽场', '水道'] }, { id: 'sub-people', text: '👨‍⚖️ 名人', details: ['尤利乌斯·凯撒', '奥古斯都'] }] },
-                    { mainTopic: "🪐 太阳系", subtopics: [{ id: 'sub-inner', text: '🔥 内行星', details: ['水星', '金星', '地球', '火星'] }, { id: 'sub-outer', text: '🧊 外行星', details: ['木星', '土星', '天王星', '海王星'] }, { id: 'sub-other', text: '☄️ 其他天体', details: ['小行星带', '彗星'] }] },
-                    { mainTopic: "💧 水循环", subtopics: [{ id: 'sub-evap', text: '☀️ 蒸发', details: ['太阳加热水', '变成蒸汽'] }, { id: 'sub-cond', text: '☁️ 凝结', details: ['蒸汽冷却', '形成云'] }, { id: 'sub-precip', text: '🌧️ 降水', details: ['雨、雪、冰雹', '水落到地面'] }] },
-                ]
-            }
+        const translations = { /* ... Translation data remains the same ... */ 
+            'en': { ui: { title: "Mind Map Builder 🌳", level: "Level", time: "Time", score: "Score", combo: "Combo", mainIdeas: "Main Ideas", details: "Details", levelComplete: "Level Complete! 🎉", masterMapper: "You're a master mind-mapper!", timesUp: "Time's Up! ⏰", finalScore: "Final Score", nextLevel: "Next Level", playAgain: "Play Again", tryAgain: "Try Again", gameFinished: "You finished the game! 🏆" }, levels: [ { mainTopic: "🏛️ Ancient Rome", subtopics: [{ id: 'sub-gov', text: '🏛️ Government', details: ['Senate', 'Republic'] }, { id: 'sub-arch', text: '🏗️ Architecture', details: ['Colosseum', 'Aqueducts'] }, { id: 'sub-people', text: '👨‍⚖️ Famous People', details: ['Julius Caesar', 'Augustus'] }] }, { mainTopic: "🪐 The Solar System", subtopics: [{ id: 'sub-inner', text: '🔥 Inner Planets', details: ['Mercury', 'Venus', 'Earth', 'Mars'] }, { id: 'sub-outer', text: '🧊 Outer Planets', details: ['Jupiter', 'Saturn', 'Uranus', 'Neptune'] }, { id: 'sub-other', text: '☄️ Other Objects', details: ['Asteroid Belt', 'Comets'] }] }, { mainTopic: "💧 The Water Cycle", subtopics: [{ id: 'sub-evap', text: '☀️ Evaporation', details: ['Sun heats water', 'Turns to vapor'] }, { id: 'sub-cond', text: '☁️ Condensation', details: ['Vapor cools', 'Forms clouds'] }, { id: 'sub-precip', text: '🌧️ Precipitation', details: ['Rain, snow, sleet', 'Water falls to Earth'] }] }, { mainTopic: "🌱 Parts of a Plant", subtopics: [{ id: 'sub-roots', text: '👇 Roots', details: ['Absorb water', 'Anchor plant'] }, { id: 'sub-stem', text: '🌴 Stem', details: ['Supports leaves', 'Carries water'] }, { id: 'sub-leaves', text: '🍃 Leaves', details: ['Photosynthesis', 'Makes food'] }] }, { mainTopic: "🏺 Ancient Egypt", subtopics: [{ id: 'sub-geo', text: '🗺️ Geography', details: ['Nile River', 'Sahara Desert'] }, { id: 'sub-culture', text: '📜 Culture', details: ['Hieroglyphs', 'Pyramids'] }, { id: 'sub-pharaohs', text: '👑 Pharaohs', details: ['Tutankhamun', 'Cleopatra'] }] }, { mainTopic: "📚 Literary Genres", subtopics: [{ id: 'sub-fic', text: '🦄 Fiction', details: ['Fantasy', 'Sci-Fi'] }, { id: 'sub-nonfic', text: '🧐 Non-Fiction', details: ['Biography', 'History'] }, { id: 'sub-poetry', text: '✍️ Poetry', details: ['Haiku', 'Sonnet'] }] }, { mainTopic: "🗳️ Types of Government", subtopics: [{ id: 'sub-dem', text: '🙋 Democracy', details: ['Rule by the people', 'Elections'] }, { id: 'sub-mon', text: '👑 Monarchy', details: ['King or Queen', 'Hereditary rule'] }, { id: 'sub-dict', text: '🎖️ Dictatorship', details: ['One ruler', 'No elections'] }] }, { mainTopic: "🌍 Continents & Oceans", subtopics: [{ id: 'sub-cont', text: '🌎 Continents', details: ['Asia', 'Africa', 'North America'] }, { id: 'sub-oceans', text: '🌊 Oceans', details: ['Pacific', 'Atlantic', 'Indian'] }] }, { mainTopic: "🍎 Food Groups", subtopics: [{ id: 'sub-fruit', text: '🥦 Fruits & Veggies', details: ['Apples', 'Broccoli'] }, { id: 'sub-prot', text: '🍗 Proteins', details: ['Chicken', 'Beans'] }, { id: 'sub-grain', text: '🍞 Grains', details: ['Bread', 'Rice'] }] }, { mainTopic: "📝 Note-Taking Methods", subtopics: [{ id: 'sub-mindmap', text: '🌳 Mind Maps', details: ['Visual', 'Branches'] }, { id: 'sub-bullet', text: '➡️ Bullet Points', details: ['Lists', 'Short phrases'] }, { id: 'sub-cornell', text: '📖 Cornell Method', details: ['Cues', 'Summary'] }] } ] },
+            'tr': { ui: { title: "Zihin Haritası Oluşturucu 🌳", level: "Seviye", time: "Süre", score: "Puan", combo: "Kombo", mainIdeas: "Ana Fikirler", details: "Detaylar", levelComplete: "Seviye Tamamlandı! 🎉", masterMapper: "Harika bir zihin haritacısısın!", timesUp: "Süre Doldu! ⏰", finalScore: "Son Puan", nextLevel: "Sonraki Seviye", playAgain: "Tekrar Oyna", tryAgain: "Tekrar Dene", gameFinished: "Oyunu bitirdin! 🏆" }, levels: [ { mainTopic: "🏛️ Antik Roma", subtopics: [{ id: 'sub-gov', text: '🏛️ Yönetim', details: ['Senato', 'Cumhuriyet'] }, { id: 'sub-arch', text: '🏗️ Mimari', details: ['Kolezyum', 'Su kemerleri'] }, { id: 'sub-people', text: '👨‍⚖️ Ünlü Kişiler', details: ['Jül Sezar', 'Augustus'] }] }, { mainTopic: "🪐 Güneş Sistemi", subtopics: [{ id: 'sub-inner', text: '🔥 İç Gezegenler', details: ['Merkür', 'Venüs', 'Dünya', 'Mars'] }, { id: 'sub-outer', text: '🧊 Dış Gezegenler', details: ['Jüpiter', 'Satürn', 'Uranüs', 'Neptün'] }, { id: 'sub-other', text: '☄️ Diğer Nesneler', details: ['Asteroit Kuşağı', 'Kuyruklu Yıldızlar'] }] }, { mainTopic: "💧 Su Döngüsü", subtopics: [{ id: 'sub-evap', text: '☀️ Buharlaşma', details: ['Güneş suyu ısıtır', 'Buğdaya dönüşür'] }, { id: 'sub-cond', text: '☁️ Yoğunlaşma', details: ['Buhar soğur', 'Bulutları oluşturur'] }, { id: 'sub-precip', text: '🌧️ Yağış', details: ['Yağmur, kar, dolu', 'Su yeryüzüne düşer'] }] }, ] },
+            'zh': { ui: { title: "思维导图构建器 🌳", level: "等级", time: "时间", score: "分数", combo: "连击", mainIdeas: "主要思想", details: "细节", levelComplete: "完成本级！ 🎉", masterMapper: "你是一位思维导图大师！", timesUp: "时间到！ ⏰", finalScore: "最终得分", nextLevel: "下一级", playAgain: "再玩一次", tryAgain: "再试一次", gameFinished: "你完成了游戏！ 🏆" }, levels: [ { mainTopic: "🏛️ 古罗马", subtopics: [{ id: 'sub-gov', text: '🏛️ 政府', details: ['元老院', '共和国'] }, { id: 'sub-arch', text: '🏗️ 建筑', details: ['罗马斗兽场', '水道'] }, { id: 'sub-people', text: '👨‍⚖️ 名人', details: ['尤利乌斯·凯撒', '奥古斯都'] }] }, { mainTopic: "🪐 太阳系", subtopics: [{ id: 'sub-inner', text: '🔥 内行星', details: ['水星', '金星', '地球', '火星'] }, { id: 'sub-outer', text: '🧊 外行星', details: ['木星', '土星', '天王星', '海王星'] }, { id: 'sub-other', text: '☄️ 其他天体', details: ['小行星带', '彗星'] }] }, { mainTopic: "💧 水循环", subtopics: [{ id: 'sub-evap', text: '☀️ 蒸发', details: ['太阳加热水', '变成蒸汽'] }, { id: 'sub-cond', text: '☁️ 凝结', details: ['蒸汽冷却', '形成云'] }, { id: 'sub-precip', text: '🌧️ 降水', details: ['雨、雪、冰雹', '水落到地面'] }] }, ] }
         };
-        if (!translations.tr.levels[3]) translations.tr.levels = translations.en.levels.map(l => ({...l})); // Fallback for missing translations
-        if (!translations.zh.levels[3]) translations.zh.levels = translations.en.levels.map(l => ({...l})); // Fallback for missing translations
-
+        if (!translations.tr.levels[3]) translations.tr.levels = translations.en.levels.map(l => ({...l}));
+        if (!translations.zh.levels[3]) translations.zh.levels = translations.en.levels.map(l => ({...l}));
 
         // DOM Elements
-        const langScreenEl = document.getElementById('language-selection-screen');
-        const gameContainerEl = document.getElementById('game-container');
-        const langButtons = document.querySelectorAll('[data-lang]');
-        const levelIndicatorEl = document.getElementById('level-indicator');
-        const timerEl = document.getElementById('timer');
-        const scoreEl = document.getElementById('score');
-        const comboCounterEl = document.getElementById('combo-counter');
-        const comboBonusTextEl = document.getElementById('combo-bonus-text');
-        const mainIdeasBankEl = document.getElementById('main-ideas-bank');
-        const detailsBankEl = document.getElementById('details-bank');
-        const mainTopicEl = document.getElementById('main-topic');
-        const branchesContainerEl = document.getElementById('branches-container');
-        const mindMapEl = document.getElementById('mind-map');
-        const modalEl = document.getElementById('modal');
-        const starRatingEl = document.getElementById('star-rating');
-        const modalTitleEl = document.getElementById('modal-title');
-        const finalScoreEl = document.getElementById('final-score');
-        const nextLevelBtn = document.getElementById('next-level-btn');
+        const langScreenEl = document.getElementById('language-selection-screen'); const gameContainerEl = document.getElementById('game-container'); const langButtons = document.querySelectorAll('[data-lang]'); const levelIndicatorEl = document.getElementById('level-indicator'); const timerEl = document.getElementById('timer'); const scoreEl = document.getElementById('score'); const comboCounterEl = document.getElementById('combo-counter'); const comboBonusTextEl = document.getElementById('combo-bonus-text'); const mainIdeasBankEl = document.getElementById('main-ideas-bank'); const detailsBankEl = document.getElementById('details-bank'); const mainTopicEl = document.getElementById('main-topic'); const branchesContainerEl = document.getElementById('branches-container'); const mindMapEl = document.getElementById('mind-map'); const modalEl = document.getElementById('modal'); const starRatingEl = document.getElementById('star-rating'); const modalTitleEl = document.getElementById('modal-title'); const finalScoreEl = document.getElementById('final-score'); const nextLevelBtn = document.getElementById('next-level-btn');
 
         // Game State
-        let selectedLanguage = 'en';
-        let currentLevel = 0;
-        let score = 0;
-        let timeLeft = 120;
-        let timerInterval;
-        let totalCards = 0;
-        let placedCards = 0;
-        let comboCounter = 0;
-        let maxScorePossible = 0;
+        let selectedLanguage = 'en'; let currentLevel = 0; let score = 0; let timeLeft = 120; let timerInterval; let totalCards = 0; let placedCards = 0; let comboCounter = 0; let maxScorePossible = 0;
+        
+        // --- DRAG & TOUCH STATE ---
+        let draggedElement = null;
+        let draggedGhost = null;
+        let lastHoveredDropZone = null;
 
-        // --- SOUND ENGINE ---
         let audioCtx;
-        function playSound(type) {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-
-            if (type === 'correct') {
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
-            } else { // 'wrong'
-                oscillator.type = 'square';
-                oscillator.frequency.setValueAtTime(164.81, audioCtx.currentTime); // E3
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
-            }
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.5);
-        }
-
-        function translateUI() {
-            const ui = translations[selectedLanguage].ui;
-            document.getElementById('game-title').textContent = ui.title;
-            document.getElementById('level-label').textContent = ui.level;
-            document.getElementById('time-label').textContent = ui.time;
-            document.getElementById('score-label').textContent = ui.score;
-            document.getElementById('combo-label').textContent = ui.combo;
-            document.getElementById('main-ideas-label').textContent = ui.mainIdeas;
-            document.getElementById('details-label').textContent = ui.details;
-            document.getElementById('final-score-label').textContent = ui.finalScore;
-            document.getElementById('modal-subtitle').textContent = ui.masterMapper;
-        }
+        function playSound(type) { /* ... Sound code remains the same ... */ if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const oscillator = audioCtx.createOscillator(); const gainNode = audioCtx.createGain(); oscillator.connect(gainNode); gainNode.connect(audioCtx.destination); gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); if (type === 'correct') { oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5); } else { oscillator.type = 'square'; oscillator.frequency.setValueAtTime(164.81, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3); } oscillator.start(); oscillator.stop(audioCtx.currentTime + 0.5); }
+        function translateUI() { /* ... UI translation code remains the same ... */ const ui = translations[selectedLanguage].ui; document.getElementById('game-title').textContent = ui.title; document.getElementById('level-label').textContent = ui.level; document.getElementById('time-label').textContent = ui.time; document.getElementById('score-label').textContent = ui.score; document.getElementById('combo-label').textContent = ui.combo; document.getElementById('main-ideas-label').textContent = ui.mainIdeas; document.getElementById('details-label').textContent = ui.details; document.getElementById('final-score-label').textContent = ui.finalScore; document.getElementById('modal-subtitle').textContent = ui.masterMapper; }
 
         function startGame(lang) {
-            selectedLanguage = lang;
-            langScreenEl.classList.add('hidden');
-            gameContainerEl.classList.remove('hidden');
-            translateUI();
-            setTimeout(() => setupLevel(currentLevel), 100);
+            selectedLanguage = lang; langScreenEl.classList.add('hidden'); gameContainerEl.classList.remove('hidden');
+            translateUI(); setTimeout(() => setupLevel(currentLevel), 100);
         }
 
         langButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); // Init on user interaction
-                startGame(button.dataset.lang);
-            });
+            button.addEventListener('click', () => { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); startGame(button.dataset.lang); });
         });
 
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; }
-            return array;
-        }
+        function shuffle(array) { /* ... Shuffle code remains the same ... */ for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
         function createCard(id, text, type, parentId = null) {
-            const card = document.createElement('div');
-            card.id = id; card.innerHTML = text; card.draggable = true; card.dataset.type = type;
+            const card = document.createElement('div'); card.id = id; card.innerHTML = text; card.draggable = true; card.dataset.type = type;
             if (parentId) card.dataset.parentId = parentId;
             card.className = 'idea-card p-3 rounded-lg shadow-sm text-center text-lg';
             if(type === 'subtopic') card.classList.add('bg-green-100'); else card.classList.add('bg-yellow-50');
+            // Add both mouse and touch event listeners
             card.addEventListener('dragstart', onDragStart);
+            card.addEventListener('touchstart', onTouchStart, { passive: false });
             return card;
         }
         
-        function createDropZone(id, type, parentId = null) {
-            const wrapper = document.createElement('div'); const dropZone = document.createElement('div');
-            dropZone.id = `drop-${id}`; dropZone.dataset.targetId = id; dropZone.dataset.type = type;
-            if (parentId) dropZone.dataset.parentId = parentId;
-            dropZone.className = 'drop-zone p-2 rounded-lg space-y-2';
-            wrapper.appendChild(dropZone);
-            dropZone.addEventListener('dragover', onDragOver); dropZone.addEventListener('dragleave', onDragLeave); dropZone.addEventListener('drop', onDrop);
-            return wrapper;
-        }
+        function createDropZone(id, type, parentId = null) { /* ... createDropZone code remains the same ... */ const wrapper = document.createElement('div'); const dropZone = document.createElement('div'); dropZone.id = `drop-${id}`; dropZone.dataset.targetId = id; dropZone.dataset.type = type; if (parentId) dropZone.dataset.parentId = parentId; dropZone.className = 'drop-zone p-2 rounded-lg space-y-2'; wrapper.appendChild(dropZone); dropZone.addEventListener('dragover', onDragOver); dropZone.addEventListener('dragleave', onDragLeave); dropZone.addEventListener('drop', onDrop); return wrapper; }
 
-        function setupLevel(levelIndex) {
-            const levelData = translations[selectedLanguage].levels[levelIndex];
-            score = 0; timeLeft = 120; placedCards = 0; comboCounter = 0;
-            updateScore(0); updateCombo(0);
-            timerEl.textContent = timeLeft; levelIndicatorEl.textContent = levelIndex + 1;
-            mainIdeasBankEl.innerHTML = ''; detailsBankEl.innerHTML = ''; branchesContainerEl.innerHTML = '';
-            mainTopicEl.innerHTML = levelData.mainTopic;
+        function setupLevel(levelIndex) { /* ... setupLevel logic remains the same ... */ const levelData = translations[selectedLanguage].levels[levelIndex]; score = 0; timeLeft = 120; placedCards = 0; comboCounter = 0; updateScore(0); updateCombo(0); timerEl.textContent = timeLeft; levelIndicatorEl.textContent = levelIndex + 1; mainIdeasBankEl.innerHTML = ''; detailsBankEl.innerHTML = ''; branchesContainerEl.innerHTML = ''; mainTopicEl.innerHTML = levelData.mainTopic; let subtopicCards = []; let detailCards = []; totalCards = 0; maxScorePossible = 0; levelData.subtopics.forEach(subtopic => { subtopicCards.push(createCard(subtopic.id, subtopic.text, 'subtopic')); totalCards++; maxScorePossible += 10; subtopic.details.forEach((detail, index) => { const detailId = `${subtopic.id}-detail-${index}`; detailCards.push(createCard(detailId, detail, 'detail', subtopic.id)); totalCards++; maxScorePossible += 10; }); }); maxScorePossible += 120; shuffle(subtopicCards).forEach(card => mainIdeasBankEl.appendChild(card)); shuffle(detailCards).forEach(card => detailsBankEl.appendChild(card)); const numSubtopics = levelData.subtopics.length; const angleStep = 360 / numSubtopics; const radiusX = mindMapEl.offsetWidth * 0.35; const radiusY = mindMapEl.offsetHeight * 0.3; levelData.subtopics.forEach((subtopic, i) => { const angleRad = (angleStep * i - 90) * (Math.PI / 180); const x = radiusX * Math.cos(angleRad); const y = radiusY * Math.sin(angleRad); const container = document.createElement('div'); container.className = 'absolute'; container.style.left = `calc(50% + ${x}px)`; container.style.top = `calc(50% + ${y}px)`; container.style.transform = 'translate(-50%, -50%)'; const subtopicDropWrapper = createDropZone(subtopic.id, 'subtopic'); const detailDropWrapper = createDropZone(`details-for-${subtopic.id}`, 'detail', subtopic.id); detailDropWrapper.classList.add('hidden', 'mt-2'); container.appendChild(subtopicDropWrapper); container.appendChild(detailDropWrapper); branchesContainerEl.appendChild(container); const line = document.createElement('div'); const angleDeg = Math.atan2(y, x) * (180 / Math.PI); const length = Math.sqrt(x*x + y*y) - mainTopicEl.offsetWidth / 2.5; line.className = 'branch-line'; line.style.width = `${length}px`; line.style.height = '4px'; line.style.left = `calc(50% + ${mainTopicEl.offsetWidth / 2.5 * Math.cos(angleRad)}px)`; line.style.top = `calc(50% + ${mainTopicEl.offsetWidth / 2.5 * Math.sin(angleRad)}px)`; line.style.transform = `rotate(${angleDeg}deg)`; branchesContainerEl.appendChild(line); }); startTimer(); }
 
-            let subtopicCards = []; let detailCards = []; totalCards = 0; maxScorePossible = 0;
-
-            levelData.subtopics.forEach(subtopic => {
-                subtopicCards.push(createCard(subtopic.id, subtopic.text, 'subtopic'));
-                totalCards++; maxScorePossible += 10;
-                subtopic.details.forEach((detail, index) => {
-                    const detailId = `${subtopic.id}-detail-${index}`;
-                    detailCards.push(createCard(detailId, detail, 'detail', subtopic.id));
-                    totalCards++; maxScorePossible += 10;
-                });
-            });
-            maxScorePossible += 120; // Max time bonus
-
-            shuffle(subtopicCards).forEach(card => mainIdeasBankEl.appendChild(card));
-            shuffle(detailCards).forEach(card => detailsBankEl.appendChild(card));
-
-            const numSubtopics = levelData.subtopics.length; const angleStep = 360 / numSubtopics;
-            const radiusX = mindMapEl.offsetWidth * 0.35; const radiusY = mindMapEl.offsetHeight * 0.3;
-            
-            levelData.subtopics.forEach((subtopic, i) => {
-                const angleRad = (angleStep * i - 90) * (Math.PI / 180);
-                const x = radiusX * Math.cos(angleRad); const y = radiusY * Math.sin(angleRad);
-                const container = document.createElement('div');
-                container.className = 'absolute'; container.style.left = `calc(50% + ${x}px)`; container.style.top = `calc(50% + ${y}px)`; container.style.transform = 'translate(-50%, -50%)';
-                const subtopicDropWrapper = createDropZone(subtopic.id, 'subtopic');
-                const detailDropWrapper = createDropZone(`details-for-${subtopic.id}`, 'detail', subtopic.id);
-                detailDropWrapper.classList.add('hidden', 'mt-2');
-                container.appendChild(subtopicDropWrapper); container.appendChild(detailDropWrapper); branchesContainerEl.appendChild(container);
-                const line = document.createElement('div'); const angleDeg = Math.atan2(y, x) * (180 / Math.PI); const length = Math.sqrt(x*x + y*y) - mainTopicEl.offsetWidth / 2.5;
-                line.className = 'branch-line'; line.style.width = `${length}px`; line.style.height = '4px';
-                line.style.left = `calc(50% + ${mainTopicEl.offsetWidth / 2.5 * Math.cos(angleRad)}px)`;
-                line.style.top = `calc(50% + ${mainTopicEl.offsetWidth / 2.5 * Math.sin(angleRad)}px)`;
-                line.style.transform = `rotate(${angleDeg}deg)`;
-                branchesContainerEl.appendChild(line);
-            });
-            
-            startTimer();
-        }
-
+        // --- MOUSE DRAG & DROP ---
         function onDragStart(e) { e.dataTransfer.setData('text/plain', e.target.id); }
         function onDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
         function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
-
         function onDrop(e) {
             e.preventDefault(); e.currentTarget.classList.remove('drag-over');
-            const cardId = e.dataTransfer.getData('text/plain'); const card = document.getElementById(cardId); const dropZone = e.currentTarget;
+            const cardId = e.dataTransfer.getData('text/plain'); const card = document.getElementById(cardId);
+            handlePlacement(card, e.currentTarget);
+        }
 
+        // --- TOUCH DRAG & DROP ---
+        function onTouchStart(e) {
+            e.preventDefault();
+            draggedElement = e.target.closest('.idea-card');
+            if (!draggedElement || draggedElement.draggable === false) return;
+            
+            draggedGhost = draggedElement.cloneNode(true);
+            draggedGhost.classList.add('dragging-ghost');
+            document.body.appendChild(draggedGhost);
+            
+            const touch = e.touches[0];
+            updateGhostPosition(touch);
+
+            window.addEventListener('touchmove', onTouchMove, { passive: false });
+            window.addEventListener('touchend', onTouchEnd, { passive: false });
+        }
+
+        function onTouchMove(e) {
+            e.preventDefault();
+            if (!draggedGhost) return;
+            
+            const touch = e.touches[0];
+            updateGhostPosition(touch);
+
+            draggedGhost.style.visibility = 'hidden'; // Hide ghost to find element underneath
+            const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+            draggedGhost.style.visibility = 'visible';
+
+            const dropZone = elementUnder ? elementUnder.closest('.drop-zone') : null;
+
+            if (lastHoveredDropZone && lastHoveredDropZone !== dropZone) {
+                lastHoveredDropZone.classList.remove('drag-over');
+            }
+            if (dropZone) {
+                dropZone.classList.add('drag-over');
+            }
+            lastHoveredDropZone = dropZone;
+        }
+
+        function onTouchEnd(e) {
+            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('touchend', onTouchEnd);
+
+            if (lastHoveredDropZone) {
+                lastHoveredDropZone.classList.remove('drag-over');
+                handlePlacement(draggedElement, lastHoveredDropZone);
+            }
+            
+            if (draggedGhost) {
+                document.body.removeChild(draggedGhost);
+            }
+            draggedElement = null;
+            draggedGhost = null;
+            lastHoveredDropZone = null;
+        }
+
+        function updateGhostPosition(touch) {
+            if (!draggedGhost) return;
+            // Center the ghost on the finger
+            draggedGhost.style.left = `${touch.clientX - draggedGhost.offsetWidth / 2}px`;
+            draggedGhost.style.top = `${touch.clientY - draggedGhost.offsetHeight / 2}px`;
+        }
+
+        // --- COMMON PLACEMENT LOGIC ---
+        function handlePlacement(card, dropZone) {
             if (validatePlacement(card, dropZone)) {
                 playSound('correct');
                 const isSubtopic = card.dataset.type === 'subtopic'; card.draggable = false;
@@ -383,68 +316,15 @@
                 setTimeout(() => card.classList.remove('shake'), 500);
             }
         }
-
-        function validatePlacement(card, dropZone) {
-            const cardType = card.dataset.type; const dropZoneType = dropZone.dataset.type;
-            if (cardType === 'subtopic' && dropZoneType === 'subtopic') return card.id === dropZone.dataset.targetId;
-            if (cardType === 'detail' && dropZoneType === 'detail') return card.dataset.parentId === dropZone.dataset.parentId;
-            return false;
-        }
-
-        function updateScore(points) { score += points; scoreEl.textContent = score; }
         
-        function updateCombo(value) {
-            comboCounter = value;
-            comboCounterEl.textContent = comboCounter;
-            if (comboCounter > 2 && comboCounter % 3 === 0) {
-                const bonus = comboCounter * 5;
-                updateScore(bonus);
-                comboBonusTextEl.textContent = `+${bonus}`;
-                comboBonusTextEl.classList.add('combo-text');
-                setTimeout(() => comboBonusTextEl.classList.remove('combo-text'), 500);
-            }
-        }
-
-        function startTimer() {
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => { timeLeft--; timerEl.textContent = timeLeft; if (timeLeft <= 0) endGame(false); }, 1000);
-        }
-
-        function endGame(isWin) {
-            clearInterval(timerInterval);
-            const ui = translations[selectedLanguage].ui;
-            if (isWin) {
-                const bonus = timeLeft; updateScore(bonus);
-                modalTitleEl.textContent = ui.levelComplete;
-                if (currentLevel < translations[selectedLanguage].levels.length - 1) nextLevelBtn.textContent = ui.nextLevel;
-                else { modalTitleEl.textContent = ui.gameFinished; nextLevelBtn.textContent = ui.playAgain; }
-            } else { modalTitleEl.textContent = ui.timesUp; nextLevelBtn.textContent = ui.tryAgain; }
-            finalScoreEl.textContent = score;
-            
-            // Star Rating Logic
-            const scorePercentage = (score / maxScorePossible) * 100;
-            const stars = starRatingEl.children;
-            stars[0].classList.toggle('filled', scorePercentage > 20);
-            stars[1].classList.toggle('filled', scorePercentage > 50);
-            stars[2].classList.toggle('filled', scorePercentage > 85);
-
-            modalEl.classList.remove('hidden');
-            setTimeout(() => { modalEl.querySelector('div').classList.remove('scale-95', 'opacity-0'); }, 10);
-        }
-        
-        function handleNextAction() {
-            modalEl.classList.add('hidden'); modalEl.querySelector('div').classList.add('scale-95', 'opacity-0');
-            const ui = translations[selectedLanguage].ui;
-            if (nextLevelBtn.textContent === ui.nextLevel) currentLevel++;
-            else if (nextLevelBtn.textContent === ui.playAgain) currentLevel = 0;
-            setupLevel(currentLevel);
-        }
-
+        function validatePlacement(card, dropZone) { /* ... Validation logic remains the same ... */ const cardType = card.dataset.type; const dropZoneType = dropZone.dataset.type; if (cardType === 'subtopic' && dropZoneType === 'subtopic') return card.id === dropZone.dataset.targetId; if (cardType === 'detail' && dropZoneType === 'detail') return card.dataset.parentId === dropZone.dataset.parentId; return false; }
+        function updateScore(points) { /* ... Score logic remains the same ... */ score += points; scoreEl.textContent = score; }
+        function updateCombo(value) { /* ... Combo logic remains the same ... */ comboCounter = value; comboCounterEl.textContent = comboCounter; if (comboCounter > 2 && comboCounter % 3 === 0) { const bonus = comboCounter * 5; updateScore(bonus); comboBonusTextEl.textContent = `+${bonus}`; comboBonusTextEl.classList.add('combo-text'); setTimeout(() => comboBonusTextEl.classList.remove('combo-text'), 500); } }
+        function startTimer() { /* ... Timer logic remains the same ... */ clearInterval(timerInterval); timerInterval = setInterval(() => { timeLeft--; timerEl.textContent = timeLeft; if (timeLeft <= 0) endGame(false); }, 1000); }
+        function endGame(isWin) { /* ... endGame logic remains the same ... */ clearInterval(timerInterval); const ui = translations[selectedLanguage].ui; if (isWin) { const bonus = timeLeft; updateScore(bonus); modalTitleEl.textContent = ui.levelComplete; if (currentLevel < translations[selectedLanguage].levels.length - 1) nextLevelBtn.textContent = ui.nextLevel; else { modalTitleEl.textContent = ui.gameFinished; nextLevelBtn.textContent = ui.playAgain; } } else { modalTitleEl.textContent = ui.timesUp; nextLevelBtn.textContent = ui.tryAgain; } finalScoreEl.textContent = score; const scorePercentage = (score / maxScorePossible) * 100; const stars = starRatingEl.children; stars[0].classList.toggle('filled', scorePercentage > 20); stars[1].classList.toggle('filled', scorePercentage > 50); stars[2].classList.toggle('filled', scorePercentage > 85); modalEl.classList.remove('hidden'); setTimeout(() => { modalEl.querySelector('div').classList.remove('scale-95', 'opacity-0'); }, 10); }
+        function handleNextAction() { /* ... Next action logic remains the same ... */ modalEl.classList.add('hidden'); modalEl.querySelector('div').classList.add('scale-95', 'opacity-0'); const ui = translations[selectedLanguage].ui; if (nextLevelBtn.textContent === ui.nextLevel) currentLevel++; else if (nextLevelBtn.textContent === ui.playAgain) currentLevel = 0; setupLevel(currentLevel); }
         nextLevelBtn.addEventListener('click', handleNextAction);
-
-        window.onresize = () => {
-             if (!gameContainerEl.classList.contains('hidden')) { setTimeout(() => setupLevel(currentLevel), 100); }
-        };
+        window.onresize = () => { if (!gameContainerEl.classList.contains('hidden')) { setTimeout(() => setupLevel(currentLevel), 100); } };
     </script>
 </body>
 </html>
