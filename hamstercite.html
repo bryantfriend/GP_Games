@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hamster Wheel of Knowledge: Mini-Bibliography Marathon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            touch-action: none;
+        }
+
+        #wheel-spinner {
+            transform-origin: center;
+            transform-box: fill-box;
+        }
+
+        /* --- Hamster & Wheel Animation --- */
+        .hamster-container {
+            width: 300px;
+            height: 300px;
+            position: relative;
+        }
+
+        #hamster-wheel {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s linear;
+        }
+
+        #hamster {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -15%); /* Moved hamster down */
+            animation-play-state: paused;
+        }
+
+        /* Hamster running animation - More dynamic */
+        @keyframes run {
+            0% { transform: translate(-50%, -15%) rotate(-2deg); }
+            25% { transform: translate(-52%, -18%) rotate(0deg); }
+            50% { transform: translate(-50%, -15%) rotate(2deg); }
+            75% { transform: translate(-48%, -18%) rotate(0deg); }
+            100% { transform: translate(-50%, -15%) rotate(-2deg); }
+        }
+        
+        .running #hamster {
+            animation: run 0.5s infinite linear;
+            animation-play-state: running;
+        }
+        
+        /* Stumble animation for wrong answers - Adjusted for new position */
+        @keyframes stumble {
+            0% { transform: translate(-50%, -15%) rotate(0deg); }
+            25% { transform: translate(-55%, -20%) rotate(-15deg); }
+            50% { transform: translate(-50%, -15%) rotate(10deg); }
+            75% { transform: translate(-45%, -20%) rotate(15deg); }
+            100% { transform: translate(-50%, -15%) rotate(0deg); }
+        }
+
+        .stumble #hamster {
+            animation: stumble 0.5s ease-in-out;
+        }
+
+        /* --- Drag and Drop --- */
+        .draggable {
+            cursor: grab;
+            user-select: none;
+        }
+        .drop-zone {
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .drop-zone.over {
+            background-color: #f0fdf4; /* Tailwind green-50 */
+            transform: scale(1.05);
+        }
+        .drop-zone.correct {
+            background-color: #dcfce7; /* Tailwind green-200 */
+            border-color: #22c55e; /* Tailwind green-500 */
+        }
+        .drop-zone.incorrect {
+            background-color: #fee2e2; /* Tailwind red-200 */
+            border-color: #ef4444; /* Tailwind red-500 */
+        }
+        
+        /* Card flip for feedback */
+        .feedback-card {
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+        .feedback-card.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-sky-100 to-indigo-200 min-h-screen flex items-center justify-center p-4">
+
+    <div id="game-container" class="w-full max-w-4xl mx-auto">
+
+        <!-- Language Selection Screen -->
+        <div id="language-screen" class="text-center bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800 mb-4">Choose Your Language</h1>
+            <p class="text-xl text-slate-600 mb-8">Please select a language to begin.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button data-lang="en" class="lang-select bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full text-xl shadow-lg transform hover:scale-105 transition-transform">
+                    English
+                </button>
+                <button data-lang="zh" class="lang-select bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-full text-xl shadow-lg transform hover:scale-105 transition-transform">
+                    中文 (Chinese)
+                </button>
+                <button data-lang="tr" class="lang-select bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full text-xl shadow-lg transform hover:scale-105 transition-transform">
+                    Türkçe (Turkish)
+                </button>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="hidden text-center bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg">
+            <h1 id="start-title" class="text-4xl md:text-5xl font-bold text-slate-800 mb-4">Hamster Wheel of Knowledge</h1>
+            <p id="start-subtitle" class="text-xl text-slate-600 mb-2">Help the hamster complete the "Mini-Bibliography Marathon"!</p>
+            <p id="start-instructions" class="text-slate-500 mb-8">Answer citation questions correctly to make the hamster run faster. Wrong answers will make it stumble!</p>
+            <button id="start-button" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-4 px-8 rounded-full text-xl shadow-lg transform hover:scale-105 transition-transform">
+                Start the Marathon!
+            </button>
+        </div>
+
+        <!-- Main Game Screen -->
+        <div id="main-game" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                
+                <!-- Left Panel: Hamster Animation -->
+                <div class="bg-white/50 backdrop-blur-sm p-6 rounded-2xl shadow-md flex flex-col items-center justify-center order-2 md:order-1">
+                    <h2 id="main-header" class="text-2xl font-bold text-slate-700 mb-4">Mini-Bibliography Marathon</h2>
+                    <div id="animation-container" class="hamster-container">
+                        <!-- Hamster Wheel SVG - Updated for better visuals -->
+                        <svg id="hamster-wheel" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Stand - Stays stationary -->
+                            <g id="wheel-stand">
+                                <path d="M 80 180 L 70 200 H 130 L 120 180 Z" fill="#a0aec0"/>
+                                <path d="M 100 100 L 100 180" stroke="#718096" stroke-width="6" stroke-linecap="round"/>
+                            </g>
+                            
+                            <!-- Wheel - Rotates -->
+                            <g id="wheel-spinner">
+                                <!-- Back rim -->
+                                <circle cx="100" cy="100" r="80" fill="none" stroke="#60a5fa" stroke-width="8" opacity="0.7"/>
+                                <!-- Spokes -->
+                                <g stroke="#93c5fd" stroke-width="2">
+                                    <line x1="100" y1="100" x2="100" y2="20" />
+                                    <line x1="100" y1="100" x2="157" y2="43" />
+                                    <line x1="100" y1="100" x2="180" y2="100" />
+                                    <line x1="100" y1="100" x2="157" y2="157" />
+                                    <line x1="100" y1="100" x2="100" y2="180" />
+                                    <line x1="100" y1="100" x2="43" y2="157" />
+                                    <line x1="100" y1="100" x2="20" y2="100" />
+                                    <line x1="100" y1="100" x2="43" y2="43" />
+                                </g>
+                                 <!-- Front rim -->
+                                <circle cx="100" cy="100" r="80" fill="none" stroke="#3b82f6" stroke-width="12"/>
+                                <!-- Center pin -->
+                                <circle cx="100" cy="100" r="10" fill="#2563eb"/>
+                                <circle cx="100" cy="100" r="5" fill="#93c5fd"/>
+                            </g>
+                        </svg>
+                        
+                        <!-- Hamster SVG - Updated for better visuals -->
+                        <svg id="hamster" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <g>
+                                <!-- Tail -->
+                                <path d="M68,60 Q75,58 73,65" fill="#f6ad55"/>
+                                <!-- Back Leg -->
+                                <ellipse cx="60" cy="70" rx="10" ry="8" fill="#e5983c"/>
+                                <!-- Body -->
+                                <path d="M30,50 C10,50 15,80 35,80 C55,80 70,80 70,60 C70,40 50,30 40,35 Z" fill="#f6ad55"/>
+                                <!-- Belly -->
+                                <path d="M35,78 C40,82 50,82 55,78" fill="#fff7ed" stroke="#fde68a" stroke-width="1"/>
+                                <!-- Front Paw -->
+                                <ellipse cx="38" cy="72" rx="6" ry="5" fill="#e5983c"/>
+                                <!-- Head -->
+                                <circle cx="30" cy="45" r="15" fill="#f6ad55"/>
+                                <!-- Ear -->
+                                <path d="M25,30 Q30,25 35,32" fill="#e5983c"/>
+                                <path d="M27,32 Q30,29 33,33" fill="#fed7d7"/>
+                                <!-- Eye -->
+                                <circle cx="35" cy="43" r="3" fill="#2d3748"/>
+                                <!-- Nose -->
+                                <circle cx="20" cy="50" r="2" fill="#4a5568"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-gray-200 rounded-full h-4 mt-4 overflow-hidden">
+                        <div id="progress-bar" class="bg-green-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <p id="progress-text" class="text-sm text-slate-600 mt-2">0 / 20 Questions</p>
+                </div>
+                
+                <!-- Right Panel: Question -->
+                <div class="bg-white/50 backdrop-blur-sm p-6 rounded-2xl shadow-md order-1 md:order-2">
+                    <div id="question-area">
+                        <!-- Question content will be dynamically inserted here -->
+                    </div>
+                    <div id="feedback-area" class="mt-4 text-center"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="hidden text-center bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg">
+             <div id="feedback-card" class="feedback-card w-full">
+                <div class="card-face">
+                    <h1 id="end-title" class="text-4xl md:text-5xl font-bold text-slate-800 mb-4">Marathon Complete!</h1>
+                    <p id="end-message" class="text-xl text-slate-600 mb-6">Great job! You helped the hamster finish the race!</p>
+                    <p class="text-2xl font-semibold text-slate-700"><span id="final-score-text">Final Score</span>: <span id="final-score" class="text-indigo-600">0</span></p>
+                </div>
+                <div class="card-face card-back p-6 border rounded-lg bg-sky-50">
+                     <h2 id="summary-title" class="text-2xl font-bold text-slate-700 mb-3">Key Takeaways 📝</h2>
+                     <ul id="summary-list" class="text-left text-slate-600 space-y-2">
+                        <li><span class="font-semibold">Book Citation:</span> Author, *Title* (in italics), Year.</li>
+                        <li><span class="font-semibold">Website Citation:</span> Organization, "Article Title," Year, URL.</li>
+                        <li>A bibliography helps give credit to original authors!</li>
+                     </ul>
+                </div>
+            </div>
+            <div class="mt-8 flex gap-4 justify-center">
+                 <button id="show-summary" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-transform">
+                    Show Key Takeaways
+                </button>
+                <button id="restart-button" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-transform">
+                    Run Again!
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- DOM Elements ---
+    const languageScreen = document.getElementById('language-screen');
+    const startScreen = document.getElementById('start-screen');
+    const mainGame = document.getElementById('main-game');
+    const endScreen = document.getElementById('end-screen');
+    const langSelectButtons = document.querySelectorAll('.lang-select');
+    const startButton = document.getElementById('start-button');
+    const restartButton = document.getElementById('restart-button');
+    const questionArea = document.getElementById('question-area');
+    const feedbackArea = document.getElementById('feedback-area');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const animationContainer = document.getElementById('animation-container');
+    const wheelSpinner = document.getElementById('wheel-spinner');
+    const finalScoreEl = document.getElementById('final-score');
+    const showSummaryButton = document.getElementById('show-summary');
+    const feedbackCard = document.getElementById('feedback-card');
+
+    // --- Translation Data ---
+    const translations = {
+        'en': {
+            // UI Text
+            "startTitle": "Hamster Wheel of Knowledge",
+            "startSubtitle": "Help the hamster complete the \"Mini-Bibliography Marathon\"!",
+            "startInstructions": "Answer citation questions correctly to make the hamster run faster. Wrong answers will make it stumble!",
+            "startButton": "Start the Marathon!",
+            "mainHeader": "Mini-Bibliography Marathon",
+            "progressText": "{count} / {total} Questions",
+            "checkAnswerButton": "Check Answer",
+            "dragHereText": "Drag from here:",
+            "correctFeedback": "Correct! The hamster speeds up!",
+            "incorrectFeedback": "Not quite. The hamster stumbles...",
+            "endTitle": "Marathon Complete!",
+            "endMessage": "Great job! You helped the hamster finish the race!",
+            "finalScoreText": "Final Score",
+            "summaryTitle": "Key Takeaways 📝",
+            "summaryPoint1": "<b>Book Citation:</b> Author, <i>Title</i>, Year.",
+            "summaryPoint2": "<b>Website Citation:</b> Organization, \"Article Title,\" Year, URL.",
+            "summaryPoint3": "A bibliography gives credit to original authors!",
+            "showSummaryButton": "Show Key Takeaways",
+            "restartButton": "Run Again!",
+            // Questions
+            "questions": [
+                { type: 'mcq', citation: 'Smith, John. italic(*Global Issues Today*). 2019.', question: "What part of the book citation is 'Smith, John'?", options: ['Title', 'Author', 'Year', 'Publisher'], answer: 'Author' },
+                { type: 'mcq', citation: 'Smith, John. italic(*Global Issues Today*). 2019.', question: "What does '2019' represent in this book citation?", options: ['Page Number', 'Author\'s Age', 'Year of Publication', 'Chapter'], answer: 'Year of Publication' },
+                { type: 'mcq', citation: 'Smith, John. italic(*Global Issues Today*). 2019.', question: "In a book citation, the title is usually...", options: ['in quotes', 'bolded', 'in italics', 'underlined'], answer: 'in italics' },
+                { type: 'mcq', citation: 'UNICEF. "Children and Education." 2023. https://www.unicef.org/education', question: "What is 'UNICEF' in this website citation?", options: ['The Author', 'The Website Title', 'The Organization', 'The URL'], answer: 'The Organization' },
+                { type: 'mcq', citation: 'UNICEF. "Children and Education." 2023. https://www.unicef.org/education', question: "What part of the website citation is 'Children and Education'?", options: ['Article Title', 'Main Website', 'Publisher', 'Author'], answer: 'Article Title' },
+                { type: 'mcq', citation: 'UNICEF. "Children and Education." 2023. https://www.unicef.org/education', question: "What is the purpose of including the URL?", options: ['To show the author', 'To help readers find the source online', 'To list the publication year', 'To make it look longer'], answer: 'To help readers find the source online' },
+                { type: 'dragdrop', question: 'Drag the parts to build a correct **book** citation:', prompt: 'Author. *Title*. Year.', parts: { Author: 'Crichton, Michael', Title: '*Jurassic Park*', Year: '1990' }, shuffled: ['1990', '*Jurassic Park*', 'Crichton, Michael'] },
+                { type: 'dragdrop', question: 'Drag the parts to build a correct **website** citation:', prompt: 'Organization. "Article Title." Year. URL.', parts: { Organization: 'NASA', 'Article Title': '"Artemis I Mission"', Year: '2022', URL: 'https://www.nasa.gov/artemis-1' }, shuffled: ['https://www.nasa.gov/artemis-1', '2022', 'NASA', '"Artemis I Mission"'] },
+                { type: 'mcq', citation: '', question: 'What is a bibliography?', options: ['A list of books you want to read', 'A list of sources used in research', 'An author\'s life story', 'A book about geography'], answer: 'A list of sources used in research' },
+                { type: 'mcq', citation: '', question: 'Why is it important to cite your sources?', options: ['To make your paper longer', 'To show you are a good writer', 'To give credit to the original authors', 'To get a better grade'], answer: 'To give credit to the original authors' },
+                { type: 'mcq', citation: 'Rowling, J.K. italic(*Harry Potter and the Sorcerer\'s Stone*). 1997.', question: 'Who is the author?', options: ['Harry Potter', 'J.K. Rowling', 'The Sorcerer', 'Stone'], answer: 'J.K. Rowling' },
+                { type: 'mcq', citation: 'National Geographic. "Amazing Animals." 2021. https://kids.nationalgeographic.com/animals', question: 'Which part is the title of the article?', options: ['National Geographic', '"Amazing Animals"', '2021', 'The URL'], answer: '"Amazing Animals"' },
+                { type: 'mcq', citation: '', question: 'If a book has two authors, how should they be listed?', options: ['Only the first author', 'In alphabetical order', 'In the order they appear on the cover', 'Only the second author'], answer: 'In the order they appear on the cover' },
+                { type: 'mcq', citation: '', question: 'What does "et al." mean in a citation?', options: ['The end', 'And others', 'Extra information', 'See also'], answer: 'And others' },
+                { type: 'mcq', citation: '', question: 'For a website, if there is no date, what should you write?', options: ['n.d.', 'No date', 'Unknown', 'Leave it blank'], answer: 'n.d.' },
+                { type: 'dragdrop', question: 'Build a book citation with a publisher:', prompt: 'Author. *Title*. Publisher, Year.', parts: { Author: 'Dahl, Roald', Title: '*Matilda*', Publisher: 'Viking Kestrel', Year: '1988' }, shuffled: ['1988', '*Matilda*', 'Dahl, Roald', 'Viking Kestrel'] },
+                { type: 'mcq', citation: '', question: 'What is the main purpose of a "mini-bibliography"?', options: ['To list every source ever made', 'To practice citing sources correctly', 'To write a long essay', 'To avoid doing research'], answer: 'To practice citing sources correctly' },
+                { type: 'mcq', citation: '', question: 'When citing a website, what is the most important piece of information for finding it again?', options: ['The date', 'The author', 'The URL', 'The title'], answer: 'The URL' },
+                { type: 'mcq', citation: 'Green, John. italic(*The Fault in Our Stars*). 2012.', question: 'What is the title of the book?', options: ['Green, John', '2012', '*The Fault in Our Stars*', 'A book about stars'], answer: '*The Fault in Our Stars*' },
+                { type: 'mcq', citation: '', question: 'Where does a bibliography usually appear in a project?', options: ['At the beginning', 'In the middle', 'At the end', 'On a separate page'], answer: 'At the end' },
+            ]
+        },
+        'zh': {
+            "startTitle": "仓鼠知识轮",
+            "startSubtitle": "帮助仓鼠完成“迷你参考书目马拉松”！",
+            "startInstructions": "正确回答引用问题，让仓鼠跑得更快。答错会使它绊倒！",
+            "startButton": "开始马拉松！",
+            "mainHeader": "迷你参考书目马拉松",
+            "progressText": "{count} / {total} 个问题",
+            "checkAnswerButton": "检查答案",
+            "dragHereText": "从这里拖动：",
+            "correctFeedback": "正确！仓鼠加速了！",
+            "incorrectFeedback": "不对哦。仓鼠绊倒了...",
+            "endTitle": "马拉松完成！",
+            "endMessage": "干得好！你帮助仓鼠完成了比赛！",
+            "finalScoreText": "最终得分",
+            "summaryTitle": "要点回顾 📝",
+            "summaryPoint1": "<b>书籍引用：</b>作者, <i>书名</i>, 年份。",
+            "summaryPoint2": "<b>网站引用：</b>组织, “文章标题”, 年份, 网址。",
+            "summaryPoint3": "参考书目是为了向原作者致敬！",
+            "showSummaryButton": "显示要点",
+            "restartButton": "再跑一次！",
+            "questions": [
+                { type: 'mcq', citation: '史密斯, 约翰. italic(*今日全球问题*). 2019.', question: "书籍引用中'史密斯, 约翰'是哪个部分？", options: ['书名', '作者', '年份', '出版商'], answer: '作者' },
+                { type: 'mcq', citation: '史密斯, 约翰. italic(*今日全球问题*). 2019.', question: "这个书籍引用中的'2019'代表什么？", options: ['页码', '作者年龄', '出版年份', '章节'], answer: '出版年份' },
+                { type: 'mcq', citation: '史密斯, 约翰. italic(*今日全球问题*). 2019.', question: "在书籍引用中，书名通常是...", options: ['用引号', '加粗', '用斜体', '加下划线'], answer: '用斜体' },
+                { type: 'mcq', citation: '联合国儿童基金会. "儿童与教育." 2023. https://www.unicef.org/education', question: "这个网站引用中的'联合国儿童基金会'是什么？", options: ['作者', '网站标题', '组织', '网址'], answer: '组织' },
+                { type: 'mcq', citation: '联合国儿童基金会. "儿童与教育." 2023. https://www.unicef.org/education', question: "网站引用中'儿童与教育'是哪个部分？", options: ['文章标题', '主网站', '出版商', '作者'], answer: '文章标题' },
+                { type: 'mcq', citation: '联合国儿童基金会. "儿童与教育." 2023. https://www.unicef.org/education', question: "包含网址的目的是什么？", options: ['显示作者', '帮助读者在线找到来源', '列出出版年份', '让它看起来更长'], answer: '帮助读者在线找到来源' },
+                { type: 'dragdrop', question: '拖动各部分以构建一个正确的**书籍**引用：', prompt: '作者. *书名*. 年份.', parts: { Author: '克莱顿, 迈克尔', Title: '*侏罗纪公园*', Year: '1990' }, shuffled: ['1990', '*侏罗纪公园*', '克莱顿, 迈克尔'] },
+                { type: 'dragdrop', question: '拖动各部分以构建一个正确的**网站**引用：', prompt: '组织. "文章标题". 年份. 网址.', parts: { Organization: '美国国家航空航天局', 'Article Title': '"阿尔忒弥斯一号任务"', Year: '2022', URL: 'https://www.nasa.gov/artemis-1' }, shuffled: ['https://www.nasa.gov/artemis-1', '2022', '美国国家航空航天局', '"阿尔忒弥斯一号任务"'] },
+                { type: 'mcq', citation: '', question: '什么是参考书目？', options: ['你想读的书的列表', '研究中使用的来源列表', '作者的生平故事', '关于地理的书'], answer: '研究中使用的来源列表' },
+                { type: 'mcq', citation: '', question: '为什么引用来源很重要？', options: ['让你的论文更长', '显示你是一个好作家', '向原作者致敬', '为了得到更好的成绩'], answer: '向原作者致敬' },
+                { type: 'mcq', citation: '罗琳, J.K. italic(*哈利·波特与魔法石*). 1997.', question: '谁是作者？', options: ['哈利·波特', 'J.K. 罗琳', '魔法师', '石头'], answer: 'J.K. 罗琳' },
+                { type: 'mcq', citation: '国家地理. "神奇的动物." 2021. https://kids.nationalgeographic.com/animals', question: '哪部分是文章的标题？', options: ['国家地理', '"神奇的动物"', '2021', '网址'], answer: '"神奇的动物"' },
+                { type: 'mcq', citation: '', question: '如果一本书有两位作者，应该如何列出他们？', options: ['只列第一位作者', '按字母顺序', '按封面上出现的顺序', '只列第二位作者'], answer: '按封面上出现的顺序' },
+                { type: 'mcq', citation: '', question: '引用中的“et al.”是什么意思？', options: ['结束', '以及其他人', '额外信息', '另见'], answer: '以及其他人' },
+                { type: 'mcq', citation: '', question: '对于一个网站，如果没有日期，你应该写什么？', options: ['n.d.', '无日期', '未知', '留空'], answer: 'n.d.' },
+                { type: 'dragdrop', question: '构建一个带出版商的书籍引用：', prompt: '作者. *书名*. 出版商, 年份.', parts: { Author: '达尔, 罗尔德', Title: '*玛蒂尔达*', Publisher: '维京红隼', Year: '1988' }, shuffled: ['1988', '*玛蒂尔达*', '达尔, 罗尔德', '维京红隼'] },
+                { type: 'mcq', citation: '', question: '“迷你参考书目”的主要目的是什么？', options: ['列出所有曾经的来源', '练习正确引用来源', '写一篇长论文', '避免做研究'], answer: '练习正确引用来源' },
+                { type: 'mcq', citation: '', question: '引用网站时，再次找到它的最重要信息是什么？', options: ['日期', '作者', '网址', '标题'], answer: '网址' },
+                { type: 'mcq', citation: '格林, 约翰. italic(*星运里的错*). 2012.', question: '这本书的书名是什么？', options: ['格林, 约翰', '2012', '*星运里的错*', '一本关于星星的书'], answer: '*星运里的错*' },
+                { type: 'mcq', citation: '', question: '参考书目通常出现在项目的哪个位置？', options: ['开头', '中间', '结尾', '单独一页'], answer: '结尾' },
+            ]
+        },
+        'tr': {
+            "startTitle": "Bilgi Hamster Tekerleği",
+            "startSubtitle": "Hamster'ın \"Mini-Kaynakça Maratonu\"nu tamamlamasına yardım edin!",
+            "startInstructions": "Hamster'ın daha hızlı koşması için alıntı sorularını doğru cevaplayın. Yanlış cevaplar onu tökezletir!",
+            "startButton": "Maratona Başla!",
+            "mainHeader": "Mini-Kaynakça Maratonu",
+            "progressText": "{count} / {total} Soru",
+            "checkAnswerButton": "Cevabı Kontrol Et",
+            "dragHereText": "Buradan sürükleyin:",
+            "correctFeedback": "Doğru! Hamster hızlanıyor!",
+            "incorrectFeedback": "Pek sayılmaz. Hamster tökezliyor...",
+            "endTitle": "Maraton Tamamlandı!",
+            "endMessage": "Harika iş! Hamster'ın yarışı bitirmesine yardım ettin!",
+            "finalScoreText": "Nihai Puan",
+            "summaryTitle": "Önemli Çıkarımlar 📝",
+            "summaryPoint1": "<b>Kitap Alıntısı:</b> Yazar, <i>Başlık</i>, Yıl.",
+            "summaryPoint2": "<b>Web Sitesi Alıntısı:</b> Organizasyon, \"Makale Başlığı\", Yıl, URL.",
+            "summaryPoint3": "Kaynakça, orijinal yazarlara atıfta bulunur!",
+            "showSummaryButton": "Önemli Çıkarımları Göster",
+            "restartButton": "Tekrar Koş!",
+            "questions": [
+                { type: 'mcq', citation: 'Smith, John. italic(*Günümüz Küresel Sorunları*). 2019.', question: "Kitap alıntısının 'Smith, John' kısmı nedir?", options: ['Başlık', 'Yazar', 'Yıl', 'Yayıncı'], answer: 'Yazar' },
+                { type: 'mcq', citation: 'Smith, John. italic(*Günümüz Küresel Sorunları*). 2019.', question: "Bu kitap alıntısında '2019' neyi temsil ediyor?", options: ['Sayfa Numarası', 'Yazarın Yaşı', 'Yayın Yılı', 'Bölüm'], answer: 'Yayın Yılı' },
+                { type: 'mcq', citation: 'Smith, John. italic(*Günümüz Küresel Sorunları*). 2019.', question: "Bir kitap alıntısında başlık genellikle...", options: ['tırnak içinde', 'kalın', 'italik', 'altı çizili'], answer: 'italik' },
+                { type: 'mcq', citation: 'UNICEF. "Çocuklar ve Eğitim." 2023. https://www.unicef.org/education', question: "Bu web sitesi alıntısında 'UNICEF' nedir?", options: ['Yazar', 'Web Sitesi Başlığı', 'Organizasyon', 'URL'], answer: 'Organizasyon' },
+                { type: 'mcq', citation: 'UNICEF. "Çocuklar ve Eğitim." 2023. https://www.unicef.org/education', question: "Web sitesi alıntısının 'Çocuklar ve Eğitim' kısmı nedir?", options: ['Makale Başlığı', 'Ana Web Sitesi', 'Yayıncı', 'Yazar'], answer: 'Makale Başlığı' },
+                { type: 'mcq', citation: 'UNICEF. "Çocuklar ve Eğitim." 2023. https://www.unicef.org/education', question: "URL'yi dahil etmenin amacı nedir?", options: ['Yazarı göstermek', 'Okuyucuların kaynağı çevrimiçi bulmasına yardımcı olmak', 'Yayın yılını listelemek', 'Daha uzun görünmesini sağlamak'], answer: 'Okuyucuların kaynağı çevrimiçi bulmasına yardımcı olmak' },
+                { type: 'dragdrop', question: 'Doğru bir **kitap** alıntısı oluşturmak için parçaları sürükleyin:', prompt: 'Yazar. *Başlık*. Yıl.', parts: { Author: 'Crichton, Michael', Title: '*Jurassic Park*', Year: '1990' }, shuffled: ['1990', '*Jurassic Park*', 'Crichton, Michael'] },
+                { type: 'dragdrop', question: 'Doğru bir **web sitesi** alıntısı oluşturmak için parçaları sürükleyin:', prompt: 'Organizasyon. "Makale Başlığı". Yıl. URL.', parts: { Organization: 'NASA', 'Article Title': '"Artemis I Görevi"', Year: '2022', URL: 'https://www.nasa.gov/artemis-1' }, shuffled: ['https://www.nasa.gov/artemis-1', '2022', 'NASA', '"Artemis I Görevi"'] },
+                { type: 'mcq', citation: '', question: 'Kaynakça nedir?', options: ['Okumak istediğiniz kitapların listesi', 'Araştırmada kullanılan kaynakların listesi', 'Bir yazarın hayat hikayesi', 'Coğrafya hakkında bir kitap'], answer: 'Araştırmada kullanılan kaynakların listesi' },
+                { type: 'mcq', citation: '', question: 'Kaynaklarınızı belirtmek neden önemlidir?', options: ['Makalenizi uzatmak için', 'İyi bir yazar olduğunuzu göstermek için', 'Orijinal yazarlara atıfta bulunmak için', 'Daha iyi bir not almak için'], answer: 'Orijinal yazarlara atıfta bulunmak için' },
+                { type: 'mcq', citation: 'Rowling, J.K. italic(*Harry Potter ve Felsefe Taşı*). 1997.', question: 'Yazar kim?', options: ['Harry Potter', 'J.K. Rowling', 'Felsefeci', 'Taş'], answer: 'J.K. Rowling' },
+                { type: 'mcq', citation: 'National Geographic. "Harika Hayvanlar." 2021. https://kids.nationalgeographic.com/animals', question: 'Makalenin başlığı hangi kısımdır?', options: ['National Geographic', '"Harika Hayvanlar"', '2021', 'URL'], answer: '"Harika Hayvanlar"' },
+                { type: 'mcq', citation: '', question: 'Bir kitabın iki yazarı varsa, nasıl listelenmelidirler?', options: ['Sadece ilk yazar', 'Alfabetik sırayla', 'Kapakta göründükleri sırayla', 'Sadece ikinci yazar'], answer: 'Kapakta göründükleri sırayla' },
+                { type: 'mcq', citation: '', question: 'Bir alıntıda "et al." ne anlama gelir?', options: ['Son', 'Ve diğerleri', 'Ek bilgi', 'Ayrıca bakınız'], answer: 'Ve diğerleri' },
+                { type: 'mcq', citation: '', question: 'Bir web sitesi için tarih yoksa ne yazmalısınız?', options: ['t.y.', 'Tarih yok', 'Bilinmiyor', 'Boş bırak'], answer: 't.y.' },
+                { type: 'dragdrop', question: 'Yayıncılı bir kitap alıntısı oluşturun:', prompt: 'Yazar. *Başlık*. Yayıncı, Yıl.', parts: { Author: 'Dahl, Roald', Title: '*Matilda*', Publisher: 'Viking Kestrel', Year: '1988' }, shuffled: ['1988', '*Matilda*', 'Dahl, Roald', 'Viking Kestrel'] },
+                { type: 'mcq', citation: '', question: '"Mini-kaynakça"nın temel amacı nedir?', options: ['Şimdiye kadar yapılmış her kaynağı listelemek', 'Kaynakları doğru bir şekilde alıntılamayı pratik etmek', 'Uzun bir makale yazmak', 'Araştırma yapmaktan kaçınmak'], answer: 'Kaynakları doğru bir şekilde alıntılamayı pratik etmek' },
+                { type: 'mcq', citation: '', question: 'Bir web sitesini alıntılarken, onu tekrar bulmak için en önemli bilgi parçası nedir?', options: ['Tarih', 'Yazar', 'URL', 'Başlık'], answer: 'URL' },
+                { type: 'mcq', citation: 'Green, John. italic(*Aynı Yıldızın Altında*). 2012.', question: 'Kitabın başlığı nedir?', options: ['Green, John', '2012', '*Aynı Yıldızın Altında*', 'Yıldızlar hakkında bir kitap'], answer: '*Aynı Yıldızın Altında*' },
+                { type: 'mcq', citation: '', question: 'Kaynakça genellikle bir projenin neresinde yer alır?', options: ['Başında', 'Ortasında', 'Sonunda', 'Ayrı bir sayfada'], answer: 'Sonunda' },
+            ]
+        }
+    };
+
+
+    // --- Game State ---
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let hamsterSpeed = 0; // 0 = stopped, 1 = slow, 2 = medium, 3 = fast
+    let rotationAngle = 0;
+    let selectedLanguage = 'en';
+    let currentQuestions = [];
+
+    // --- Functions ---
+    
+    function selectLanguage(lang) {
+        selectedLanguage = lang;
+        currentQuestions = translations[lang].questions;
+        updateUIText(lang);
+        languageScreen.classList.add('hidden');
+        startScreen.classList.remove('hidden');
+    }
+
+    function updateUIText(lang) {
+        const t = translations[lang];
+        document.getElementById('start-title').textContent = t.startTitle;
+        document.getElementById('start-subtitle').textContent = t.startSubtitle;
+        document.getElementById('start-instructions').textContent = t.startInstructions;
+        document.getElementById('start-button').textContent = t.startButton;
+        document.getElementById('main-header').textContent = t.mainHeader;
+        document.getElementById('end-title').textContent = t.endTitle;
+        document.getElementById('end-message').textContent = t.endMessage;
+        document.getElementById('final-score-text').textContent = t.finalScoreText;
+        document.getElementById('summary-title').textContent = t.summaryTitle;
+        document.getElementById('show-summary').textContent = t.showSummaryButton;
+        document.getElementById('restart-button').textContent = t.restartButton;
+        const summaryList = document.getElementById('summary-list');
+        summaryList.innerHTML = `
+            <li>${t.summaryPoint1}</li>
+            <li>${t.summaryPoint2}</li>
+            <li>${t.summaryPoint3}</li>
+        `;
+    }
+
+
+    function startGame() {
+        currentQuestionIndex = 0;
+        score = 0;
+        hamsterSpeed = 0;
+        rotationAngle = 0;
+        startScreen.classList.add('hidden');
+        endScreen.classList.add('hidden');
+        mainGame.classList.remove('hidden');
+        feedbackCard.classList.remove('flipped');
+        updateProgressBarUI();
+        updateHamsterSpeed();
+        displayQuestion();
+    }
+
+    function displayQuestion() {
+        feedbackArea.innerHTML = '';
+        const q = currentQuestions[currentQuestionIndex];
+        let html = '';
+
+        if (q.citation) {
+            const formattedCitation = q.citation.replace(/italic\((.*?)\)/g, '<i class=\"text-slate-700\">$1</i>');
+            html += `<p class="text-center text-slate-500 bg-slate-100 p-3 rounded-lg mb-4 text-sm md:text-base">${formattedCitation}</p>`;
+        }
+        
+        html += `<h3 class="text-xl font-semibold text-slate-800 mb-4">${q.question}</h3>`;
+
+        if (q.type === 'mcq') {
+            html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">';
+            q.options.forEach(option => {
+                html += `<button class="mcq-option w-full bg-white hover:bg-sky-100 text-slate-700 p-3 rounded-lg border-2 border-slate-300 transition-all duration-200">${option}</button>`;
+            });
+            html += '</div>';
+        } else if (q.type === 'dragdrop') {
+            html += `<p class="text-center text-indigo-600 bg-indigo-100 p-2 rounded-lg mb-4 font-semibold">${q.prompt}</p>`;
+            html += '<div class="space-y-3 mb-4">';
+            const t = translations[selectedLanguage];
+            Object.keys(q.parts).forEach(partName => {
+                html += `
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium text-slate-600 w-28 text-right">${partName}:</span>
+                        <div class="drop-zone flex-1 bg-slate-100 border-2 border-dashed border-slate-400 rounded-lg p-3 h-12" data-part="${partName}"></div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            html += `<p class="text-sm text-center text-slate-500 mb-2">${t.dragHereText}</p>`;
+            html += '<div class="flex flex-wrap gap-2 justify-center">';
+            q.shuffled.forEach(part => {
+                html += `<div class="draggable bg-white cursor-grab p-2 rounded-lg border-2 border-amber-400 shadow" draggable="true" data-value="${part}">${part.replace(/\*/g, '')}</div>`;
+            });
+            html += '</div>';
+            html += `<button id="check-dragdrop" class="mt-4 w-full bg-indigo-500 text-white p-3 rounded-lg font-bold hover:bg-indigo-600">${t.checkAnswerButton}</button>`;
+        }
+
+        questionArea.innerHTML = html;
+        addQuestionListeners();
+    }
+
+    function addQuestionListeners() {
+        if (currentQuestions[currentQuestionIndex].type === 'mcq') {
+            document.querySelectorAll('.mcq-option').forEach(button => {
+                button.addEventListener('click', handleMCQAnswer);
+            });
+        } else if (currentQuestions[currentQuestionIndex].type === 'dragdrop') {
+            const draggables = document.querySelectorAll('.draggable');
+            const dropZones = document.querySelectorAll('.drop-zone');
+            
+            draggables.forEach(draggable => {
+                draggable.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', e.target.dataset.value);
+                    setTimeout(() => e.target.classList.add('opacity-50'), 0);
+                });
+                draggable.addEventListener('dragend', (e) => {
+                    e.target.classList.remove('opacity-50');
+                });
+            });
+
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('over');
+                });
+                zone.addEventListener('dragleave', (e) => {
+                    zone.classList.remove('over');
+                });
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('over');
+                    const data = e.dataTransfer.getData('text/plain');
+                    
+                    if (zone.children.length > 0) {
+                        const existingDraggable = zone.children[0];
+                        const originalContainer = document.querySelector('.flex-wrap.gap-2.justify-center');
+                        if (originalContainer) {
+                             originalContainer.appendChild(existingDraggable);
+                        }
+                    }
+
+                    const draggableElement = Array.from(draggables).find(d => d.dataset.value === data);
+                    if (draggableElement) {
+                        zone.appendChild(draggableElement);
+                        draggableElement.classList.remove('cursor-grab');
+                        draggableElement.classList.add('cursor-default');
+                    }
+                });
+            });
+            
+            document.getElementById('check-dragdrop').addEventListener('click', handleDragDropAnswer);
+        }
+    }
+
+    function handleMCQAnswer(event) {
+        const selectedAnswer = event.target.textContent;
+        const correctAnswer = currentQuestions[currentQuestionIndex].answer;
+        const isCorrect = selectedAnswer === correctAnswer;
+
+        document.querySelectorAll('.mcq-option').forEach(button => {
+            button.disabled = true;
+            if (button.textContent === correctAnswer) {
+                button.classList.add('bg-green-500', 'text-white', 'border-green-600');
+            } else if (button.textContent === selectedAnswer) {
+                button.classList.add('bg-red-500', 'text-white', 'border-red-600');
+            }
+        });
+
+        showFeedback(isCorrect);
+    }
+    
+    function handleDragDropAnswer() {
+        const q = currentQuestions[currentQuestionIndex].parts;
+        let allCorrect = true;
+        
+        document.querySelectorAll('.drop-zone').forEach(zone => {
+           const partName = zone.dataset.part;
+           const droppedElement = zone.querySelector('.draggable');
+           const droppedValue = droppedElement ? droppedElement.dataset.value : null;
+
+           if(q[partName] === droppedValue) {
+               zone.classList.add('correct');
+           } else {
+               zone.classList.add('incorrect');
+               allCorrect = false;
+           }
+        });
+        
+        document.getElementById('check-dragdrop').disabled = true;
+        showFeedback(allCorrect);
+    }
+
+
+    function showFeedback(isCorrect) {
+        let message = '';
+        const t = translations[selectedLanguage];
+        if (isCorrect) {
+            score++;
+            hamsterSpeed = Math.min(3, hamsterSpeed + 1);
+            message = `<div class="bg-green-100 text-green-800 p-3 rounded-lg font-semibold">${t.correctFeedback}</div>`;
+            animationContainer.classList.remove('stumble');
+        } else {
+            hamsterSpeed = Math.max(0, hamsterSpeed - 1);
+            message = `<div class="bg-red-100 text-red-800 p-3 rounded-lg font-semibold">${t.incorrectFeedback}</div>`;
+            animationContainer.classList.add('stumble');
+            setTimeout(() => animationContainer.classList.remove('stumble'), 500);
+        }
+        feedbackArea.innerHTML = message;
+
+        updateHamsterSpeed();
+        updateProgressBarUI();
+
+        setTimeout(() => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < currentQuestions.length) {
+                displayQuestion();
+            } else {
+                endGame();
+            }
+        }, 2000);
+    }
+
+    function updateProgressBarUI() {
+        const progress = (currentQuestionIndex / currentQuestions.length) * 100;
+        progressBar.style.width = `${progress}%`;
+        progressText.textContent = translations[selectedLanguage].progressText
+            .replace('{count}', currentQuestionIndex)
+            .replace('{total}', currentQuestions.length);
+    }
+
+
+    function updateHamsterSpeed() {
+        const hamsterEl = document.getElementById('hamster');
+        if (hamsterSpeed > 0) {
+            animationContainer.classList.add('running');
+            const duration = 1.5 - (hamsterSpeed * 0.4);
+            hamsterEl.style.animationDuration = `${duration}s`;
+            
+            const rotationSpeed = hamsterSpeed * 3;
+            function rotateWheel() {
+                if (hamsterSpeed > 0 && mainGame.offsetParent !== null) {
+                     rotationAngle = (rotationAngle + rotationSpeed) % 360;
+                     wheelSpinner.style.transform = `rotate(${rotationAngle}deg)`;
+                     requestAnimationFrame(rotateWheel);
+                }
+            }
+            requestAnimationFrame(rotateWheel);
+
+        } else {
+            animationContainer.classList.remove('running');
+        }
+    }
+
+    function endGame() {
+        mainGame.classList.add('hidden');
+        endScreen.classList.remove('hidden');
+        finalScoreEl.textContent = `${score} / ${currentQuestions.length}`;
+        hamsterSpeed = 0;
+        animationContainer.classList.remove('running');
+        progressBar.style.width = '100%';
+        progressText.textContent = translations[selectedLanguage].progressText
+            .replace('{count}', currentQuestions.length)
+            .replace('{total}', currentQuestions.length);
+    }
+
+    // --- Event Listeners ---
+    langSelectButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            selectLanguage(e.target.dataset.lang);
+        });
+    });
+    startButton.addEventListener('click', startGame);
+    restartButton.addEventListener('click', () => {
+        endScreen.classList.add('hidden');
+        languageScreen.classList.remove('hidden');
+    });
+    showSummaryButton.addEventListener('click', () => {
+        feedbackCard.classList.toggle('flipped');
+    });
+
+</script>
+</body>
+</html>
+
