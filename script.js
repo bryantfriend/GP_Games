@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'misinfoshooter.html',
+            title: 'Shoot the misinformation 🔫'
+        }, 
+        {
             fileName: 'kittenreading.html',
             title: 'Fact vs. Opinion 😺'
         }, 
