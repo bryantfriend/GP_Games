@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'hamstercite.html',
+            title: 'Hamster Marathon Mini-Biliography 🐹'
+        }, 
+        {
             fileName: 'mindmap.html',
             title: 'Mindmap Builder 🏗️'
         }, 
