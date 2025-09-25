@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'mindmap.html',
+            title: 'Mindmap Builder 🏗️'
+        }, 
+        {
             fileName: 'misinfoshooter.html',
             title: 'Shoot the misinformation 🔫'
         }, 
