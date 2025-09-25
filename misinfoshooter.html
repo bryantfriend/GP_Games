@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Info Interceptor: Fake News Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Bangers&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            touch-action: manipulation; /* Prevents double-tap zoom on mobile */
+        }
+
+        .font-bangers {
+            font-family: 'Bangers', cursive;
+        }
+        
+        #game-screen {
+            background: #0f172a; /* slate-900 */
+            background-image: 
+                radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.1) 2%, transparent 0%),
+                radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.1) 2%, transparent 0%);
+            background-size: 100px 100px;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        .news-snippet {
+            position: absolute;
+            will-change: transform;
+            transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            width: 90%;
+            max-width: 320px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #1e293b; /* slate-800 */
+            font-weight: 600;
+        }
+        
+        .snippet-fact {
+            background-color: #ffffff; /* white */
+            border-color: #22c55e; /* green-500 */
+        }
+
+        .snippet-fake {
+            background-color: #fef2f2; /* red-50 */
+            border-color: #ef4444; /* red-500 */
+        }
+        
+        /* Animation for falling snippets */
+        @keyframes fall {
+            from { top: -100px; }
+            to { top: 100%; }
+        }
+
+        .falling {
+            animation-name: fall;
+            animation-timing-function: linear;
+        }
+
+        /* Feedback animation on click */
+        .correct-hit {
+            transform: translateX(-50%) scale(1.1) rotate(3deg) !important;
+            opacity: 0;
+        }
+        
+        .wrong-hit {
+            transform: translateX(-50%) scale(0.9) rotate(-3deg) !important;
+            opacity: 0;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .lang-button, .difficulty-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .lang-button.selected, .difficulty-button.selected {
+            transform: scale(1.1);
+            background-color: #06b6d4; /* cyan-600 */
+            border-color: #67e8f9; /* cyan-300 */
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body class="bg-slate-800 text-white overflow-hidden h-screen flex items-center justify-center">
+
+    <!-- Game Container -->
+    <div class="w-full h-full max-w-2xl mx-auto flex flex-col">
+        
+        <!-- Main Screen -->
+        <div id="main-screen" class="w-full h-full flex flex-col items-center justify-center text-center p-4">
+             <div class="bg-slate-900/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-lg">
+                <h1 class="font-bangers text-6xl md:text-8xl text-cyan-400 tracking-wider">Info Interceptor</h1>
+                
+                <div class="mt-8">
+                    <h2 class="text-xl font-bold text-slate-300 mb-3">Select Language</h2>
+                    <div class="flex justify-center gap-4">
+                        <button class="lang-button selected bg-slate-700 hover:bg-slate-600 border-2 border-slate-500 font-bold py-2 px-6 rounded-lg" data-lang="en">English</button>
+                        <button class="lang-button bg-slate-700 hover:bg-slate-600 border-2 border-slate-500 font-bold py-2 px-6 rounded-lg" data-lang="zh">中文</button>
+                        <button class="lang-button bg-slate-700 hover:bg-slate-600 border-2 border-slate-500 font-bold py-2 px-6 rounded-lg" data-lang="tr">Türkçe</button>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h2 class="text-xl font-bold text-slate-300 mb-3">Select Difficulty</h2>
+                     <div class="flex justify-center gap-4">
+                        <button class="difficulty-button selected bg-slate-700 hover:bg-slate-600 border-2 border-slate-500 font-bold py-2 px-6 rounded-lg" data-difficulty="easy">Easy</button>
+                        <button class="difficulty-button bg-slate-700 hover:bg-slate-600 border-2 border-slate-500 font-bold py-2 px-6 rounded-lg" data-difficulty="hard">Hard</button>
+                    </div>
+                </div>
+                
+                <button id="continue-button" class="mt-8 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-3 px-10 rounded-full text-2xl transition-transform transform hover:scale-105 shadow-lg">Continue</button>
+            </div>
+        </div>
+
+        <!-- Instructions Screen (previously start-screen) -->
+        <div id="instructions-screen" class="w-full h-full flex-col items-center justify-center text-center p-4 hidden">
+            <div class="bg-slate-900/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-slate-700">
+                <h1 id="instructions-title" class="font-bangers text-6xl md:text-8xl text-cyan-400 tracking-wider"></h1>
+                <p id="instructions-text" class="text-slate-300 text-lg md:text-xl mt-4 max-w-md"></p>
+                <div class="flex gap-4 mt-8 justify-center">
+                    <button id="back-button" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-8 rounded-full text-2xl transition-transform transform hover:scale-105 shadow-lg">Back</button>
+                    <button id="start-button" class="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-3 px-10 rounded-full text-2xl transition-transform transform hover:scale-105 shadow-lg"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-container" class="w-full h-full flex-col hidden">
+            <!-- Header -->
+            <header class="flex justify-between items-center p-4 bg-slate-900/80 backdrop-blur-sm border-b-2 border-slate-700">
+                <div>
+                    <span class="text-lg font-semibold text-cyan-400">SCORE</span>
+                    <span id="score" class="ml-2 text-2xl font-bold">0</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                     <span class="text-lg font-semibold text-red-400">LIVES</span>
+                     <div id="lives" class="flex space-x-1">
+                        <!-- SVGs for lives will be inserted here -->
+                     </div>
+                </div>
+            </header>
+
+            <!-- Main Game Area -->
+            <main id="game-screen" class="w-full flex-grow relative">
+                <!-- News snippets will be injected here -->
+            </main>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="game-over-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm">
+            <div class="bg-slate-800 border-2 border-cyan-500 rounded-2xl p-8 text-center shadow-2xl max-w-sm mx-4">
+                <h2 id="game-over-title" class="font-bangers text-6xl text-red-500">Game Over</h2>
+                <p id="final-score-text" class="text-slate-300 text-xl my-4">Your final score is:</p>
+                <p id="final-score" class="text-5xl font-bold text-cyan-400 mb-6">0</p>
+                <button id="restart-button" class="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-3 px-10 rounded-full text-2xl transition-transform transform hover:scale-105 shadow-lg">Play Again</button>
+            </div>
+        </div>
+
+        <!-- Feedback Message -->
+        <div id="feedback-message" class="fixed bottom-4 right-4 bg-slate-900 text-white p-3 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none">
+            <!-- Feedback content here -->
+        </div>
+
+    </div>
+
+    <script>
+        const mainScreen = document.getElementById('main-screen');
+        const instructionsScreen = document.getElementById('instructions-screen');
+        const gameContainer = document.getElementById('game-container');
+        const gameScreen = document.getElementById('game-screen');
+        const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
+        const startButton = document.getElementById('start-button');
+        const continueButton = document.getElementById('continue-button');
+        const backButton = document.getElementById('back-button');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const finalScoreElement = document.getElementById('final-score');
+        const restartButton = document.getElementById('restart-button');
+        const feedbackMessage = document.getElementById('feedback-message');
+
+        const heartSVG = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="text-red-500">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+        `;
+
+        // Database of news snippets
+        const snippetsDB = {
+            en: [
+                { text: "Scientists Discover Talking Squirrels in Local Park", type: 'fake', feedback: 'Sounds amazing, but animals can\'t talk like humans!' },
+                { text: "The Earth Revolves Around the Sun", type: 'fact', feedback: 'Correct! This is a fundamental concept in astronomy.' },
+                { text: "New Study Proves Chocolate Makes You Taller", type: 'fake', feedback: 'If only! Height is determined by genetics, not candy.' },
+                { text: "Water is Made of Hydrogen and Oxygen Atoms", type: 'fact', feedback: 'That\'s right! The chemical formula is H₂O.' },
+                { text: "The Moon is Actually a Giant Disco Ball, NASA Confirms", type: 'fake', feedback: 'The moon is made of rock, not shiny mirrors.' },
+                { text: "Regular Exercise is Good for Your Health", type: 'fact', feedback: 'True! It keeps your body strong.' },
+                { text: "Video Games Proven to Give You Superpowers", type: 'fake', feedback: 'They\'re fun, but superpowers are only in the game!' },
+                { text: "Eating Only Pizza Cures All Illnesses, Doctors Say", type: 'fake', feedback: 'A balanced diet is key. No single food is a miracle cure.' },
+                { text: "Plants Use Photosynthesis to Create Food", type: 'fact', feedback: 'Correct! They use sunlight to convert CO₂ into energy.' },
+                { text: "Australia is Wider Than the Moon", type: 'fact', feedback: 'Surprising, but true! The continent\'s diameter is larger.' },
+                { text: "Humans Can Breathe Underwater Without Equipment", type: 'fake', feedback: 'Definitely false. We need oxygen tanks to breathe underwater.' },
+                { text: "The Great Wall of China is Visible from Mars", type: 'fake', feedback: 'This is a common myth. It\'s not even visible from low Earth orbit.' },
+                { text: "A New App Charges Your Phone with Sunlight", type: 'fake', feedback: 'Phone screens can\'t convert sunlight to power... yet!' },
+                { text: "Octopuses Have Three Hearts", type: 'fact', feedback: 'It\'s true! Two pump blood through the gills and one pumps it to the rest of the body.' },
+                { text: "Cracking Your Knuckles Will Give You Arthritis", type: 'fake', feedback: 'This is a myth. The sound is just gas bubbles popping.' },
+                { text: "The Human Brain is About 75% Water", type: 'fact', feedback: 'Correct. Staying hydrated is very important for brain function!' },
+                { text: "Elephants Think Humans are Cute, Like We Do with Puppies", type: 'fake', feedback: 'While a sweet thought, there\'s no scientific evidence for this.' },
+                { text: "Honey Never Spoils", type: 'fact', feedback: 'Archaeologists have found pots of honey in ancient Egyptian tombs that are still perfectly edible!' },
+                { text: "A Secret Agency is Hiding a Real-Life Dinosaur Park", type: 'fake', feedback: 'This sounds like a movie plot! Dinosaurs have been extinct for millions of years.' },
+                { text: "Bananas are Berries, but Strawberries Aren't", type: 'fact', feedback: 'Botanically speaking, it\'s true due to how they grow from the plant\'s ovary.' },
+                { text: "Onions Absorb Viruses from the Air", type: 'fake', feedback: 'A very old myth. Viruses need a living host to multiply, they can\'t be absorbed by an onion.' },
+                { text: "The Eiffel Tower Gets Taller in the Summer", type: 'fact', feedback: 'True! The iron expands in the heat, making it grow up to 15 cm.' },
+                { text: "A Group of Flamingos is Called a 'Flamboyance'", type: 'fact', feedback: 'Yes, and a group of crows is a \'murder\'! English has fun names for animal groups.'},
+                { text: "You Only Use 10% of Your Brain", type: 'fake', feedback: 'A popular misconception. Brain scans show that all areas of the brain are active at different times.'}
+            ],
+            zh: [
+                { text: "科学家发现会说话的松鼠", type: 'fake', feedback: '听起来很神奇，但动物不会像人一样说话！' },
+                { text: "地球围绕太阳转", type: 'fact', feedback: '正确！这是天文学的基本概念。' },
+                { text: "新研究证明巧克力能让你长高", type: 'fake', feedback: '要是真的就好了！身高是由基因决定的，不是糖果。' },
+                { text: "水是由氢原子和氧原子组成的", type: 'fact', feedback: '没错！化学式是H₂O。' },
+                { text: "美国宇航局确认月亮是一个巨大的迪斯科球", type: 'fake', feedback: '月亮是由岩石构成的，不是闪亮的镜子。' },
+                { text: "定期锻炼有益健康", type: 'fact', feedback: '是的！它能让你的身体保持强壮。' },
+                { text: "电子游戏被证明能赋予你超能力", type: 'fake', feedback: '它们很有趣，但超能力只存在于游戏中！' },
+                { text: "医生说只吃披萨能治百病", type: 'fake', feedback: '均衡饮食是关键。没有一种食物是万能药。' },
+                { text: "植物利用光合作用制造食物", type: 'fact', feedback: '正确！它们利用阳光将二氧化碳转化为能量。' },
+                { text: "澳大利亚比月亮还宽", type: 'fact', feedback: '令人惊讶，但这是真的！这片大陆的直径更大。' },
+                { text: "人类可以在没有设备的情况下在水下呼吸", type: 'fake', feedback: '绝对是假的。我们需要氧气瓶才能在水下呼吸。' },
+                { text: "从火星上可以看到中国的长城", type: 'fake', feedback: '这是一个常见的误传。即使在近地轨道也看不到它。' },
+                { text: "一款新应用能用阳光给手机充电", type: 'fake', feedback: '手机屏幕还不能将阳光转化为电能...暂时！' },
+                { text: "章鱼有三颗心脏", type: 'fact', feedback: '是真的！两颗将血液泵入鳃，一颗将其泵送到身体其他部位。' },
+                { text: "掰响指关节会导致关节炎", type: 'fake', feedback: '这是一个谣言。声音只是气体气泡破裂的声音。' },
+                { text: "人脑大约75%是水", type: 'fact', feedback: '正确。保持水分对大脑功能非常重要！' },
+                { text: "大象认为人类很可爱，就像我们觉得小狗可爱一样", type: 'fake', feedback: '虽然这个想法很美好，但没有科学证据支持。' },
+                { text: "蜂蜜永不变质", type: 'fact', feedback: '考古学家在古埃及坟墓中发现了数千年前的蜂蜜罐，仍然可以食用！' },
+                { text: "一个秘密机构隐藏着一个真实的恐龙公园", type: 'fake', feedback: '这听起来像电影情节！恐龙已经灭绝了数百万年。' },
+                { text: "香蕉是浆果，但草莓不是", type: 'fact', feedback: '从植物学上讲，这是真的，因为它们从植物的子房中生长。' },
+                { text: "洋葱能吸收空气中的病毒", type: 'fake', feedback: '一个非常古老的谣言。病毒需要活体宿主才能繁殖，它们不能被洋葱吸收。' },
+                { text: "埃菲尔铁塔在夏天会变高", type: 'fact', feedback: '是真的！铁在高温下会膨胀，使其长高15厘米。' },
+                { text: "一群火烈鸟被称为“火焰”", type: 'fact', feedback: '是的，一群乌鸦被称为“谋杀”！英语中对动物群体有有趣的名称。' },
+                { text: "你只使用了大脑的10%", type: 'fake', feedback: '一个流行的误解。脑部扫描显示，大脑的所有区域在不同时间都处于活跃状态。' }
+            ],
+            tr: [
+                { text: "Bilim İnsanları Konuşan Sincaplar Keşfetti", type: 'fake', feedback: 'Harika görünüyor, ama hayvanlar insanlar gibi konuşamaz!' },
+                { text: "Dünya Güneşin Etrafında Döner", type: 'fact', feedback: 'Doğru! Bu, astronominin temel bir kavramıdır.' },
+                { text: "Yeni Çalışma Çikolatanın Boy Uzattığını Kanıtladı", type: 'fake', feedback: 'Keşke! Boy genetikle belirlenir, şekerlemeyle değil.' },
+                { text: "Su, Hidrojen ve Oksijen Atomlarından Oluşur", type: 'fact', feedback: 'Aynen öyle! Kimyasal formülü H₂O\'dur.' },
+                { text: "NASA, Ay\'ın Aslında Dev Bir Disko Topu Olduğunu Onayladı", type: 'fake', feedback: 'Ay parlak aynalardan değil, kayadan yapılmıştır.' },
+                { text: "Düzenli Egzersiz Sağlığınız İçin İyidir", type: 'fact', feedback: 'Doğru! Vücudunuzu güçlü tutar.' },
+                { text: "Video Oyunlarının Süper Güçler Verdiği Kanıtlandı", type: 'fake', feedback: 'Eğlencelidirler, ama süper güçler sadece oyunda var!' },
+                { text: "Doktorlar Sadece Pizza Yemenin Tüm Hastalıkları İyileştirdiğini Söylüyor", type: 'fake', feedback: 'Dengeli beslenme esastır. Hiçbir tek gıda mucize bir tedavi değildir.' },
+                { text: "Bitkiler Besin Üretmek İçin Fotosentez Yapar", type: 'fact', feedback: 'Doğru! Güneş ışığını kullanarak CO₂\'yi enerjiye dönüştürürler.' },
+                { text: "Avustralya, Ay\'dan Daha Geniştir", type: 'fact', feedback: 'Şaşırtıcı ama doğru! Kıtanın çapı daha büyüktür.' },
+                { text: "İnsanlar Ekipmansız Suda Nefes Alabilir", type: 'fake', feedback: 'Kesinlikle yanlış. Suda nefes almak için oksijen tanklarına ihtiyacımız var.' },
+                { text: "Çin Seddi Mars\'tan Görülebilir", type: 'fake', feedback: 'Bu yaygın bir efsanedir. Alçak Dünya yörüngesinden bile görülemez.' },
+                { text: "Yeni Bir Uygulama Telefonunuzu Güneş Işığıyla Şarj Ediyor", type: 'fake', feedback: 'Telefon ekranları henüz güneş ışığını güce dönüştüremez!' },
+                { text: "Ahtapotların Üç Kalbi Vardır", type: 'fact', feedback: 'Doğru! İkisi kanı solungaçlara, biri de vücudun geri kalanına pompalar.' },
+                { text: "Parmaklarını Çıtlatmak Artrite Neden Olur", type: 'fake', feedback: 'Bu bir efsane. Ses sadece gaz kabarcıklarının patlamasıdır.' },
+                { text: "İnsan Beyninin Yaklaşık %75\'i Sudur", type: 'fact', feedback: 'Doğru. Susuz kalmamak beyin fonksiyonu için çok önemlidir!' },
+                { text: "Filler, Tıpkı Bizim Köpek Yavrularını Sevdiğimiz Gibi İnsanları Sevimli Bulur", type: 'fake', feedback: 'Tatlı bir düşünce olsa da, bunun için bilimsel bir kanıt yok.' },
+                { text: "Bal Asla Bozulmaz", type: 'fact', feedback: 'Arkeologlar, antik Mısır mezarlarında hala yenilebilir durumda olan bal kapları buldular!' },
+                { text: "Gizli Bir Ajans Gerçek Bir Dinozor Parkı Saklıyor", type: 'fake', feedback: 'Bu bir film senaryosu gibi! Dinozorların nesli milyonlarca yıl önce tükendi.' },
+                { text: "Muz Bir Üzümsü Meyvedir, Ama Çilek Değildir", type: 'fact', feedback: 'Botanik olarak konuşursak, bitkinin yumurtalığından nasıl büyüdükleri nedeniyle bu doğrudur.' },
+                { text: "Soğan Havadaki Virüsleri Emer", type: 'fake', feedback: 'Çok eski bir efsane. Virüslerin çoğalmak için canlı bir konağa ihtiyacı vardır, bir soğan tarafından emilemezler.' },
+                { text: "Eyfel Kulesi Yazın Uzar", type: 'fact', feedback: 'Doğru! Demir ısıda genleşir ve 15 cm kadar uzamasına neden olur.' },
+                { text: "Bir Flamingo Grubuna 'İhtişam' Denir", type: 'fact', feedback: 'Evet, ve bir karga grubuna \'cinayet\' denir! İngilizcede hayvan grupları için eğlenceli isimler var.'},
+                { text: "Beyninizin Sadece %10\'unu Kullanırsınız", type: 'fake', feedback: 'Popüler bir yanılgı. Beyin taramaları, beynin tüm alanlarının farklı zamanlarda aktif olduğunu göstermektedir.'}
+            ]
+        };
+        
+        const translations = {
+            en: {
+                title: 'Info Interceptor',
+                instructions: 'Fake news snippets are falling! Click on the FAKE ones to destroy them, but let the REAL facts pass safely.',
+                easy: 'Easy',
+                hard: 'Hard',
+                hardInstructions: 'Fake news is falling! Identify and click the FAKE ones. No hints provided.',
+                startButton: 'Start Game',
+                score: 'SCORE',
+                lives: 'LIVES',
+                gameOver: 'Game Over',
+                finalScore: 'Your final score is:',
+                playAgain: 'Play Again',
+                missedFake: 'Missed a fake one!',
+                clickedFact: 'That was a real fact!'
+            },
+            zh: {
+                title: '信息拦截器',
+                instructions: '假新闻正在掉落！点击假的将其摧毁，但让真实的事实安全通过。',
+                easy: '简单',
+                hard: '困难',
+                hardInstructions: '假新闻正在掉落！识别并点击假新闻。不提供提示。',
+                startButton: '开始游戏',
+                score: '分数',
+                lives: '生命',
+                gameOver: '游戏结束',
+                finalScore: '你的最终分数是：',
+                playAgain: '再玩一次',
+                missedFake: '错过了一个假的！',
+                clickedFact: '那是一个真实的事实！'
+            },
+            tr: {
+                title: 'Bilgi Avcısı',
+                instructions: 'Yalan haberler yağıyor! YALAN olanlara tıklayarak onları yok et, ama GERÇEK bilgilerin güvenle geçmesine izin ver.',
+                easy: 'Kolay',
+                hard: 'Zor',
+                hardInstructions: 'Yalan haberler yağıyor! YALAN olanları belirle ve tıkla. İpucu verilmeyecektir.',
+                startButton: 'Oyuna Başla',
+                score: 'SKOR',
+                lives: 'CANLAR',
+                gameOver: 'Oyun Bitti',
+                finalScore: 'Son skorun:',
+                playAgain: 'Tekrar Oyna',
+                missedFake: 'Yalan haberi kaçırdın!',
+                clickedFact: 'Bu gerçek bir bilgiydi!'
+            }
+        };
+
+        let score = 0;
+        let lives = 3;
+        let gameInterval;
+        let spawnRate = 2000; // ms between new snippets
+        let fallSpeed = 8; // seconds to fall
+        let selectedLanguage = 'en';
+        let selectedDifficulty = 'easy';
+        let currentSnippets = [];
+
+        function updateUIText() {
+            const t = translations[selectedLanguage];
+            document.querySelector('#instructions-title').textContent = t.title;
+            const instructionsText = document.querySelector('#instructions-text');
+            if(selectedDifficulty === 'hard') {
+                 instructionsText.textContent = t.hardInstructions;
+            } else {
+                 instructionsText.textContent = t.instructions;
+            }
+            document.querySelector('#start-button').textContent = t.startButton;
+            document.querySelector('#back-button').textContent = t.playAgain.split(' ')[0]; // Using a generic 'Back' like word
+            document.querySelector('header .text-cyan-400').textContent = t.score;
+            document.querySelector('header .text-red-400').textContent = t.lives;
+            document.querySelector('#game-over-title').textContent = t.gameOver;
+            document.querySelector('#final-score-text').textContent = t.finalScore;
+            document.querySelector('#restart-button').textContent = t.playAgain;
+            document.querySelector('[data-difficulty="easy"]').textContent = t.easy;
+            document.querySelector('[data-difficulty="hard"]').textContent = t.hard;
+        }
+
+        function initGame() {
+            score = 0;
+            lives = 3;
+            spawnRate = 2000;
+            fallSpeed = 8;
+            currentSnippets = [...snippetsDB[selectedLanguage]];
+            updateScore();
+            updateLives();
+            instructionsScreen.classList.add('hidden');
+            instructionsScreen.classList.remove('flex');
+            gameOverModal.classList.add('hidden');
+            gameContainer.classList.remove('hidden');
+            gameContainer.classList.add('flex');
+            startGameLoop();
+        }
+
+        function startGameLoop() {
+            gameInterval = setInterval(() => {
+                if (document.hidden) return; // Pause game if tab is not active
+                createNewsSnippet();
+                // Increase difficulty over time
+                if (spawnRate > 800) spawnRate -= 50;
+                if (fallSpeed > (selectedDifficulty === 'easy' ? 4 : 3)) fallSpeed -= 0.1;
+            }, spawnRate);
+        }
+
+        function stopGameLoop() {
+            clearInterval(gameInterval);
+             // Clear any remaining snippets
+            const remainingSnippets = gameScreen.querySelectorAll('.news-snippet');
+            remainingSnippets.forEach(snippet => snippet.remove());
+        }
+
+        function createNewsSnippet() {
+            const snippetData = currentSnippets[Math.floor(Math.random() * currentSnippets.length)];
+            const snippetElement = document.createElement('div');
+            
+            snippetElement.textContent = snippetData.text;
+            snippetElement.dataset.type = snippetData.type;
+            snippetElement.dataset.feedback = snippetData.feedback;
+
+            snippetElement.classList.add('news-snippet');
+            snippetElement.classList.add(snippetData.type === 'fact' ? 'snippet-fact' : 'snippet-fake');
+            
+            // Randomize horizontal position
+            const gameScreenWidth = gameScreen.offsetWidth;
+            const snippetWidth = 320; // max-width of snippet
+            const maxLeft = gameScreenWidth - snippetWidth - 20; // 10px padding on each side
+            const randomLeft = Math.max(10, Math.random() * maxLeft);
+            snippetElement.style.left = `${randomLeft}px`;
+            snippetElement.style.transform = 'none'; // Reset transform for accurate positioning
+
+            snippetElement.classList.add('falling');
+            snippetElement.style.animationDuration = `${fallSpeed}s`;
+
+            snippetElement.addEventListener('click', handleSnippetClick);
+            
+            // Check if snippet reached the bottom
+            snippetElement.addEventListener('animationend', () => {
+                if(snippetElement.dataset.type === 'fake' && snippetElement.parentElement) {
+                    loseLife();
+                    if(selectedDifficulty === 'easy') {
+                        showFeedback(translations[selectedLanguage].missedFake, 'error');
+                    }
+                }
+                snippetElement.remove();
+            });
+
+            gameScreen.appendChild(snippetElement);
+        }
+
+        function handleSnippetClick(event) {
+            const snippet = event.currentTarget;
+            if (!snippet) return;
+            
+            // Prevent multiple clicks
+            snippet.removeEventListener('click', handleSnippetClick);
+
+            if (snippet.dataset.type === 'fake') {
+                // Correctly clicked a fake snippet
+                score += 10;
+                snippet.classList.add('correct-hit');
+                if (selectedDifficulty === 'easy') {
+                    showFeedback(snippet.dataset.feedback, 'success');
+                }
+            } else {
+                // Incorrectly clicked a real snippet
+                loseLife();
+                snippet.classList.add('wrong-hit');
+                if (selectedDifficulty === 'easy') {
+                    showFeedback(snippet.dataset.feedback || translations[selectedLanguage].clickedFact, 'error');
+                }
+            }
+
+            updateScore();
+            
+            // Remove element after animation
+            setTimeout(() => {
+                snippet.remove();
+            }, 200);
+        }
+
+        function loseLife() {
+            lives--;
+            updateLives();
+            if (lives <= 0) {
+                gameOver();
+            }
+        }
+        
+        function updateScore() {
+            scoreElement.textContent = score;
+        }
+
+        function updateLives() {
+            livesElement.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                livesElement.innerHTML += heartSVG;
+            }
+        }
+
+        function showFeedback(message, type) {
+            feedbackMessage.textContent = message;
+            feedbackMessage.classList.remove('opacity-0');
+            feedbackMessage.style.backgroundColor = type === 'success' ? '#22c55e' : '#ef4444';
+
+            setTimeout(() => {
+                feedbackMessage.classList.add('opacity-0');
+            }, 2000);
+        }
+        
+        function gameOver() {
+            stopGameLoop();
+            finalScoreElement.textContent = score;
+            gameContainer.classList.add('hidden');
+            gameContainer.classList.remove('flex');
+            gameOverModal.classList.remove('hidden');
+        }
+
+        // Event Listeners for main screen
+        document.querySelectorAll('.lang-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                selectedLanguage = e.target.dataset.lang;
+                document.querySelectorAll('.lang-button').forEach(btn => btn.classList.remove('selected'));
+                e.target.classList.add('selected');
+            });
+        });
+
+        document.querySelectorAll('.difficulty-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                selectedDifficulty = e.target.dataset.difficulty;
+                document.querySelectorAll('.difficulty-button').forEach(btn => btn.classList.remove('selected'));
+                e.target.classList.add('selected');
+            });
+        });
+
+        continueButton.addEventListener('click', () => {
+            mainScreen.classList.add('hidden');
+            instructionsScreen.classList.remove('hidden');
+            instructionsScreen.classList.add('flex', 'flex-col');
+            updateUIText();
+        });
+
+        backButton.addEventListener('click', () => {
+            instructionsScreen.classList.add('hidden');
+            instructionsScreen.classList.remove('flex', 'flex-col');
+            mainScreen.classList.remove('hidden');
+        });
+
+        startButton.addEventListener('click', initGame);
+        restartButton.addEventListener('click', initGame);
+
+    </script>
+
+</body>
+</html>
+
