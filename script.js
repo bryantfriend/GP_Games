@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'groupnotes.html',
+            title: 'Bee Hive Notes Adventure 🐝'
+        }, 
+        {
             fileName: 'hamsterruner.html',
             title: 'Hamster Running Mini-Biliography 🐹'
         }, 
