@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beekeeper's Notes Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Patrick Hand', cursive;
+            background-color: #f0f9ff;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23a7f3d0' fill-opacity='0.4'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h5v1h-5v9h5v1h-5v9h5v1h-5v9h5v1h-5v9h5v1h-5v9h5v1h-5v9h5v1h-5v9h5v1h-5v9h5v1H6v-1H0v-9h6v-1H0v-9h6v-1H0v-9h6v-1H0v-9h6v-1H0v-9h6v-1H0v-9h6v-1H0v-9h6v-1H0V5h6zm1 0h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1H7v-1H1v-9h6v-1H1v-9h6v-1H1v-9h6v-1H1v-9h6v-1H1v-9h6v-1H1v-9h6v-1H1v-9h6V5zm10 1h79v79H17V6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .bee {
+            position: absolute;
+            cursor: grab;
+            transition: all 0.2s ease-in-out;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            animation: buzz 3s ease-in-out infinite alternate;
+        }
+
+        .bee:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+        
+        @keyframes buzz {
+            0% { transform: translateY(0px) rotate(-2deg); }
+            50% { transform: translateY(-10px) rotate(0deg); }
+            100% { transform: translateY(0px) rotate(2deg); }
+        }
+
+        .bee-body {
+            width: 50px;
+            height: 35px;
+            background: linear-gradient(90deg, #FFD700 20%, #000 20%, #000 40%, #FFD700 40%, #FFD700 60%, #000 60%, #000 80%, #FFD700 80%);
+            border-radius: 50% / 60%;
+            position: relative;
+        }
+
+        .bee-body::before, .bee-body::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 30px;
+            background-color: rgba(173, 216, 230, 0.7);
+            border-radius: 50%;
+            top: -15px;
+        }
+
+        .bee-body::before {
+            left: 5px;
+            transform: rotate(-30deg);
+        }
+
+        .bee-body::after {
+            right: 5px;
+            transform: rotate(30deg);
+        }
+
+        .note-paper {
+            background-color: #fffacd;
+            border: 1px solid #d2b48c;
+            border-radius: 4px;
+            padding: 2px 8px;
+            margin-top: 4px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            font-size: 1.1rem;
+            white-space: nowrap;
+        }
+        
+        .beehive {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .beehive-label {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(139, 69, 19, 0.7);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 8px;
+            font-size: clamp(0.8rem, 2.5vw, 1.25rem);
+            width: 80%;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .drag-over {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+        
+        .correct-drop, .hint-reveal {
+            animation: pulse-green 0.8s;
+        }
+
+        .incorrect-drop {
+            animation: shake 0.5s;
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(74, 222, 128, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body class="w-screen h-screen overflow-hidden text-slate-800 flex items-center justify-center">
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="text-center">
+        <h1 class="text-7xl text-amber-600 drop-shadow-lg mb-4">Beekeeper's Notes</h1>
+        <h2 class="text-3xl text-slate-600 mb-8">Select a Language</h2>
+        <div class="flex flex-col space-y-4">
+            <button class="lang-btn bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition text-2xl" data-lang="en">English</button>
+            <button class="lang-btn bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition text-2xl" data-lang="tr">Türkçe</button>
+            <button class="lang-btn bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition text-2xl" data-lang="zh">中文</button>
+        </div>
+    </div>
+    
+    <!-- Main Game Container -->
+    <div id="game-container" class="hidden container mx-auto p-4 md:p-8 h-full flex-col">
+        
+        <!-- Header -->
+        <header class="text-center mb-4">
+            <h1 id="game-title" class="text-5xl md:text-6xl text-amber-600 drop-shadow-lg">Beekeeper's Notes</h1>
+            <p id="topic-display" class="text-2xl md:text-3xl text-slate-600 mt-1">Help the bees sort their notes!</p>
+        </header>
+
+        <!-- Top Bar with Stats and Upgrades -->
+        <div class="flex justify-between items-center bg-yellow-200/50 rounded-lg p-3 md:p-4 shadow-md mb-4 text-sm md:text-xl">
+            <div class="flex items-center space-x-2">
+                <span class="text-3xl">🍯</span>
+                <span id="honey-label">Honey:</span>
+                <span id="honey-score" class="font-bold">0</span>
+            </div>
+            <div class="flex items-center gap-2 md:gap-4">
+                 <div id="main-hive-visual" class="transition-transform duration-500" style="width: 50px; height: auto;">
+                    <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                        <path id="hive-body" fill="#FFC107" d="M50 10 C 20 10, 10 30, 10 50 C 10 80, 20 90, 50 90 C 80 90, 90 80, 90 50 C 90 30, 80 10, 50 10 Z" />
+                        <circle id="hive-door" fill="#A52A2A" cx="50" cy="75" r="8"/>
+                        <g id="hive-roof" fill="#A52A2A"><path d="M50,2 A70,40 0,0,0 20,20 L 80,20 A70,40 0,0,0 50,2 Z" /></g>
+                    </svg>
+                 </div>
+                <div class="flex flex-col gap-1">
+                    <button id="upgrade-hive-button" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-1 px-2 md:py-2 md:px-4 rounded-lg shadow-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed text-xs md:text-base"></button>
+                    <button id="upgrade-bonus-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 md:py-2 md:px-4 rounded-lg shadow-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed text-xs md:text-base"></button>
+                    <button id="upgrade-hint-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 md:py-2 md:px-4 rounded-lg shadow-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed text-xs md:text-base"></button>
+                </div>
+            </div>
+            <div class="text-right">
+                <span id="level-label">Level:</span>
+                <span id="level-display" class="font-bold">1</span>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <main id="game-area" class="relative flex-grow border-4 border-dashed border-green-300 rounded-2xl bg-green-100/30 shadow-inner">
+            <!-- Bees will be dynamically added here -->
+        </main>
+
+        <!-- Beehives Area -->
+        <footer id="hives-area" class="flex justify-around items-end pt-6 h-48">
+            <!-- Hives will be dynamically added here -->
+        </footer>
+
+    </div>
+
+    <!-- Message Modal -->
+    <div id="message-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div id="message-box" class="bg-white p-8 rounded-2xl shadow-2xl text-center text-4xl transform scale-50 opacity-0 transition-all duration-300">
+            <p id="message-text"></p>
+        </div>
+    </div>
+
+
+    <script>
+        // DOM Elements
+        const mainMenu = document.getElementById('main-menu');
+        const gameContainer = document.getElementById('game-container');
+        const langButtons = document.querySelectorAll('.lang-btn');
+
+        const gameArea = document.getElementById('game-area');
+        const hivesArea = document.getElementById('hives-area');
+        const honeyScoreEl = document.getElementById('honey-score');
+        const levelDisplayEl = document.getElementById('level-display');
+        const topicDisplayEl = document.getElementById('topic-display');
+        const mainHiveVisual = document.getElementById('main-hive-visual');
+        const messageModal = document.getElementById('message-modal');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+
+        // UI Text Elements
+        const gameTitleEl = document.getElementById('game-title');
+        const honeyLabelEl = document.getElementById('honey-label');
+        const levelLabelEl = document.getElementById('level-label');
+        const upgradeHiveBtn = document.getElementById('upgrade-hive-button');
+        const upgradeBonusBtn = document.getElementById('upgrade-bonus-button');
+        const upgradeHintBtn = document.getElementById('upgrade-hint-button');
+
+        // Game State
+        let honeyScore = 0;
+        let currentLevelIndex = 0;
+        let currentLanguage = 'en';
+        let draggedBee = null; // For touch events
+        
+        // Upgrade State
+        let hiveLevel = 1;
+        let hiveUpgradeCost = 100;
+        let bonusHoneyLevel = 0;
+        let bonusHoneyCost = 150;
+        let hintLevel = 0;
+        let hintCost = 200;
+
+        const translations = {
+            en: {
+                title: "Beekeeper's Notes",
+                honey: "Honey:",
+                level: "Level:",
+                upgrade_hive: (cost) => `Upgrade Hive (${cost} 🍯)`,
+                upgrade_bonus: (cost) => `Bonus Honey (${cost} 🍯)`,
+                upgrade_hint: (cost) => `Reveal Hint (${cost} 🍯)`,
+                level_complete: "Level Complete!",
+                all_levels_complete: "You are a Master Beekeeper!",
+                all_levels_complete_sub: "Congratulations! You've completed all the levels!",
+                sweet: "Sweet!",
+                wrong_hive: "Wrong hive!",
+                hive_upgraded: "Hive Upgraded!",
+                bonus_upgraded: "Bonus Upgraded!",
+                hint_purchased: "Hint Revealed!",
+                gameData: [
+                    { topic: "Topic: Climate Change", categories: ["Causes", "Effects", "Solutions"], notes: [{ text: "Pollution", category: "Causes" }, { text: "Deforestation", category: "Causes" }, { text: "Fossil Fuels", category: "Causes" }, { text: "Rising Sea Levels", category: "Effects" }, { text: "Extreme Weather", category: "Effects" }, { text: "Melting Glaciers", category: "Effects" }, { text: "Renewable Energy", category: "Solutions" }, { text: "Recycling", category: "Solutions" }, { text: "Tree Planting", category: "Solutions" }] },
+                    { topic: "Topic: Parts of a Plant", categories: ["Roots", "Stem", "Leaves"], notes: [{ text: "Absorb Water", category: "Roots" }, { text: "Anchor Plant", category: "Roots" }, { text: "Store Food", category: "Roots" }, { text: "Supports Plant", category: "Stem" }, { text: "Carries Water", category: "Stem" }, { text: "Holds up Leaves", category: "Stem" }, { text: "Photosynthesis", category: "Leaves" }, { text: "Makes Food", category: "Leaves" }, { text: "Gas Exchange", category: "Leaves" }] },
+                    { topic: "Topic: Ancient Rome", categories: ["Government", "Architecture", "Daily Life"], notes: [{ text: "Republic", category: "Government" }, { text: "Senate", category: "Government" }, { text: "Emperors", category: "Government" }, { text: "Colosseum", category: "Architecture" }, { text: "Aqueducts", category: "Architecture" }, { text: "Roads", category: "Architecture" }, { text: "Togas", category: "Daily Life" }, { text: "Gladiator Games", category: "Daily Life" }, { text: "Public Baths", category: "Daily Life" }] },
+                    { topic: "Topic: The Solar System", categories: ["Inner Planets", "Outer Planets", "Dwarf Planets"], notes: [{ text: "Mercury", category: "Inner Planets" }, { text: "Venus", category: "Inner Planets" }, { text: "Earth", category: "Inner Planets" }, { text: "Mars", category: "Inner Planets" }, { text: "Jupiter", category: "Outer Planets" }, { text: "Saturn", category: "Outer Planets" }, { text: "Uranus", category: "Outer Planets" }, { text: "Neptune", category: "Outer Planets" }, { text: "Pluto", category: "Dwarf Planets" }, { text: "Ceres", category: "Dwarf Planets" }] },
+                    { topic: "Topic: Types of Rocks", categories: ["Igneous", "Sedimentary", "Metamorphic"], notes: [{ text: "Granite", category: "Igneous" }, { text: "Obsidian", category: "Igneous" }, { text: "Basalt", category: "Igneous" }, { text: "Sandstone", category: "Sedimentary" }, { text: "Limestone", category: "Sedimentary" }, { text: "Shale", category: "Sedimentary" }, { text: "Marble", category: "Metamorphic" }, { text: "Slate", category: "Metamorphic" }, { text: "Gneiss", category: "Metamorphic" }] }
+                ]
+            },
+            tr: {
+                title: "Arıcının Notları",
+                honey: "Bal:",
+                level: "Seviye:",
+                upgrade_hive: (cost) => `Kovanı Geliştir (${cost} 🍯)`,
+                upgrade_bonus: (cost) => `Bonus Bal (${cost} 🍯)`,
+                upgrade_hint: (cost) => `İpucu Göster (${cost} 🍯)`,
+                level_complete: "Seviye Tamamlandı!",
+                all_levels_complete: "Usta Bir Arıcısın!",
+                all_levels_complete_sub: "Tebrikler! Tüm seviyeleri tamamladın!",
+                sweet: "Harika!",
+                wrong_hive: "Yanlış kovan!",
+                hive_upgraded: "Kovan Geliştirildi!",
+                bonus_upgraded: "Bonus Geliştirildi!",
+                hint_purchased: "İpucu Ortaya Çıktı!",
+                gameData: [
+                    { topic: "Konu: İklim Değişikliği", categories: ["Nedenler", "Etkiler", "Çözümler"], notes: [{ text: "Kirlilik", category: "Nedenler" }, { text: "Ormansızlaşma", category: "Nedenler" }, { text: "Fosil Yakıtlar", category: "Nedenler" }, { text: "Yükselen Deniz Seviyesi", category: "Etkiler" }, { text: "Aşırı Hava Koşulları", category: "Etkiler" }, { text: "Buzulların Erimesi", category: "Etkiler" }, { text: "Yenilenebilir Enerji", category: "Çözümler" }, { text: "Geri Dönüşüm", category: "Çözümler" }, { text: "Ağaç Dikimi", category: "Çözümler" }] },
+                    { topic: "Konu: Bitkinin Kısımları", categories: ["Kökler", "Gövde", "Yapraklar"], notes: [{ text: "Suyu Emer", category: "Kökler" }, { text: "Bitkiyi Sabitler", category: "Kökler" }, { text: "Besin Depolar", category: "Kökler" }, { text: "Bitkiyi Destekler", category: "Gövde" }, { text: "Su Taşır", category: "Gövde" }, { text: "Yaprakları Tutar", category: "Gövde" }, { text: "Fotosentez", category: "Yapraklar" }, { text: "Besin Yapar", category: "Yapraklar" }, { text: "Gaz Alışverişi", category: "Yapraklar" }] },
+                    { topic: "Konu: Antik Roma", categories: ["Yönetim", "Mimari", "Günlük Yaşam"], notes: [{ text: "Cumhuriyet", category: "Yönetim" }, { text: "Senato", category: "Yönetim" }, { text: "İmparatorlar", category: "Yönetim" }, { text: "Kolezyum", category: "Mimari" }, { text: "Su Kemerleri", category: "Mimari" }, { text: "Yollar", category: "Mimari" }, { text: "Togalar", category: "Günlük Yaşam" }, { text: "Gladyatör Oyunları", category: "Günlük Yaşam" }, { text: "Halk Hamamları", category: "Günlük Yaşam" }] },
+                    { topic: "Konu: Güneş Sistemi", categories: ["İç Gezegenler", "Dış Gezegenler", "Cüce Gezegenler"], notes: [{ text: "Merkür", category: "İç Gezegenler" }, { text: "Venüs", category: "İç Gezegenler" }, { text: "Dünya", category: "İç Gezegenler" }, { text: "Mars", category: "İç Gezegenler" }, { text: "Jüpiter", category: "Dış Gezegenler" }, { text: "Satürn", category: "Dış Gezegenler" }, { text: "Uranüs", category: "Dış Gezegenler" }, { text: "Neptün", category: "Dış Gezegenler" }, { text: "Plüton", category: "Cüce Gezegenler" }, { text: "Ceres", category: "Cüce Gezegenler" }] },
+                    { topic: "Konu: Kayaç Türleri", categories: ["Magmatik", "Tortul", "Başkalaşım"], notes: [{ text: "Granit", category: "Magmatik" }, { text: "Obsidiyen", category: "Magmatik" }, { text: "Bazalt", category: "Magmatik" }, { text: "Kumtaşı", category: "Tortul" }, { text: "Kireçtaşı", category: "Tortul" }, { text: "Şeyl", category: "Tortul" }, { text: "Mermer", category: "Başkalaşım" }, { text: "Sleyt", category: "Başkalaşım" }, { text: "Gnay", category: "Başkalaşım" }] }
+                ]
+            },
+            zh: {
+                title: "养蜂人的笔记",
+                honey: "蜂蜜:",
+                level: "等级:",
+                upgrade_hive: (cost) => `升级蜂箱 (${cost} 🍯)`,
+                upgrade_bonus: (cost) => `奖励蜂蜜 (${cost} 🍯)`,
+                upgrade_hint: (cost) => `显示提示 (${cost} 🍯)`,
+                level_complete: "完成本级！",
+                all_levels_complete: "你是一位养蜂大师！",
+                all_levels_complete_sub: "恭喜！你已经完成了所有关卡！",
+                sweet: "好甜蜜！",
+                wrong_hive: "错误的蜂箱！",
+                hive_upgraded: "蜂箱已升级！",
+                bonus_upgraded: "奖励已升级！",
+                hint_purchased: "提示已显示！",
+                gameData: [
+                    { topic: "主题：气候变化", categories: ["原因", "影响", "解决方案"], notes: [{ text: "污染", category: "原因" }, { text: "砍伐森林", category: "原因" }, { text: "化石燃料", category: "原因" }, { text: "海平面上升", category: "影响" }, { text: "极端天气", category: "影响" }, { text: "冰川融化", category: "影响" }, { text: "可再生能源", category: "解决方案" }, { text: "回收利用", category: "解决方案" }, { text: "植树", category: "解决方案" }] },
+                    { topic: "主题：植物的各部分", categories: ["根", "茎", "叶"], notes: [{ text: "吸收水分", category: "根" }, { text: "固定植物", category: "根" }, { text: "储存食物", category: "根" }, { text: "支撑植物", category: "茎" }, { text: "运输水分", category: "茎" }, { text: "举起叶子", category: "茎" }, { text: "光合作用", category: "叶" }, { text: "制造食物", category: "叶" }, { text: "气体交换", category: "叶" }] },
+                    { topic: "主题：古罗马", categories: ["政府", "建筑", "日常生活"], notes: [{ text: "共和国", category: "政府" }, { text: "元老院", category: "政府" }, { text: "皇帝", category: "政府" }, { text: "罗马斗兽场", category: "建筑" }, { text: "水道", category: "建筑" }, { text: "道路", category: "建筑" }, { text: "托加袍", category: "日常生活" }, { text: "角斗士比赛", category: "日常生活" }, { text: "公共浴场", category: "日常生活" }] },
+                    { topic: "主题：太阳系", categories: ["内行星", "外行星", "矮行星"], notes: [{ text: "水星", category: "内行星" }, { text: "金星", category: "内行星" }, { text: "地球", category: "内行星" }, { text: "火星", category: "内行星" }, { text: "木星", category: "外行星" }, { text: "土星", category: "外行星" }, { text: "天王星", category: "外行星" }, { text: "海王星", category: "外行星" }, { text: "冥王星", category: "矮行星" }, { text: "谷神星", category: "矮行星" }] },
+                    { topic: "主题：岩石种类", categories: ["火成岩", "沉积岩", "变质岩"], notes: [{ text: "花岗岩", category: "火成岩" }, { text: "黑曜石", category: "火成岩" }, { text: "玄武岩", category: "火成岩" }, { text: "砂岩", category: "沉积岩" }, { text: "石灰岩", category: "沉积岩" }, { text: "页岩", category: "沉积岩" }, { text: "大理石", category: "变质岩" }, { text: "板岩", category: "变质岩" }, { text: "片麻岩", category: "变质岩" }] }
+                ]
+            }
+        };
+
+        function startGame(lang) {
+            currentLanguage = lang;
+            mainMenu.classList.add('hidden');
+            gameContainer.classList.remove('hidden');
+            gameContainer.classList.add('flex');
+            
+            translateUI();
+            loadLevel(currentLevelIndex);
+            updateScore();
+
+            upgradeHiveBtn.addEventListener('click', upgradeHive);
+            upgradeBonusBtn.addEventListener('click', upgradeBonus);
+            upgradeHintBtn.addEventListener('click', buyHint);
+        }
+        
+        function translateUI() {
+            const t = translations[currentLanguage];
+            gameTitleEl.textContent = t.title;
+            honeyLabelEl.textContent = t.honey;
+            levelLabelEl.textContent = t.level;
+            updateUpgradeButtons();
+        }
+
+        function updateUpgradeButtons() {
+            const t = translations[currentLanguage];
+            upgradeHiveBtn.textContent = t.upgrade_hive(hiveUpgradeCost);
+            upgradeBonusBtn.textContent = t.upgrade_bonus(bonusHoneyCost);
+            upgradeHintBtn.textContent = t.upgrade_hint(hintCost);
+
+            upgradeHiveBtn.disabled = honeyScore < hiveUpgradeCost;
+            upgradeBonusBtn.disabled = honeyScore < bonusHoneyCost;
+            upgradeHintBtn.disabled = honeyScore < hintCost;
+        }
+
+        function loadLevel(levelIndex) {
+            const levelData = translations[currentLanguage].gameData[levelIndex];
+            if (!levelData) {
+                const t = translations[currentLanguage];
+                showMessage(t.all_levels_complete, "bg-green-400");
+                topicDisplayEl.innerText = t.all_levels_complete_sub;
+                gameArea.innerHTML = '';
+                hivesArea.innerHTML = '';
+                return;
+            }
+
+            gameArea.innerHTML = '';
+            hivesArea.innerHTML = '';
+            
+            levelDisplayEl.textContent = levelIndex + 1;
+            topicDisplayEl.textContent = levelData.topic;
+            
+            levelData.categories.forEach(category => {
+                const hive = document.createElement('div');
+                hive.className = 'beehive w-1/4 md:w-1/5 h-full relative flex-shrink-0';
+                hive.dataset.category = category;
+                hive.innerHTML = `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-lg filter hover:brightness-105"><path fill="#FFC107" d="M50 20 C 20 20, 10 40, 10 60 C 10 90, 20 100, 50 100 C 80 100, 90 90, 90 60 C 90 40, 80 20, 50 20 Z" /><path fill="#A52A2A" d="M50,10 A60,50 0,0,0 20,35 L 80,35 A60,50 0,0,0 50,10 Z" /><circle fill="#654321" cx="50" cy="85" r="10"/></svg><div class="beehive-label">${category}</div>`;
+                hivesArea.appendChild(hive);
+
+                hive.addEventListener('dragover', e => { e.preventDefault(); hive.classList.add('drag-over'); });
+                hive.addEventListener('dragleave', () => hive.classList.remove('drag-over'));
+                hive.addEventListener('drop', handleDrop);
+            });
+
+            levelData.notes.forEach((note, index) => {
+                const bee = document.createElement('div');
+                bee.id = `bee-${index}`;
+                bee.className = 'bee';
+                bee.draggable = true;
+                bee.dataset.category = note.category;
+                bee.innerHTML = `<div class="bee-body"></div><div class="note-paper">${note.text}</div>`;
+
+                setTimeout(() => {
+                    const areaRect = gameArea.getBoundingClientRect();
+                    const beeWidth = 150; 
+                    const beeHeight = 80;
+                    bee.style.left = `${Math.random() * (areaRect.width - beeWidth)}px`;
+                    bee.style.top = `${Math.random() * (areaRect.height - beeHeight)}px`;
+                }, 0);
+                
+                gameArea.appendChild(bee);
+                bee.addEventListener('dragstart', handleDragStart);
+                
+                // Add touch events for tablets and mobile
+                bee.addEventListener('touchstart', handleTouchStart, { passive: false });
+                bee.addEventListener('touchmove', handleTouchMove, { passive: false });
+                bee.addEventListener('touchend', handleTouchEnd);
+            });
+        }
+
+        function handleDragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.closest('.bee').id);
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const hive = e.currentTarget;
+            hive.classList.remove('drag-over');
+            
+            const beeId = e.dataTransfer.getData('text/plain');
+            const bee = document.getElementById(beeId);
+            
+            processDrop(bee, hive);
+        }
+
+        // --- Touch Event Handlers ---
+        function handleTouchStart(e) {
+            e.preventDefault();
+            draggedBee = e.currentTarget;
+            draggedBee.style.zIndex = "1000";
+            draggedBee.style.transform = "scale(1.1)";
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (!draggedBee) return;
+
+            const touch = e.targetTouches[0];
+            const gameAreaRect = gameArea.getBoundingClientRect();
+
+            // Position the bee centered on the finger
+            let x = touch.clientX - gameAreaRect.left - (draggedBee.offsetWidth / 2);
+            let y = touch.clientY - gameAreaRect.top - (draggedBee.offsetHeight / 2);
+            
+            // Constrain to game area
+            x = Math.max(0, Math.min(x, gameAreaRect.width - draggedBee.offsetWidth));
+            y = Math.max(0, Math.min(y, gameAreaRect.height - draggedBee.offsetHeight));
+
+            draggedBee.style.left = `${x}px`;
+            draggedBee.style.top = `${y}px`;
+
+            // Check for hive overlap
+            const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+            const hiveUnder = elementUnder ? elementUnder.closest('.beehive') : null;
+
+            hivesArea.querySelectorAll('.beehive').forEach(hive => {
+                if (hive === hiveUnder) {
+                    hive.classList.add('drag-over');
+                } else {
+                    hive.classList.remove('drag-over');
+                }
+            });
+        }
+
+        function handleTouchEnd(e) {
+            if (!draggedBee) return;
+
+            draggedBee.style.zIndex = "10";
+            draggedBee.style.transform = "scale(1)";
+
+            const touch = e.changedTouches[0];
+            const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+            const hiveUnder = elementUnder ? elementUnder.closest('.beehive') : null;
+            
+            hivesArea.querySelectorAll('.beehive').forEach(hive => hive.classList.remove('drag-over'));
+
+            if (hiveUnder) {
+                processDrop(draggedBee, hiveUnder);
+            }
+
+            draggedBee = null;
+        }
+
+        function processDrop(bee, hive) {
+            if (!bee || !hive) return;
+            
+            const beeCategory = bee.dataset.category;
+            const hiveCategory = hive.dataset.category;
+            const t = translations[currentLanguage];
+
+            if (beeCategory === hiveCategory) {
+                let honeyGained = 10;
+                // Check for bonus honey
+                if (Math.random() < bonusHoneyLevel * 0.1) { // 10% chance per level
+                    honeyGained += 20;
+                    showMessage("+20 Bonus!", "bg-yellow-400");
+                }
+                
+                honeyScore += honeyGained;
+                updateScore();
+                bee.remove();
+                hive.classList.add('correct-drop');
+                setTimeout(() => hive.classList.remove('correct-drop'), 500);
+                showMessage(t.sweet, "bg-green-400");
+                checkLevelComplete();
+            } else {
+                hive.classList.add('incorrect-drop');
+                setTimeout(() => hive.classList.remove('incorrect-drop'), 500);
+                showMessage(t.wrong_hive, "bg-red-400");
+            }
+        }
+
+        function checkLevelComplete() {
+            if (gameArea.childElementCount === 0) {
+                const t = translations[currentLanguage];
+                showMessage(t.level_complete, "bg-blue-400");
+                currentLevelIndex++;
+                setTimeout(() => loadLevel(currentLevelIndex), 1500);
+            }
+        }
+
+        function updateScore() {
+            honeyScoreEl.textContent = honeyScore;
+            updateUpgradeButtons();
+        }
+        
+        function upgradeHive() {
+            if (honeyScore >= hiveUpgradeCost) {
+                honeyScore -= hiveUpgradeCost;
+                hiveLevel++;
+                hiveUpgradeCost = Math.floor(hiveUpgradeCost * 1.8);
+                updateScore();
+                mainHiveVisual.style.transform = `scale(${1 + hiveLevel * 0.1})`;
+                showMessage(translations[currentLanguage].hive_upgraded, "bg-yellow-400");
+            }
+        }
+
+        function upgradeBonus() {
+            if (honeyScore >= bonusHoneyCost) {
+                honeyScore -= bonusHoneyCost;
+                bonusHoneyLevel++;
+                bonusHoneyCost = Math.floor(bonusHoneyCost * 2);
+                updateScore();
+                 showMessage(translations[currentLanguage].bonus_upgraded, "bg-green-400");
+            }
+        }
+
+        function buyHint() {
+            if (honeyScore >= hintCost && gameArea.children.length > 0) {
+                 honeyScore -= hintCost;
+                 hintLevel++;
+                 hintCost = Math.floor(hintCost * 1.5);
+                 updateScore();
+
+                 const firstBee = gameArea.children[0];
+                 const correctCategory = firstBee.dataset.category;
+                 const correctHive = hivesArea.querySelector(`[data-category="${correctCategory}"]`);
+
+                 correctHive.classList.add('hint-reveal');
+                 setTimeout(() => correctHive.classList.remove('hint-reveal'), 800);
+                 showMessage(translations[currentLanguage].hint_purchased, "bg-blue-400");
+            }
+        }
+
+
+        function showMessage(msg, bgColor) {
+            messageText.textContent = msg;
+            messageBox.className = `bg-white p-8 rounded-2xl shadow-2xl text-center text-4xl transform scale-50 opacity-0 transition-all duration-300 ${bgColor} text-white`;
+
+            messageModal.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.remove('scale-50', 'opacity-0');
+                messageBox.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            
+            setTimeout(() => {
+                messageBox.classList.remove('scale-100', 'opacity-100');
+                messageBox.classList.add('scale-50', 'opacity-0');
+                setTimeout(() => messageModal.classList.add('hidden'), 300);
+            }, 1200);
+        }
+
+        // Initialize the main menu
+        window.onload = () => {
+             langButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    startGame(e.target.dataset.lang);
+                });
+            });
+        };
+    </script>
+</body>
+</html>
+
+
