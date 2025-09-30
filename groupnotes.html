@@ -441,8 +441,11 @@
             draggedBee.style.left = `${x}px`;
             draggedBee.style.top = `${y}px`;
 
-            // Check for hive overlap
+            // Temporarily disable pointer events on the bee to "see through" it
+            draggedBee.style.pointerEvents = 'none';
             const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+            draggedBee.style.pointerEvents = 'auto'; // Re-enable pointer events
+
             const hiveUnder = elementUnder ? elementUnder.closest('.beehive') : null;
 
             hivesArea.querySelectorAll('.beehive').forEach(hive => {
@@ -456,12 +459,16 @@
 
         function handleTouchEnd(e) {
             if (!draggedBee) return;
-
+            
             draggedBee.style.zIndex = "10";
             draggedBee.style.transform = "scale(1)";
 
+            // Temporarily disable pointer events on the bee to "see through" it
+            draggedBee.style.pointerEvents = 'none';
             const touch = e.changedTouches[0];
             const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+            draggedBee.style.pointerEvents = 'auto'; // Re-enable pointer events
+            
             const hiveUnder = elementUnder ? elementUnder.closest('.beehive') : null;
             
             hivesArea.querySelectorAll('.beehive').forEach(hive => hive.classList.remove('drag-over'));
