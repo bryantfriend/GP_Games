@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'sevenup.html',
+            title: 'Heads up 7 up (but actually it's 4) 🙈'
+        }, 
+        {
             fileName: 'groupnotes.html',
             title: 'Bee Hive Notes Adventure 🐝'
         }, 
