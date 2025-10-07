@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perspective Detective Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .suspect-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .suspect-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .btn-primary {
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex items-center justify-center min-h-screen p-4">
+    <div id="game-container" class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-indigo-600 mb-4">Classroom 7 Up!</h1>
+            <p class="text-lg text-slate-600 mb-6">A fun tool to play 7 Up in the classroom.</p>
+            <div class="max-w-md mx-auto bg-slate-50 border border-slate-200 rounded-lg p-4 mb-8 text-left">
+                <h2 class="text-xl font-bold mb-2">How to Play:</h2>
+                <ol class="list-decimal list-inside space-y-2">
+                    <li>Teacher selects 4 students to come to the front.</li>
+                    <li>We'll create their player profiles together.</li>
+                    <li>The 4 students will tap someone in the class.</li>
+                    <li>The tapped students will try to guess who picked them!</li>
+                </ol>
+            </div>
+            <button id="start-setup-btn" class="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg">
+                Create Players
+            </button>
+        </div>
+        
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="hidden">
+            <h1 class="text-3xl md:text-4xl font-bold text-indigo-600 mb-6 text-center">Create the Players</h1>
+            <p class="text-center text-slate-500 mb-6 max-w-2xl mx-auto">Enter the name of each student at the front and choose an icon to represent them.</p>
+            <form id="setup-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-4 bg-slate-50 rounded-lg border">
+                    <label class="font-semibold md:col-span-1">1.</label>
+                    <input type="text" name="name1" placeholder="Student Name" class="p-2 border rounded-md md:col-span-8" required>
+                    <select name="feature1" class="p-2 border rounded-md bg-white md:col-span-3">
+                        <option value="hat">Hat</option><option value="glasses">Glasses</option><option value="headphones">Headphones</option><option value="keychain">Keychain</option><option value="hoodie" selected>Hoodie</option><option value="book">Book</option><option value="watch">Watch</option>
+                    </select>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-4 bg-slate-50 rounded-lg border">
+                    <label class="font-semibold md:col-span-1">2.</label>
+                    <input type="text" name="name2" placeholder="Student Name" class="p-2 border rounded-md md:col-span-8" required>
+                    <select name="feature2" class="p-2 border rounded-md bg-white md:col-span-3">
+                        <option value="hat">Hat</option><option value="glasses" selected>Glasses</option><option value="headphones">Headphones</option><option value="keychain">Keychain</option><option value="hoodie">Hoodie</option><option value="book">Book</option><option value="watch">Watch</option>
+                    </select>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-4 bg-slate-50 rounded-lg border">
+                    <label class="font-semibold md:col-span-1">3.</label>
+                    <input type="text" name="name3" placeholder="Student Name" class="p-2 border rounded-md md:col-span-8" required>
+                    <select name="feature3" class="p-2 border rounded-md bg-white md:col-span-3">
+                        <option value="hat">Hat</option><option value="glasses">Glasses</option><option value="headphones" selected>Headphones</option><option value="keychain">Keychain</option><option value="hoodie">Hoodie</option><option value="book">Book</option><option value="watch">Watch</option>
+                    </select>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-4 bg-slate-50 rounded-lg border">
+                    <label class="font-semibold md:col-span-1">4.</label>
+                    <input type="text" name="name4" placeholder="Student Name" class="p-2 border rounded-md md:col-span-8" required>
+                    <select name="feature4" class="p-2 border rounded-md bg-white md:col-span-3">
+                        <option value="hat" selected>Hat</option><option value="glasses">Glasses</option><option value="headphones">Headphones</option><option value="keychain">Keychain</option><option value="hoodie">Hoodie</option><option value="book">Book</option><option value="watch">Watch</option>
+                    </select>
+                </div>
+                <div class="text-center pt-4">
+                    <button type="submit" class="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg">
+                        Create Lineup & Start
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tapper Screen -->
+        <div id="tapper-screen" class="hidden text-center">
+            <h1 class="text-3xl font-bold text-indigo-600 mb-4">Time to Tap!</h1>
+            <p class="text-slate-600 text-lg mb-8">The 4 students at the front should now each quietly tap one person in the class. When you're all done, click the button below.</p>
+            <button id="start-guessing-btn" class="btn-primary bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg">
+                Everyone is Tapped!
+            </button>
+        </div>
+
+        <!-- Guessing Screen -->
+        <div id="guessing-screen" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="round-title" class="text-2xl font-bold text-indigo-600">Guess 1</h2>
+            </div>
+
+            <div id="suspects-container" class="mb-6 text-center">
+                <h3 class="text-xl font-semibold mb-2">Who Tapped You?</h3>
+                <p class="text-slate-600 mb-4 text-lg">First, ask the student to <span class="font-bold text-indigo-700">justify their answer</span> with evidence!</p>
+                <p class="text-slate-500 mb-6">Then, click on the player they chose below.</p>
+                <div id="suspects-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- Suspect cards will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="hidden text-center">
+             <h1 class="text-4xl md:text-5xl font-bold text-indigo-600 mb-4">Game Over!</h1>
+             <p class="text-2xl text-slate-600 mb-6">Thanks for playing!</p>
+             
+             <h3 class="text-2xl font-bold text-slate-700 mt-8 mb-4">Final Standings</h3>
+             <div id="final-results-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <!-- Final avatars will be shown here -->
+             </div>
+
+             <div class="max-w-xl mx-auto bg-slate-50 border border-slate-200 rounded-lg p-6 mb-8 text-left">
+                <h2 class="text-xl font-bold mb-3">Key Skill: Justification</h2>
+                <p class="text-slate-700">Remember to explain *why* you made your guess. Using evidence and observation is a powerful skill both in games and in learning!</p>
+             </div>
+             <button id="play-again-btn" class="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg">
+                Play Again
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Modal for feedback -->
+    <div id="feedback-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden">
+        <div id="modal-content" class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+            <div id="modal-icon" class="w-20 h-20 mx-auto mb-4 flex items-center justify-center rounded-full"></div>
+            <h2 id="modal-title" class="text-3xl font-bold mb-2"></h2>
+            <p id="modal-message" class="text-slate-600 mb-6"></p>
+            <div id="modal-buttons"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const startScreen = document.getElementById('start-screen');
+        const setupScreen = document.getElementById('setup-screen');
+        const tapperScreen = document.getElementById('tapper-screen');
+        const guessingScreen = document.getElementById('guessing-screen');
+        const endScreen = document.getElementById('end-screen');
+        const startSetupBtn = document.getElementById('start-setup-btn');
+        const setupForm = document.getElementById('setup-form');
+        const startGuessingBtn = document.getElementById('start-guessing-btn');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        const roundTitle = document.getElementById('round-title');
+        const suspectsGrid = document.getElementById('suspects-grid');
+        const finalResultsGrid = document.getElementById('final-results-grid');
+        const feedbackModal = document.getElementById('feedback-modal');
+        const modalContent = document.getElementById('modal-content');
+        const modalIcon = document.getElementById('modal-icon');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalButtons = document.getElementById('modal-buttons');
+
+        // --- Game Data ---
+        let PLAYER_POOL = [];
+        const MAX_GUESSES = 4;
+
+        // --- Game State ---
+        let currentGuess = 0;
+
+        // --- Game Flow ---
+        function initializeGameFromForm(event) {
+            event.preventDefault();
+            PLAYER_POOL = [];
+            const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EC4899'];
+            const formData = new FormData(setupForm);
+
+            for (let i = 1; i <= 4; i++) {
+                const name = formData.get(`name${i}`);
+                const feature = formData.get(`feature${i}`);
+                if (name && feature) {
+                    PLAYER_POOL.push({
+                        id: i,
+                        name: name,
+                        color: colors[i-1],
+                        feature: feature,
+                        score: 0
+                    });
+                }
+            }
+            
+            currentGuess = 0;
+            setupScreen.classList.add('hidden');
+            tapperScreen.classList.remove('hidden');
+        }
+
+        function startGuessingPhase() {
+            tapperScreen.classList.add('hidden');
+            setupGuessingRound();
+        }
+
+        function setupGuessingRound() {
+            if (currentGuess >= MAX_GUESSES) {
+                endGame();
+                return;
+            }
+            currentGuess++;
+            roundTitle.textContent = `Guess ${currentGuess}`;
+            renderPlayers(PLAYER_POOL);
+            guessingScreen.classList.remove('hidden');
+        }
+
+        function renderPlayers(players) {
+            suspectsGrid.innerHTML = '';
+            players.forEach(player => {
+                const card = document.createElement('div');
+                card.className = 'suspect-card cursor-pointer bg-slate-50 border-2 border-slate-200 rounded-lg p-3 text-center';
+                card.dataset.id = player.id;
+                const playerSVG = createPlayerSVG(player.color, player.feature, player.score);
+                card.innerHTML = `${playerSVG}<p class="font-semibold mt-2">${player.name}</p>`;
+                card.addEventListener('click', () => handleGuess(player.id));
+                suspectsGrid.appendChild(card);
+            });
+        }
+        
+        function handleGuess(guessedId) {
+            guessingScreen.classList.add('hidden');
+            const guessedPlayer = PLAYER_POOL.find(p => p.id === parseInt(guessedId));
+
+            modalTitle.textContent = "Teacher's Verdict";
+            modalMessage.textContent = `The student guessed ${guessedPlayer.name}. Is this correct?`;
+            modalIcon.innerHTML = `<svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            modalIcon.className = 'w-20 h-20 mx-auto mb-4 flex items-center justify-center rounded-full bg-slate-100';
+            modalButtons.innerHTML = `
+                <button onclick="showResult(true, ${guessedPlayer.id})" class="btn-primary bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full text-lg mr-4">Correct</button>
+                <button onclick="showResult(false, ${guessedPlayer.id})" class="btn-primary bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-full text-lg">Incorrect</button>
+            `;
+            showModal();
+        }
+        
+        function showResult(isCorrect, guessedId) {
+            if (isCorrect) {
+                modalTitle.textContent = 'Correct!';
+                modalMessage.textContent = 'Great job! That was the right tapper.';
+                modalIcon.className = 'w-20 h-20 mx-auto mb-4 flex items-center justify-center rounded-full bg-green-100';
+                modalIcon.innerHTML = `<svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else {
+                const guessedPlayer = PLAYER_POOL.find(p => p.id === parseInt(guessedId));
+                if(guessedPlayer) {
+                    guessedPlayer.score = Math.min(3, guessedPlayer.score + 1); // Max score of 3
+                }
+                modalTitle.textContent = 'Not Quite!';
+                modalMessage.textContent = `${guessedPlayer.name} earns a point for being sneaky!`;
+                modalIcon.className = 'w-20 h-20 mx-auto mb-4 flex items-center justify-center rounded-full bg-red-100';
+                modalIcon.innerHTML = `<svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            }
+            modalButtons.innerHTML = `<button onclick="proceed()" class="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full text-lg">Next Guess</button>`;
+        }
+        
+        function proceed() {
+            hideModal();
+            setTimeout(setupGuessingRound, 200);
+        }
+        
+        function endGame() {
+            guessingScreen.classList.add('hidden');
+            
+            finalResultsGrid.innerHTML = '';
+            PLAYER_POOL.forEach(player => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-50 border-2 border-slate-200 rounded-lg p-3 text-center';
+                const playerSVG = createPlayerSVG(player.color, player.feature, player.score);
+                card.innerHTML = `${playerSVG}<p class="font-semibold mt-2">${player.name}</p>`;
+                finalResultsGrid.appendChild(card);
+            });
+
+            endScreen.classList.remove('hidden');
+        }
+
+        function showModal() {
+            feedbackModal.classList.remove('hidden');
+            setTimeout(() => { modalContent.style.transform = 'scale(1)'; }, 10);
+        }
+        
+        function hideModal() {
+            modalContent.style.transform = 'scale(0.95)';
+            setTimeout(() => { feedbackModal.classList.add('hidden'); }, 200);
+        }
+        
+        function createPlayerSVG(color, feature, score) {
+            let featureSvg = '';
+            switch (feature) {
+                case 'hat': featureSvg = `<path d="M10 20 C10 10, 30 10, 30 20 L 5 20 L 35 20 M 10 20 Q 20 18, 30 20" fill="${color}" stroke="#4B5563" stroke-width="1.5"/>`; break;
+                case 'glasses': featureSvg = `<circle cx="14" cy="22" r="4" stroke="#4B5563" stroke-width="1.5" fill="none"/> <circle cx="26" cy="22" r="4" stroke="#4B5563" stroke-width="1.5" fill="none"/> <line x1="18" y1="22" x2="22" y2="22" stroke="#4B5563" stroke-width="1.5"/>`; break;
+                case 'headphones': featureSvg = `<path d="M8 30 C0 15, 40 15, 32 30" stroke="${color}" stroke-width="4" fill="none"/> <rect x="5" y="30" width="6" height="8" fill="${color}" rx="2"/> <rect x="29" y="30" width="6" height="8" fill="${color}" rx="2"/>`; break;
+                case 'keychain': featureSvg = `<g transform="translate(28, 28) scale(0.5)"> <path d="M20.8,6.1l-4.8-4.8c-1-1-2.5-1-3.5,0l-8.8,8.8c-1,1-1,2.5,0,3.5l4.8,4.8c1,1,2.5,1,3.5,0l8.8-8.8 C21.8,8.6,21.8,7.1,20.8,6.1z M5.6,12.8L4.2,11.4c-0.4-0.4-0.4-1,0-1.4l7.2-7.2c0.4-0.4,1-0.4,1.4,0l1.4,1.4L5.6,12.8z" fill="${color}"/></g>`; break;
+                case 'hoodie': featureSvg = `<path d="M5 40 Q20 10, 35 40 Z" fill="${color}" opacity="0.6"/> <path d="M10 15 Q20 5, 30 15 L 35 40 L 5 40 Z" fill="${color}" stroke="#4B5563" stroke-width="1.5"/>`; break;
+                case 'book': featureSvg = `<rect x="5" y="25" width="30" height="15" fill="${color}" rx="2" stroke="#4B5563" stroke-width="1"/> <line x1="20" y1="25" x2="20" y2="40" stroke="#FFFFFF" stroke-width="1.5"/>`; break;
+                case 'watch': featureSvg = `<rect x="5" y="32" width="5" height="8" rx="2" fill="${color}" /><rect x="5" y="34" width="5" height="4" rx="1" fill="#FFFFFF" opacity="0.5"/>`; break;
+            }
+
+            let petsSvg = '';
+            if (score >= 1) { // Hamster
+                petsSvg += `<g transform="translate(-8, 38)"><path d="M 10,0 C 4.5,0 0,4.5 0,10 H 20 C 20,4.5 15.5,0 10,0 Z" fill="#D2B48C"/><circle cx="6" cy="4" r="1.5" fill="black"/><circle cx="14" cy="4" r="1.5" fill="black"/><path d="M 8,7 Q 10,8 12,7" stroke="black" stroke-width="0.5" fill="none"/></g>`;
+            }
+            if (score >= 2) { // Unicorn
+                 petsSvg += `<g transform="translate(30, 15) scale(0.6)"><path d="M15 4C15 4 16 0 20 0C24 0 25 4 25 4C25 4 27 6 25 10C23 14 17 14 15 10C13 6 15 4 15 4Z" fill="white" stroke="#4B5563" stroke-width="2.5"/><path d="M20 0L22 4L20 8L18 4L20 0" fill="#FFD700"/><path d="M20 0L21 2L20 4L19 2L20 0" fill="#FF69B4"/><circle cx="23" cy="5" r="1" fill="#4B5563"/></g>`;
+            }
+            if (score >= 3) { // Dragon
+                 petsSvg += `<g transform="translate(35, 40) scale(0.8)"><path d="M5 10C1 5 5 0 10 0C15 0 19 5 15 10C15 15 5 15 5 10Z" fill="#228B22"/><path d="M10 0L8 2L10 4L12 2Z" fill="#ADFF2F"/><circle cx="8" cy="4" r="1" fill="red"/></g>`;
+            }
+
+            return `<svg viewBox="0 -5 50 60" xmlns="http://www.w3.org/2000/svg" class="w-24 h-24 mx-auto"><g>${petsSvg}</g><circle cx="20" cy="25" r="10" fill="#E5E7EB" stroke="#4B5563" stroke-width="1.5"/><circle cx="16" cy="24" r="1.5" fill="#4B5563"/><circle cx="24" cy="24" r="1.5" fill="#4B5563"/><path d="M17 30 Q20 32, 23 30" stroke="#4B5563" stroke-width="1.5" fill="none"/><rect x="15" y="35" width="10" height="15" fill="${color}" rx="3"/>${featureSvg}</svg>`;
+        }
+
+        // --- Event Listeners ---
+        startSetupBtn.addEventListener('click', () => {
+            startScreen.classList.add('hidden');
+            setupScreen.classList.remove('hidden');
+        });
+        setupForm.addEventListener('submit', initializeGameFromForm);
+        startGuessingBtn.addEventListener('click', startGuessingPhase);
+        playAgainBtn.addEventListener('click', () => {
+            endScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
+
