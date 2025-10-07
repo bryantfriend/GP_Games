@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topic Sentence Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f9ff;
+            /* Prevent pull-to-refresh and other touch actions on the body */
+            overscroll-behavior-y: contain;
+        }
+        .game-card {
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            border: 4px solid #e0f2fe;
+        }
+        .btn {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .word-block {
+            cursor: grab;
+            user-select: none;
+            touch-action: none; /* Important for preventing default touch behaviors like scrolling */
+        }
+        .word-block:active {
+            cursor: grabbing;
+        }
+        .drop-zone {
+            border: 3px dashed #93c5fd;
+            min-height: 80px;
+            transition: background-color 0.3s ease;
+        }
+        .drop-zone.drag-over {
+            background-color: #dbeafe;
+        }
+        .drop-zone .word-block {
+            cursor: default;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            animation: zoom-in 0.3s ease-out;
+        }
+        @keyframes zoom-in {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .wiggle {
+            animation: wiggle 0.5s ease-in-out;
+        }
+        @keyframes wiggle {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px) rotate(-2deg); }
+            75% { transform: translateX(5px) rotate(2deg); }
+        }
+        .correct-answer {
+            animation: pulse-green 1s;
+        }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        .hint-highlight {
+            animation: pulse-yellow 1.5s;
+        }
+        @keyframes pulse-yellow {
+            0% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(250, 204, 21, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="game-container" class="w-full max-w-4xl mx-auto">
+        
+        <!-- Start Screen -->
+        <div id="start-screen" class="game-card text-center p-8 md:p-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-blue-600 mb-4">Topic Sentence Builder</h1>
+            <p class="text-slate-600 text-lg mb-8">Drag the blocks to build a strong topic sentence. Race against the clock and get the highest score!</p>
+            <div class="flex justify-center">
+                 <svg class="w-24 h-24 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                </svg>
+            </div>
+            <button id="start-btn" class="btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-10 rounded-full text-xl">
+                Start Game
+            </button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md border-2 border-slate-100">
+                    <svg class="w-6 h-6 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.007z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-xl font-bold text-slate-700">Score: <span id="score">0</span></span>
+                </div>
+                <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md border-2 border-slate-100">
+                     <svg class="w-6 h-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-xl font-bold text-slate-700">Time: <span id="timer">60</span>s</span>
+                </div>
+            </div>
+            <div class="game-card p-6 md:p-8">
+                <div class="text-center mb-6">
+                    <p class="text-slate-500">WEAK SENTENCE:</p>
+                    <p id="bad-sentence" class="text-xl text-slate-700 font-semibold line-through">I like dogs.</p>
+                </div>
+                <div id="drop-zone" class="drop-zone w-full p-4 rounded-xl flex flex-wrap items-center justify-center gap-2 bg-slate-50 mb-6"></div>
+                <div id="word-pool" class="w-full p-4 rounded-xl flex flex-wrap items-center justify-center gap-3 bg-blue-100 border-2 border-blue-200 min-h-[100px]"></div>
+                <div class="text-center mt-6">
+                    <!-- Check button removed for instant feedback -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard Screen -->
+        <div id="leaderboard-screen" class="hidden game-card text-center p-8 md:p-12">
+            <h2 class="text-4xl md:text-5xl font-bold text-blue-600 mb-6">Leaderboard</h2>
+            <div id="leaderboard-list" class="space-y-2 mb-8 max-w-md mx-auto text-left">
+                <!-- Scores will be dynamically inserted here -->
+            </div>
+            <button id="restart-game-btn" class="btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-10 rounded-full text-xl">
+                Play Again
+            </button>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="game-over-modal" class="modal">
+            <div class="modal-content game-card text-center p-8 md:p-12 max-w-lg w-full">
+                <h2 class="text-4xl md:text-5xl font-bold text-rose-500 mb-4">Time's Up!</h2>
+                <svg class="w-24 h-24 text-rose-400 mb-4 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                </svg>
+                <p class="text-slate-600 text-2xl mb-2">Your final score is:</p>
+                <p id="final-score" class="text-6xl font-bold text-slate-800 mb-6">0</p>
+                <div id="leaderboard-form">
+                     <p class="text-slate-600 text-lg mb-3">Enter your name for the leaderboard!</p>
+                     <input type="text" id="player-name" placeholder="Enter your name" class="text-center w-full max-w-xs p-3 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition mb-4">
+                     <button id="submit-score-btn" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full text-lg">Save Score</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const startBtn = document.getElementById('start-btn');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const badSentenceDisplay = document.getElementById('bad-sentence');
+        const dropZone = document.getElementById('drop-zone');
+        const wordPool = document.getElementById('word-pool');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const leaderboardScreen = document.getElementById('leaderboard-screen');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const restartGameBtn = document.getElementById('restart-game-btn');
+        const playerNameInput = document.getElementById('player-name');
+        const submitScoreBtn = document.getElementById('submit-score-btn');
+
+        // Game Data
+        const questionBank = [
+            { badSentence: "I like dogs.", goodSentenceParts: ["Dogs make", "great pets because", "they are loyal", "and friendly."], distractors: ["chase cars", "are small"] }, { badSentence: "Pollution is bad.", goodSentenceParts: ["Pollution harms", "animals, plants,", "and human health", "around the world."], distractors: ["is messy", "from factories"] }, { badSentence: "Video games are fun.", goodSentenceParts: ["Playing video games", "can improve", "problem-solving skills", "and reaction time."], distractors: ["cost money", "with friends"] }, { badSentence: "School lunches are gross.", goodSentenceParts: ["Healthier school lunches", "are essential for", "student well-being", "and academic success."], distractors: ["on Mondays", "have pizza"] }, { badSentence: "Reading is important.", goodSentenceParts: ["Reading books", "expands vocabulary", "and stimulates", "a person's imagination."], distractors: ["at the library", "takes time"] }, { badSentence: "History is boring.", goodSentenceParts: ["Studying history helps", "us understand", "the present and", "avoid past mistakes."], distractors: ["is about old stuff", "has long chapters"] }, { badSentence: "Space is big.", goodSentenceParts: ["The universe contains", "billions of galaxies,", "each with millions", "or billions of stars."], distractors: ["is dark", "has aliens"] }, { badSentence: "Exercise is good.", goodSentenceParts: ["Regular physical activity", "strengthens the heart,", "improves mood, and", "increases energy levels."], distractors: ["makes you tired", "at the gym"] }, { badSentence: "Social media is popular.", goodSentenceParts: ["Social media platforms", "have transformed", "how people communicate", "and share information."], distractors: ["is on my phone", "has funny videos"] }, { badSentence: "The internet is useful.", goodSentenceParts: ["The internet provides", "access to vast amounts", "of information for", "research and learning."], distractors: ["can be slow", "has games"] }, { badSentence: "Trees are good.", goodSentenceParts: ["Forests play a", "crucial role in", "regulating Earth's climate", "by absorbing carbon dioxide."], distractors: ["are green", "have leaves"] }, { badSentence: "Music is nice.", goodSentenceParts: ["Listening to music", "can reduce stress,", "improve concentration,", "and lift one's spirits."], distractors: ["is loud", "on the radio"] }, { badSentence: "Art is pretty.", goodSentenceParts: ["Creating and appreciating", "art can foster", "creativity, empathy, and", "cultural understanding."], distractors: ["in a museum", "is colorful"] }, { badSentence: "Volunteering is work.", goodSentenceParts: ["Volunteering in the", "community helps others", "and provides a", "sense of purpose."], distractors: ["on weekends", "is hard"] }, { badSentence: "Recycling is a chore.", goodSentenceParts: ["Recycling conserves", "natural resources,", "reduces pollution, and", "saves landfill space."], distractors: ["uses blue bins", "on Tuesdays"] }, { badSentence: "Homework is pointless.", goodSentenceParts: ["Completing homework", "reinforces classroom learning", "and develops", "responsible study habits."], distractors: ["is too much", "I don't like it"] }, { badSentence: "The sun is bright.", goodSentenceParts: ["The sun is", "the center of our solar system,", "providing the light and heat", "necessary for life on Earth."], distractors: ["is yellow", "is hot"] }, { badSentence: "Water is wet.", goodSentenceParts: ["Access to clean", "drinking water is", "essential for human health", "and sanitation."], distractors: ["from the tap", "is clear"] }, { badSentence: "Movies are cool.", goodSentenceParts: ["Filmmaking is a", "complex art form that", "combines storytelling,", "visuals, and sound."], distractors: ["are long", "at the theater"] }, { badSentence: "Dinosaurs were big.", goodSentenceParts: ["The study of dinosaurs", "provides valuable insights", "into Earth's prehistoric", "ecosystems and evolution."], distractors: ["had sharp teeth", "lived long ago"] }, { badSentence: "Bees are scary.", goodSentenceParts: ["Bees are vital", "pollinators that are", "essential for the reproduction", "of many plants."], distractors: ["can sting", "are yellow and black"] }, { badSentence: "Friends are nice.", goodSentenceParts: ["Strong friendships contribute", "significantly to", "mental and emotional", "well-being."], distractors: ["at my house", "play games"] }, { badSentence: "Family is important.", goodSentenceParts: ["Family provides a", "foundational support system", "that shapes an", "individual's values and identity."], distractors: ["eat dinner together", "go on trips"] }, { badSentence: "Sleep is good.", goodSentenceParts: ["Getting enough quality", "sleep is crucial for", "physical health,", "cognitive function, and safety."], distractors: ["in my bed", "at night"] }, { badSentence: "Vegetables are yucky.", goodSentenceParts: ["A diet rich in", "vegetables provides", "essential vitamins and minerals", "for a healthy body."], distractors: ["are green", "I don't like broccoli"] }, { badSentence: "Money is everything.", goodSentenceParts: ["Financial literacy is", "a critical life skill", "that enables responsible", "budgeting and saving."], distractors: ["I want more", "is in my wallet"] }, { badSentence: "Sports are fun.", goodSentenceParts: ["Participating in team sports", "teaches valuable lessons", "about teamwork, discipline,", "and perseverance."], distractors: ["after school", "winning is fun"] }, { badSentence: "Math is hard.", goodSentenceParts: ["Mathematics is the", "foundational language of", "science and technology,", "essential for innovation."], distractors: ["has too many numbers", "I'm bad at it"] }, { badSentence: "The ocean is deep.", goodSentenceParts: ["The Earth's oceans", "drive global weather systems", "and support a vast", "diversity of marine life."], distractors: ["is salty", "has sharks"] }, { badSentence: "Farming is dirty.", goodSentenceParts: ["Modern agriculture is", "a complex industry", "responsible for feeding", "the world's population."], distractors: ["uses tractors", "is in the country"] }, { badSentence: "Zoos have animals.", goodSentenceParts: ["Modern zoos play", "a critical role in", "wildlife conservation through", "breeding programs and research."], distractors: ["sell popcorn", "are fun to visit"] }, { badSentence: "Computers are smart.", goodSentenceParts: ["Computers process", "vast amounts of data", "using complex algorithms", "to perform tasks."], distractors: ["have a mouse", "are expensive"] }, { badSentence: "Bugs are gross.", goodSentenceParts: ["Insects are the", "most diverse group", "of animals on Earth,", "vital to all ecosystems."], distractors: ["have six legs", "they fly around"] }, { badSentence: "Cooking is work.", goodSentenceParts: ["Learning to cook is", "an important life skill", "that promotes healthy eating", "and self-sufficiency."], distractors: ["in the kitchen", "makes a mess"] }, { badSentence: "Cars go fast.", goodSentenceParts: ["The invention of the", "automobile revolutionized", "transportation, industry,", "and personal freedom."], distractors: ["have four wheels", "need gas"] }, { badSentence: "The moon is in the sky.", goodSentenceParts: ["The Moon's gravitational", "pull is the primary", "cause of Earth's", "ocean tides."], distractors: ["is white", "comes out at night"] }, { badSentence: "Volcanoes are mountains.", goodSentenceParts: ["Volcanic eruptions", "can dramatically alter", "landscapes and affect", "global climate patterns."], distractors: ["are tall", "have lava"] }, { badSentence: "Weather happens.", goodSentenceParts: ["Weather patterns are", "driven by the complex", "interaction of heat,", "air pressure, and moisture."], distractors: ["it is sunny today", "I like snow"] }, { badSentence: "Gravity is a thing.", goodSentenceParts: ["Gravity is the", "fundamental force", "that governs the motion", "of planets and galaxies."], distractors: ["makes things fall", "is strong"] }, { badSentence: "DNA is complicated.", goodSentenceParts: ["DNA contains the", "genetic instructions for", "the development and functioning", "of all living organisms."], distractors: ["is small", "in our cells"] }, { badSentence: "Writing is hard.", goodSentenceParts: ["Developing strong", "writing skills is", "essential for clear", "communication and success."], distractors: ["takes a long time", "uses a pencil"] }, { badSentence: "Languages are different.", goodSentenceParts: ["Learning a second", "language can improve", "cognitive abilities and", "foster cross-cultural connections."], distractors: ["some are hard", "people talk funny"] }, { badSentence: "The government makes rules.", goodSentenceParts: ["Governments are established", "to provide services,", "ensure public safety,", "and protect citizens' rights."], distractors: ["in a big building", "the president is in charge"] }, { badSentence: "My brain thinks.", goodSentenceParts: ["The human brain", "is a complex organ", "responsible for thought,", "memory, and emotion."], distractors: ["is in my head", "is squishy"] }, { badSentence: "Electricity is useful.", goodSentenceParts: ["The discovery of", "electricity powered the", "second Industrial Revolution", "and modern technology."], distractors: ["comes from outlets", "can shock you"] }, { badSentence: "Cities are big.", goodSentenceParts: ["Urban areas serve", "as major hubs for", "commerce, culture,", "and innovation."], distractors: ["have tall buildings", "are noisy"] }, { badSentence: "Fossils are old rocks.", goodSentenceParts: ["Fossils provide", "invaluable evidence", "about the history of life", "and the evolution of species."], distractors: ["are found in the ground", "are from dinosaurs"] }, { badSentence: "Cartoons are for kids.", goodSentenceParts: ["Animation is a", "versatile storytelling medium", "that appeals to", "audiences of all ages."], distractors: ["are on Saturday mornings", "are funny"] }, { badSentence: "Libraries have books.", goodSentenceParts: ["Public libraries provide", "free and equitable", "access to information,", "resources, and technology."], distractors: ["you have to be quiet", "have librarians"] }, { badSentence: "My phone is cool.", goodSentenceParts: ["Smartphones have become", "powerful handheld computers", "that have reshaped", "modern communication."], distractors: ["has a camera", "I can text my friends"] }
+        ];
+
+        // Game State
+        let score = 0;
+        let timeLeft = 60;
+        let timerInterval;
+        let hintInterval;
+        let currentQuestionIndex = 0;
+        let gameQuestions = [];
+        let draggedItem = null;
+        let leaderboard = [];
+        let lastTouchOverElement = null;
+
+        // --- Core Game Logic ---
+        function startGame() {
+            score = 0;
+            timeLeft = 60;
+            currentQuestionIndex = 0;
+            scoreDisplay.textContent = score;
+            timerDisplay.textContent = timeLeft;
+
+            startScreen.classList.add('hidden');
+            leaderboardScreen.classList.add('hidden');
+            gameOverModal.style.display = 'none';
+            gameScreen.classList.remove('hidden');
+            
+            gameQuestions = [...questionBank];
+            shuffleArray(gameQuestions);
+            loadLevel(currentQuestionIndex);
+            startTimer();
+            
+            document.body.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.body.addEventListener('touchend', handleTouchEnd);
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function loadLevel(questionIndex) {
+            if (questionIndex >= gameQuestions.length) {
+                endGame();
+                return;
+            }
+            const level = gameQuestions[questionIndex];
+            badSentenceDisplay.textContent = level.badSentence;
+            dropZone.innerHTML = '';
+            wordPool.innerHTML = '';
+            const allWords = [...level.goodSentenceParts, ...level.distractors];
+            shuffleArray(allWords);
+            allWords.forEach(word => {
+                const block = createWordBlock(word);
+                wordPool.appendChild(block);
+            });
+            startHintTimer();
+        }
+        
+        function createWordBlock(text) {
+            const block = document.createElement('div');
+            block.textContent = text;
+            block.className = 'word-block bg-white text-blue-800 font-semibold py-2 px-4 rounded-lg shadow-md border-2 border-blue-200 hover:bg-yellow-100 transition-colors';
+            block.draggable = true;
+            block.id = 'block-' + Math.random().toString(36).substr(2, 9);
+            block.addEventListener('dragstart', handleDragStart);
+            block.addEventListener('dragend', handleDragEnd);
+            block.addEventListener('touchstart', handleTouchStart, { passive: true });
+            return block;
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            stopHintTimer();
+            document.body.removeEventListener('touchmove', handleTouchMove);
+            document.body.removeEventListener('touchend', handleTouchEnd);
+            finalScoreDisplay.textContent = score;
+            playerNameInput.value = '';
+            playerNameInput.classList.remove('border-red-500');
+            gameOverModal.style.display = 'flex';
+            gameScreen.classList.add('hidden');
+        }
+        
+        function processDrop(droppedItem, targetContainer) {
+            if (!droppedItem || !targetContainer) return;
+
+            // Only process drops into the drop-zone
+            if (targetContainer.id === 'drop-zone') {
+                stopHintTimer();
+                const correctParts = gameQuestions[currentQuestionIndex].goodSentenceParts;
+                const numDropped = dropZone.children.length;
+                const nextCorrectText = correctParts[numDropped];
+
+                // Check if the dropped block is the correct one for the current position
+                if (droppedItem.textContent === nextCorrectText) {
+                    // Correct drop
+                    score += 5;
+                    scoreDisplay.textContent = score;
+                    targetContainer.appendChild(droppedItem);
+                    droppedItem.classList.add('bg-green-100', 'border-green-300', 'pointer-events-none');
+                    droppedItem.draggable = false; // Lock it in place
+
+                    // Check if the sentence is now complete
+                    if (dropZone.children.length === correctParts.length) {
+                        score += 10; // Completion bonus
+                        scoreDisplay.textContent = score;
+                        dropZone.classList.add('correct-answer');
+                        setTimeout(() => {
+                            dropZone.classList.remove('correct-answer');
+                            currentQuestionIndex++;
+                            loadLevel(currentQuestionIndex);
+                        }, 1200);
+                    } else {
+                        // Not complete yet, restart hint timer for the next block
+                        startHintTimer();
+                    }
+                } else {
+                    // Incorrect drop
+                    score = Math.max(0, score - 2);
+                    scoreDisplay.textContent = score;
+                    droppedItem.classList.add('wiggle');
+                    setTimeout(() => {
+                        droppedItem.classList.remove('wiggle');
+                        wordPool.appendChild(droppedItem); // Return to pool
+                        startHintTimer();
+                    }, 500);
+                }
+            } else {
+                 // If dropped anywhere else (like back in the pool), just return it.
+                 wordPool.appendChild(droppedItem);
+            }
+        }
+
+
+        // --- Drag and Drop Logic (Mouse & Touch) ---
+        function handleDragStart(e) {
+            draggedItem = e.target;
+            setTimeout(() => e.target.style.opacity = '0.5', 0);
+        }
+        function handleDragEnd(e) {
+            setTimeout(() => {
+                if(draggedItem) draggedItem.style.opacity = '1';
+                draggedItem = null;
+            }, 0);
+        }
+        function handleTouchStart(e) {
+            if (e.target.classList.contains('word-block')) {
+                draggedItem = e.target;
+                draggedItem.style.opacity = '0.5';
+            }
+        }
+        function handleTouchMove(e) {
+            if (!draggedItem) return;
+            e.preventDefault();
+            let touch = e.touches[0];
+            let elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
+            let dropTarget = elementUnderTouch ? elementUnderTouch.closest('#drop-zone, #word-pool') : null;
+
+            if (lastTouchOverElement && lastTouchOverElement !== dropTarget) {
+                lastTouchOverElement.classList.remove('drag-over');
+            }
+            if (dropTarget) {
+                dropTarget.classList.add('drag-over');
+                lastTouchOverElement = dropTarget;
+            } else {
+                if(lastTouchOverElement) lastTouchOverElement.classList.remove('drag-over');
+                lastTouchOverElement = null;
+            }
+        }
+        function handleTouchEnd(e) {
+            if (!draggedItem) return;
+            const item = draggedItem; // Keep a reference
+            item.style.opacity = '1';
+            
+            if (lastTouchOverElement) {
+                lastTouchOverElement.classList.remove('drag-over');
+                processDrop(item, lastTouchOverElement);
+            } else {
+                wordPool.appendChild(item);
+            }
+            
+            draggedItem = null;
+            lastTouchOverElement = null;
+        }
+        function handleDragOver(e) { e.preventDefault(); }
+        function handleDragEnter(e) {
+            const target = e.target.closest('#drop-zone, #word-pool');
+            if(target) target.classList.add('drag-over');
+        }
+        function handleDragLeave(e) {
+            const target = e.target.closest('#drop-zone, #word-pool');
+            if(target) target.classList.remove('drag-over');
+        }
+        function handleDrop(e) {
+            e.preventDefault();
+            const target = e.target.closest('#drop-zone, #word-pool');
+            if (target) {
+                target.classList.remove('drag-over');
+                processDrop(draggedItem, target);
+            } else if (draggedItem) {
+                wordPool.appendChild(draggedItem);
+            }
+        }
+        
+        // --- Hint System & Helpers ---
+        function startHintTimer() {
+            stopHintTimer();
+            hintInterval = setInterval(() => {
+                if (currentQuestionIndex >= gameQuestions.length) return;
+                const correctParts = gameQuestions[currentQuestionIndex].goodSentenceParts;
+                const numDropped = dropZone.children.length;
+                if (numDropped < correctParts.length) {
+                    const nextCorrectText = correctParts[numDropped];
+                    const hintBlock = Array.from(wordPool.children).find(block => block.textContent === nextCorrectText);
+                    if (hintBlock) {
+                        hintBlock.classList.add('hint-highlight');
+                        setTimeout(() => { if (hintBlock) hintBlock.classList.remove('hint-highlight'); }, 1500);
+                    }
+                }
+            }, 5000);
+        }
+        function stopHintTimer() {
+            clearInterval(hintInterval);
+            const hintedBlock = document.querySelector('.hint-highlight');
+            if (hintedBlock) hintedBlock.classList.remove('hint-highlight');
+        }
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // --- Leaderboard Logic ---
+        function showLeaderboard() {
+            gameScreen.classList.add('hidden');
+            gameOverModal.style.display = 'none';
+            leaderboardScreen.classList.remove('hidden');
+
+            leaderboardList.innerHTML = '';
+            const topScores = leaderboard.slice(0, 10);
+
+            if(topScores.length === 0) {
+                leaderboardList.innerHTML = "<p class='text-center text-slate-500'>No scores yet. Be the first!</p>";
+            } else {
+                topScores.forEach((entry, index) => {
+                    const li = document.createElement('div');
+                    li.className = 'flex items-center justify-between p-2 rounded-md even:bg-slate-100';
+                    li.innerHTML = `
+                        <span class="flex items-center">
+                            <span class="font-bold w-8 text-center text-slate-500">${index + 1}.</span>
+                            <span class="text-slate-800">${entry.name}</span>
+                        </span>
+                        <span class="font-bold text-blue-600">${entry.score}</span>`;
+                    leaderboardList.appendChild(li);
+                });
+            }
+        }
+
+        // --- Event Listeners ---
+        startBtn.addEventListener('click', startGame);
+        
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragenter', handleDragEnter);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+        wordPool.addEventListener('dragover', handleDragOver);
+        wordPool.addEventListener('dragenter', handleDragEnter);
+        wordPool.addEventListener('dragleave', handleDragLeave);
+        wordPool.addEventListener('drop', handleDrop);
+
+        submitScoreBtn.addEventListener('click', () => {
+            const name = playerNameInput.value.trim();
+            if (name) {
+                leaderboard.push({ name: name, score: score });
+                leaderboard.sort((a, b) => b.score - a.score);
+                showLeaderboard();
+            } else {
+                playerNameInput.classList.add('border-red-500');
+                setTimeout(() => playerNameInput.classList.remove('border-red-500'), 1000);
+            }
+        });
+
+        restartGameBtn.addEventListener('click', () => {
+            leaderboardScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        });
+
+    </script>
+</body>
+</html>
+
