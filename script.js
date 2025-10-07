@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 
         {
             fileName: 'sevenup.html',
-            title: 'Heads up 7 up (but actually it's 4) 🙈'
+            title: 'Heads up 7 up (but actually its 4) 🙈'
         }, 
         {
             fileName: 'groupnotes.html',
