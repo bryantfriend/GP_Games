@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'goodtopicsentenc.html',
+            title: 'Is this topic sentence good?'
+        }, 
+        {
             fileName: 'topicsentenc.html',
             title: 'Topic Sentence or Chicken? 🐔'
         },         
