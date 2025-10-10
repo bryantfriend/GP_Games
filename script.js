@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'topicsentenc.html',
+            title: 'Topic Sentence or Chicken? 🐔'
+        },         
+        {
             fileName: 'topicsentencebuilder.html',
             title: 'Topic Sentence Racer 🏃🏻‍♂️'
         }, 
