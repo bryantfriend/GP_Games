@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hook or Not? - Classroom Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .card {
+            background-color: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        .btn-hook {
+            background-color: #22c55e; /* green-500 */
+            color: white;
+        }
+        .btn-not {
+            background-color: #ef4444; /* red-500 */
+            color: white;
+        }
+        #feedback.correct {
+            color: #22c55e;
+        }
+        #feedback.incorrect {
+            color: #ef4444;
+        }
+        .icon {
+            width: 24px;
+            height: 24px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="w-full max-w-4xl mx-auto text-center">
+        <div class="card">
+             <!-- Correct/Incorrect Icons SVG Definition -->
+            <svg width="0" height="0" class="hidden">
+                <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="icon-check">
+                    <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </symbol>
+                <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="icon-x">
+                    <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </symbol>
+            </svg>
+            
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2" data-translate="main_title">Hook or Not?</h1>
+            <p class="text-gray-500 mb-8" data-translate="main_subtitle">Is this statement a good hook?</p>
+
+            <!-- Language Selection Screen -->
+            <div id="language-selection-screen">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-8" data-translate="language_selection_title">Choose Your Language</h2>
+                <div class="flex flex-col md:flex-row gap-4 justify-center">
+                    <button data-lang="en" class="lang-btn btn bg-blue-500 text-white w-full md:w-auto">English</button>
+                    <button data-lang="zh" class="lang-btn btn bg-red-500 text-white w-full md:w-auto">中文 (Chinese)</button>
+                    <button data-lang="tr" class="lang-btn btn bg-green-600 text-white w-full md:w-auto">Türkçe (Turkish)</button>
+                </div>
+            </div>
+
+            <!-- Instructions Screen -->
+            <div id="instructions-screen" class="hidden">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4" data-translate="instructions_title">Welcome!</h2>
+                <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto" data-translate="instructions_text">Run to the HOOK side if it's a good hook!</p>
+                <div class="flex flex-col md:flex-row gap-4 justify-center">
+                     <button id="back-btn" class="btn bg-gray-500 text-white w-full md:w-auto" data-translate="back_btn">Change Language</button>
+                    <button id="start-btn" class="btn bg-blue-500 text-white w-full md:w-auto" data-translate="start_btn">Start Game</button>
+                </div>
+            </div>
+
+
+            <!-- Game Screen -->
+            <div id="game-screen" class="hidden">
+                <div id="statement-card" class="bg-blue-500 text-white rounded-lg p-8 md:p-12 mb-8 min-h-[200px] flex items-center justify-center">
+                    <p id="statement" class="text-2xl md:text-3xl font-semibold"></p>
+                </div>
+
+                <div id="choices" class="flex flex-col md:flex-row gap-4 justify-center mb-8">
+                    <button id="hook-btn" class="btn btn-hook w-full md:w-auto">
+                         <svg class="icon"><use href="#icon-check"></use></svg>
+                         <span data-translate="hook_btn">HOOK!</span>
+                    </button>
+                    <button id="not-hook-btn" class="btn btn-not w-full md:w-auto">
+                        <svg class="icon"><use href="#icon-x"></use></svg>
+                         <span data-translate="not_hook_btn">NOT A HOOK!</span>
+                    </button>
+                </div>
+                 <div id="score-display" class="text-xl font-bold text-gray-700"><span data-translate="score_text">Score</span>: <span id="score">0</span></div>
+            </div>
+
+            <!-- Feedback Screen -->
+            <div id="feedback-screen" class="hidden">
+                 <h2 id="feedback" class="text-4xl font-bold mb-4"></h2>
+                 <p id="explanation" class="text-gray-600 text-lg mb-8 max-w-2xl mx-auto"></p>
+                 <button id="next-btn" class="btn bg-blue-500 text-white w-full md:w-auto" data-translate="next_btn">Next Question</button>
+            </div>
+            
+            <!-- End Screen -->
+            <div id="end-screen" class="hidden">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4" data-translate="end_title">Great Job!</h2>
+                <p class="text-2xl text-gray-600 mb-8"><span data-translate="final_score_text">Your final score is</span>: <span id="final-score" class="font-bold text-blue-500"></span></p>
+                <button id="restart-btn" class="btn bg-blue-500 text-white w-full md:w-auto" data-translate="restart_btn">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ... SCRIPT START ...
+        const languageSelectionScreen = document.getElementById('language-selection-screen');
+        const instructionsScreen = document.getElementById('instructions-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const feedbackScreen = document.getElementById('feedback-screen');
+        const endScreen = document.getElementById('end-screen');
+
+        const langBtns = document.querySelectorAll('.lang-btn');
+        const backBtn = document.getElementById('back-btn');
+        const startBtn = document.getElementById('start-btn');
+        const hookBtn = document.getElementById('hook-btn');
+        const notHookBtn = document.getElementById('not-hook-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+
+        const statementEl = document.getElementById('statement');
+        const scoreEl = document.getElementById('score');
+        const feedbackEl = document.getElementById('feedback');
+        const explanationEl = document.getElementById('explanation');
+        const finalScoreEl = document.getElementById('final-score');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let shuffledQuestions = [];
+        let selectedLanguage = 'en';
+        
+        const uiText = {
+            en: {
+                main_title: "Hook or Not?",
+                main_subtitle: "Is this statement a good hook?",
+                language_selection_title: "Choose Your Language",
+                instructions_title: "Welcome, 6th Graders!",
+                instructions_text: "When a statement appears, decide if it's a good 'hook' to start a paper. If it is, run to the side of the room labeled HOOK! If it's not, run to the side labeled NOT A HOOK!",
+                back_btn: "Change Language",
+                start_btn: "Start Game",
+                hook_btn: "HOOK!",
+                not_hook_btn: "NOT A HOOK!",
+                score_text: "Score",
+                next_btn: "Next Question",
+                end_title: "Great Job!",
+                final_score_text: "Your final score is",
+                restart_btn: "Play Again",
+                feedback_correct: "Correct!",
+                feedback_incorrect: "Not Quite!"
+            },
+            zh: {
+                main_title: "是不是一个好的引子？",
+                main_subtitle: "这个陈述是一个好的引子吗？",
+                language_selection_title: "选择你的语言",
+                instructions_title: "欢迎，六年级同学们！",
+                instructions_text: "当一个陈述出现时，判断它是否是一个好的'引子'来开始一篇文章。如果是，就跑到标有“是引子！”的那一边。如果不是，就跑到标有“不是引子！”的那一边。",
+                back_btn: "更换语言",
+                start_btn: "开始游戏",
+                hook_btn: "是引子！",
+                not_hook_btn: "不是引子！",
+                score_text: "得分",
+                next_btn: "下一个问题",
+                end_title: "做得好！",
+                final_score_text: "你的最终得分是",
+                restart_btn: "再玩一次",
+                feedback_correct: "正确！",
+                feedback_incorrect: "不太对！"
+            },
+            tr: {
+                main_title: "Kanca mı, Değil mi?",
+                main_subtitle: "Bu ifade iyi bir kanca mı?",
+                language_selection_title: "Dilinizi Seçin",
+                instructions_title: "Hoş Geldiniz 6. Sınıflar!",
+                instructions_text: "Bir ifade belirdiğinde, bir makaleye başlamak için iyi bir 'kanca' olup olmadığına karar verin. Eğer öyleyse, odanın KANCA! etiketli tarafına koşun. Değilse, KANCA DEĞİL! etiketli tarafına koşun.",
+                back_btn: "Dili Değiştir",
+                start_btn: "Oyuna Başla",
+                hook_btn: "Kanca!",
+                not_hook_btn: "Kanca Değil!",
+                score_text: "Skor",
+                next_btn: "Sonraki Soru",
+                end_title: "Harika İş!",
+                final_score_text: "Nihai skorunuz",
+                restart_btn: "Tekrar Oyna",
+                feedback_correct: "Doğru!",
+                feedback_incorrect: "Tam Değil!"
+            }
+        };
+        
+        const allQuestions = {
+            en: [
+                { statement: "The issue of plastic pollution is a significant environmental problem.", isHook: false, explanation: "This is a factual but dry statement. It doesn't create any curiosity or emotion." },
+                { statement: "Every minute, one garbage truck of plastic is dumped into our ocean.", isHook: true, explanation: "This uses a shocking statistic to create a powerful and memorable image in the reader's mind." },
+                { statement: "Many people around the world happen to like turtles a lot.", isHook: false, explanation: "This is a vague statement about other people's opinions. It's not engaging." },
+                { statement: "A sea turtle chomps on a plastic bag, mistaking it for a jellyfish dinner.", isHook: true, explanation: "This tells a small, specific story that creates an emotional connection and makes the reader curious." },
+                { statement: "This paper is going to be about the history of the internet.", isHook: false, explanation: "This simply announces the topic. A hook should be more creative and engaging." },
+                { statement: "What if you could hold the world's knowledge in your hand? In 1980, this was science fiction.", isHook: true, explanation: "This starts with an intriguing question and makes a surprising connection that pulls the reader in." },
+                { statement: "It is my opinion that school uniforms can be a really good idea.", isHook: false, explanation: "This is a simple statement of opinion and doesn't invite the reader to learn more. It's a thesis, not a hook." },
+                { statement: "Imagine a world where every student arrives at school wearing the same simple outfit.", isHook: true, explanation: "This paints a picture and presents an idea, making the reader think and want to explore the topic further." },
+                { statement: "Ancient Egypt was a civilization that existed a very long time ago.", isHook: false, explanation: "This is a vague statement that lacks specific, interesting details. It's too obvious to be engaging." },
+                { statement: "For over 3,000 years, the pharaohs of Egypt were not just kings; they were considered living gods.", isHook: true, explanation: "This presents a fascinating and surprising fact that captures the imagination and makes the reader want to know more." },
+                { statement: "Video games are a popular form of entertainment enjoyed by many.", isHook: false, explanation: "This is a well-known fact that doesn't provide a new or interesting angle." },
+                { statement: "Could clicking a mouse and tapping a keyboard actually be a professional sport?", isHook: true, explanation: "This question challenges a common perception and makes the reader curious about the answer." },
+                { statement: "Photosynthesis is the process plants use to convert light into food.", isHook: false, explanation: "This sounds like a definition from a textbook. It's informative but not captivating." },
+                { statement: "A single tree can absorb as much carbon in a year as a car produces driving 26,000 miles.", isHook: true, explanation: "This is a surprising statistic that makes the reader reconsider the power of something ordinary." },
+                { statement: "My favorite animal is the wolf, and I will write about it now.", isHook: false, explanation: "This is a personal statement that announces the topic without trying to engage the audience." },
+                { statement: "A haunting howl echoes through the forest, a sound of both teamwork and wild freedom.", isHook: true, explanation: "This uses vivid, sensory language to create a mood and spark curiosity about the source of the sound." },
+                { statement: "It is important for kids to read books to get smarter.", isHook: false, explanation: "This is a very general and simplistic statement that doesn't have much impact." },
+                { statement: "You can travel to other worlds and meet wizards or dragons, all without leaving your chair.", isHook: true, explanation: "This uses imaginative language to describe the experience of reading, making it sound exciting." },
+                { statement: "The Roman Empire was a big and powerful force in ancient history.", isHook: false, explanation: "This statement is too broad and doesn't offer any specific, interesting details to grab the reader." },
+                { statement: "At its peak, the Roman Empire was so vast that the sun never set on its territory.", isHook: true, explanation: "This surprising fact creates a sense of scale and power, making the topic more intriguing." },
+                { statement: "There are many different kinds of sharks that live in the ocean.", isHook: false, explanation: "This is a simple, factual statement that most people already know. It lacks excitement." },
+                { statement: "It has existed for 450 million years, surviving five mass extinctions. It is the shark.", isHook: true, explanation: "This builds suspense by listing incredible facts before revealing the subject, making it more dramatic." },
+                { statement: "In this essay, I will explain why sleep is important for your health.", isHook: false, explanation: "Announcing what you're about to do is not an effective way to hook a reader." },
+                { statement: "Your brain does some of its most important work after you’ve already fallen asleep.", isHook: true, explanation: "This statement is counter-intuitive and makes the reader want to learn what the brain is doing." },
+                { statement: "Mount Everest is the tallest mountain, and it is very high.", isHook: false, explanation: "This is a redundant and uninteresting statement. It doesn't add anything new." },
+                { statement: "On top of the world's highest peak, there are fossilized skeletons of ancient sea creatures.", isHook: true, explanation: "This is a fascinating and unexpected fact that makes you wonder how it's possible." },
+                { statement: "Bullying is something that happens in schools and it is not very nice.", isHook: false, explanation: "This statement is an understatement and doesn't convey the seriousness of the issue." },
+                { statement: "A single unkind word can stick in a person's mind for years, long after a bruise has faded.", isHook: true, explanation: "This uses a powerful metaphor to explain the lasting impact of bullying, creating an emotional connection." },
+                { statement: "This paper will discuss the planet Mars and what it is like.", isHook: false, explanation: "This is a simple announcement of the topic and lacks any creative spark to draw the reader in." },
+                { statement: "From Earth, it is a tiny red star, but on its surface lie volcanoes ten times taller than Everest.", isHook: true, explanation: "This creates a strong contrast and uses impressive facts to make the topic sound grand and exciting." },
+                { statement: "Bees are insects that are important for the pollination of flowers.", isHook: false, explanation: "This is a common fact that many students learn in science class; it's not a fresh hook." },
+                { statement: "Without the tireless work of a tiny, buzzing insect, your plate would look very different.", isHook: true, explanation: "This connects a broad topic (bees) directly to the reader's life (their food) in a mysterious way." },
+                { statement: "Leonardo da Vinci was a famous artist who painted the Mona Lisa.", isHook: false, explanation: "This states a very famous fact but doesn't offer a unique or compelling angle to draw the reader in." },
+                { statement: "The man who painted the world's most famous portrait also designed flying machines.", isHook: true, explanation: "This highlights a surprising and lesser-known fact about a famous person, sparking curiosity." },
+                { statement: "The Amazon Rainforest is a very large jungle with lots of trees.", isHook: false, explanation: "This is an obvious and uninteresting description that lacks specific, powerful details." },
+                { statement: "Often called the 'lungs of our planet,' this vast jungle produces 20% of the world's oxygen.", isHook: true, explanation: "This uses a powerful metaphor and a surprising statistic to emphasize the topic's importance." },
+                { statement: "Chocolate is a popular treat that comes from cacao beans.", isHook: false, explanation: "This is a simple statement of fact that doesn't generate much excitement or curiosity." },
+                { statement: "Ancient Mayan and Aztec civilizations prized it more than gold, even using it as money.", isHook: true, explanation: "This presents a fascinating historical fact that changes how the reader might see a common treat." },
+                { statement: "Recycling is a good practice for helping to protect the environment.", isHook: false, explanation: "While true, this statement is very generic and sounds like a slogan rather than an engaging hook." },
+                { statement: "The plastic bottle you throw away today could still be sitting in a landfill 500 years from now.", isHook: true, explanation: "This uses a specific, long-term consequence to make the reader think about their actions' impact." },
+                { statement: "The Titanic was a big ship that sank in the Atlantic Ocean in 1912.", isHook: false, explanation: "This is a dry summary of a historical event that lacks the drama and emotion of the real story." },
+                { statement: "She was called 'unsinkable,' yet on her maiden voyage, the grandest ship in the world vanished.", isHook: true, explanation: "This creates a sense of irony and drama, making the reader want to know the story behind the failure." },
+                { statement: "I think homework is not good, and students get too much of it.", isHook: false, explanation: "This is a simple opinion statement that doesn't invite a deeper discussion or exploration." },
+                { statement: "What if the key to learning more wasn't spending more time in the classroom, but less?", isHook: true, explanation: "This poses a thought-provoking question that challenges a common assumption about education." },
+                { statement: "There were several causes that led to the American Revolution.", isHook: false, explanation: "This is a factual but boring statement that sounds like the beginning of a textbook chapter." },
+                { statement: "It all started with a snowball fight that escalated into a massacre and changed the world.", isHook: true, explanation: "This focuses on a small, dramatic, and surprising event to pull the reader into a much larger topic." },
+                { statement: "The human brain is a very complex and important organ in the body.", isHook: false, explanation: "This is a true but very general statement that doesn't offer a specific, interesting detail." },
+                { statement: "Your brain generates enough electricity to power a small lightbulb, even while you are asleep.", isHook: true, explanation: "This is a surprising and cool fact that makes the reader curious about their own brain." },
+                { statement: "In this essay, I will tell you about the life of Abraham Lincoln.", isHook: false, explanation: "Announcing your intention is not an effective way to hook a reader. You should show, not tell." },
+                { statement: "Before he was a president, he was a wrestling champion, with only one recorded loss in 300 matches.", isHook: true, explanation: "This reveals a surprising and little-known fact about a historical figure, making him more interesting." }
+            ],
+            zh: [
+                { statement: "塑料污染问题是一个重大的环境问题。", isHook: false, explanation: "这是一个事实性的陈述，但很枯燥。它不会引起任何好奇心或情感。" },
+                { statement: "每分钟，就有一卡车的塑料被倾倒进我们的海洋。", isHook: true, explanation: "这用一个惊人的统计数据在读者心中创造了一个强大而难忘的画面。" },
+                { statement: "世界上的许多人都恰巧非常喜欢乌龟。", isHook: false, explanation: "这是一个关于他人意见的模糊陈述。它没有吸引力。" },
+                { statement: "一只海龟大口咀嚼着一个塑料袋，误以为是水母晚餐。", isHook: true, explanation: "这讲述了一个具体的小故事，建立了情感联系，让读者感到好奇。" },
+                { statement: "这篇论文将要探讨互联网的历史。", isHook: false, explanation: "这只是简单地宣告了主题。一个好的引子应该更有创意和吸引力。" },
+                { statement: "如果你能将世界的知识握在手中会怎样？在1980年，这是科幻小说。", isHook: true, explanation: "这以一个有趣的问题开始，并建立了一个令人惊讶的联系，吸引了读者。" },
+                { statement: "我的观点是，校服可能是一个非常好的主意。", isHook: false, explanation: "这是一个简单的观点陈述，没有邀请读者去了解更多。这是一个论点，而不是引子。" },
+                { statement: "想象一个世界，每个学生到校时都穿着同样简单的服装。", isHook: true, explanation: "这描绘了一幅画面，提出了一个想法，让读者思考并希望进一步探讨这个主题。" },
+                { statement: "古埃及是一个存在于很久以前的文明。", isHook: false, explanation: "这是一个模糊的陈述，缺乏具体的、有趣的细节。它太显而易见了，没有吸引力。" },
+                { statement: "三千多年来，埃及的法老不仅仅是国王；他们被认为是活在世间的神。", isHook: true, explanation: "这提出了一个迷人而令人惊讶的事实，激发了想象力，让读者想知道更多。" },
+                { statement: "电子游戏是许多人喜爱的一种流行的娱乐形式。", isHook: false, explanation: "这是一个众所周知的事实，没有提供新的或有趣的角度。" },
+                { statement: "点击鼠标和敲击键盘真的能成为一项职业运动吗？", isHook: true, explanation: "这个问题挑战了普遍的看法，让读者对答案感到好奇。" },
+                { statement: "光合作用是植物用来将光能转化为食物的过程。", isHook: false, explanation: "这听起来像教科书里的定义。它信息量大但没有吸引力。" },
+                { statement: "一棵树一年吸收的碳，相当于一辆汽车行驶26,000英里所产生的碳。", isHook: true, explanation: "这是一个惊人的统计数据，让读者重新思考普通事物的力量。" },
+                { statement: "我最喜欢的动物是狼，我现在要写关于它的文章。", isHook: false, explanation: "这是一个个人陈述，只是宣告了主题，而没有试图吸引观众。" },
+                { statement: "一阵令人难忘的嚎叫在森林中回荡，那既是团队合作也是野生自由的声音。", isHook: true, explanation: "这使用了生动的、感官的语言来营造一种氛围，并激发了对声音来源的好奇心。" },
+                { statement: "孩子们为了变得更聪明而读书是很重要的。", isHook: false, explanation: "这是一个非常笼统和简单的陈述，没有太大影响力。" },
+                { statement: "你可以足不出户，就前往其他世界，遇见巫师或龙。", isHook: true, explanation: "这使用了富有想象力的语言来描述阅读的体验，使其听起来很刺激。" },
+                { statement: "罗马帝国是古代历史上一个庞大而强大的力量。", isHook: false, explanation: "这个陈述过于宽泛，没有提供任何具体的、有趣的细节来吸引读者。" },
+                { statement: "在其鼎盛时期，罗马帝国的版图如此辽阔，以至于太阳从未在其领土上落下。", isHook: true, explanation: "这个惊人的事实创造了一种规模感和力量感，使主题更具吸引力。" },
+                { statement: "海洋中生活着许多不同种类的鲨鱼。", isHook: false, explanation: "这是一个简单的、事实性的陈述，大多数人已经知道。它缺乏刺激性。" },
+                { statement: "它已存在四亿五千万年，经历了五次大规模灭绝。它就是鲨鱼。", isHook: true, explanation: "这通过在揭示主题前列出令人难以置信的事实来制造悬念，使其更具戏剧性。" },
+                { statement: "在这篇文章中，我将解释为什么睡眠对你的健康很重要。", isHook: false, explanation: "宣告你将要做什么并不是吸引读者的有效方式。" },
+                { statement: "在你已经入睡后，你的大脑会做一些它最重要的工作。", isHook: true, explanation: "这个陈述是反直觉的，让读者想知道大脑在做什么。" },
+                { statement: "珠穆朗玛峰是最高的山，它非常高。", isHook: false, explanation: "这是一个多余且无趣的陈述。它没有增加任何新信息。" },
+                { statement: "在世界最高峰的顶上，有古代海洋生物的化石骨架。", isHook: true, explanation: "这是一个迷人而出乎意料的事实，让你想知道这怎么可能。" },
+                { statement: "欺凌是学校里发生的事情，这不是很好。", isHook: false, explanation: "这个陈述轻描淡写，没有传达问题的严重性。" },
+                { statement: "一句不友善的话可以在一个人的心中停留多年，远比一块瘀伤褪去得慢。", isHook: true, explanation: "这使用了一个强有力的比喻来解释欺凌的持久影响，建立了情感联系。" },
+                { statement: "本文将讨论火星这颗行星以及它是什么样的。", isHook: false, explanation: "这只是简单地宣告了主题，缺乏吸引读者的创意火花。" },
+                { statement: "从地球看，它是一颗微小的红色星星，但其表面有比珠峰高十倍的火山。", isHook: true, explanation: "这创造了强烈的对比，并使用令人印象深刻的事实使主题听起来宏伟而刺激。" },
+                { statement: "蜜蜂是对花朵授粉很重要的昆虫。", isHook: false, explanation: "这是许多学生在科学课上学到的常识；这不是一个新鲜的引子。" },
+                { statement: "没有一只嗡嗡作响的小昆虫的辛勤工作，你的餐盘会看起来非常不同。", isHook: true, explanation: "这将一个广泛的主题（蜜蜂）以一种神秘的方式直接与读者的生活（他们的食物）联系起来。" },
+                { statement: "列奥纳多·达·芬奇是一位画了《蒙娜丽莎》的著名艺术家。", isHook: false, explanation: "这陈述了一个非常著名的事实，但没有提供一个独特或引人注目的角度来吸引读者。" },
+                { statement: "画了世界上最著名肖像画的人也设计了飞行器。", isHook: true, explanation: "这突出了一个关于名人的令人惊讶且鲜为人知的事实，激发了好奇心。" },
+                { statement: "亚马逊雨林是一个有许多树木的非常大的丛林。", isHook: false, explanation: "这是一个明显且无趣的描述，缺乏具体的、有力的细节。" },
+                { statement: "这片广袤的丛林常被称为“我们星球的肺”，它产生了世界20%的氧气。", isHook: true, explanation: "这使用了一个强有力的比喻和一个惊人的统计数据来强调主题的重要性。" },
+                { statement: "巧克力是一种来自可可豆的受欢迎的甜点。", isHook: false, explanation: "这是一个简单的事实陈述，没有产生太多的兴奋或好奇心。" },
+                { statement: "古代玛雅和阿兹特克文明比黄金更珍视它，甚至用它作货币。", isHook: true, explanation: "这提出了一个迷人的历史事实，可能会改变读者对一种常见甜点的看法。" },
+                { statement: "回收是帮助保护环境的一个好做法。", isHook: false, explanation: "虽然这是真的，但这个陈述非常笼统，听起来像一个口号，而不是一个吸引人的引子。" },
+                { statement: "你今天扔掉的塑料瓶，500年后可能还静静地躺在垃圾填埋场里。", isHook: true, explanation: "这用一个具体的、长期的后果让读者思考他们行为的影响。" },
+                { statement: "泰坦尼克号是一艘于1912年在大西洋沉没的大船。", isHook: false, explanation: "这是一个对历史事件的枯燥总结，缺乏真实故事的戏剧性和情感。" },
+                { statement: "她被称为“永不沉没”，然而在她的处女航中，这艘世界上最宏伟的船消失了。", isHook: true, explanation: "这创造了一种讽刺和戏剧感，让读者想知道失败背后的故事。" },
+                { statement: "我认为家庭作业不好，学生们的作业太多了。", isHook: false, explanation: "这是一个简单的观点陈述，没有引发更深入的讨论或探索。" },
+                { statement: "如果学到更多的关键不是在教室里花更多时间，而是更少呢？", isHook: true, explanation: "这提出了一个发人深省的问题，挑战了关于教育的普遍假设。" },
+                { statement: "导致美国革命有几个原因。", isHook: false, explanation: "这是一个事实性的但枯燥的陈述，听起来像教科书章节的开头。" },
+                { statement: "一切都始于一场滚雪球般的战斗，升级为一场大屠杀，并改变了世界。", isHook: true, explanation: "这聚焦于一个小的、戏剧性的、令人惊讶的事件，以吸引读者进入一个更大的主题。" },
+                { statement: "人脑是身体中一个非常复杂和重要的器官。", isHook: false, explanation: "这是一个真实的但非常笼统的陈述，没有提供具体的、有趣的细节。" },
+                { statement: "即使在你睡觉的时候，你的大脑产生的电量也足以点亮一个小灯泡。", isHook: true, explanation: "这是一个令人惊讶和酷的事实，让读者对自己的大脑感到好奇。" },
+                { statement: "在这篇文章中，我将告诉你关于亚伯拉罕·林肯的生平。", isHook: false, explanation: "宣告你的意图不是吸引读者的有效方式。你应该展示，而不是讲述。" },
+                { statement: "在他成为总统之前，他是一名摔跤冠军，在300场比赛中仅有一次记录在案的失利。", isHook: true, explanation: "这揭示了一个关于历史人物的令人惊讶且鲜为人知的事实，使他更有趣。" }
+            ],
+            tr: [
+                { statement: "Plastik kirliliği sorunu önemli bir çevre problemidir.", isHook: false, explanation: "Bu gerçekçi ama kuru bir ifadedir. Herhangi bir merak veya duygu yaratmaz." },
+                { statement: "Her dakika, bir çöp kamyonu dolusu plastik okyanusumuza dökülüyor.", isHook: true, explanation: "Bu, okuyucunun zihninde güçlü ve unutulmaz bir görüntü yaratmak için şok edici bir istatistik kullanır." },
+                { statement: "Dünyadaki birçok insan kaplumbağaları çok sever.", isHook: false, explanation: "Bu, diğer insanların görüşleri hakkında belirsiz bir ifadedir. İlgi çekici değil." },
+                { statement: "Bir deniz kaplumbağası, denizanası yemeği sandığı bir plastik poşeti ısırır.", isHook: true, explanation: "Bu, duygusal bir bağ kuran ve okuyucuyu meraklandıran küçük, özel bir hikaye anlatır." },
+                { statement: "Bu makale internetin tarihi hakkında olacak.", isHook: false, explanation: "Bu sadece konuyu duyurur. Bir kanca daha yaratıcı ve ilgi çekici olmalıdır." },
+                { statement: "Ya dünyanın bilgisini elinizde tutabilseydiniz? 1980'de bu bilim kurguydu.", isHook: true, explanation: "Bu, ilgi çekici bir soruyla başlar ve okuyucuyu içine çeken şaşırtıcı bir bağlantı kurar." },
+                { statement: "Benim görüşüme göre okul üniformaları gerçekten iyi bir fikir olabilir.", isHook: false, explanation: "Bu, okuyucuyu daha fazlasını öğrenmeye davet etmeyen basit bir görüş ifadesidir. Bu bir kanca değil, bir tezdir." },
+                { statement: "Her öğrencinin okula aynı basit kıyafetle geldiği bir dünya hayal edin.", isHook: true, explanation: "Bu bir resim çizer ve bir fikir sunar, okuyucuyu düşündürür ve konuyu daha fazla keşfetmek istemesini sağlar." },
+                { statement: "Antik Mısır çok uzun zaman önce var olan bir medeniyetti.", isHook: false, explanation: "Bu, belirli, ilginç ayrıntılardan yoksun belirsiz bir ifadedir. İlgi çekici olmak için fazla bariz." },
+                { statement: "3.000 yılı aşkın bir süredir, Mısır firavunları sadece kral değil; yaşayan tanrılar olarak kabul edildiler.", isHook: true, explanation: "Bu, hayal gücünü yakalayan ve okuyucunun daha fazlasını bilmek istemesini sağlayan büyüleyici ve şaşırtıcı bir gerçeği sunar." },
+                { statement: "Video oyunları birçok kişi tarafından sevilen popüler bir eğlence şeklidir.", isHook: false, explanation: "Bu, yeni veya ilginç bir bakış açısı sunmayan iyi bilinen bir gerçektir." },
+                { statement: "Bir fareye tıklamak ve bir klavyeye dokunmak gerçekten profesyonel bir spor olabilir mi?", isHook: true, explanation: "Bu soru, yaygın bir algıya meydan okur ve okuyucuyu cevabı merak ettirir." },
+                { statement: "Fotosentez, bitkilerin ışığı yiyeceğe dönüştürmek için kullandığı süreçtir.", isHook: false, explanation: "Bu bir ders kitabından alınmış bir tanım gibi geliyor. Bilgilendirici ama büyüleyici değil." },
+                { statement: "Tek bir ağaç, bir arabanın 26.000 mil yol kat ederek ürettiği kadar karbonu bir yılda emebilir.", isHook: true, explanation: "Bu, okuyucunun sıradan bir şeyin gücünü yeniden düşünmesini sağlayan şaşırtıcı bir istatistiktir." },
+                { statement: "En sevdiğim hayvan kurt ve şimdi onun hakkında yazacağım.", isHook: false, explanation: "Bu, izleyiciyi etkilemeye çalışmadan konuyu duyuran kişisel bir ifadedir." },
+                { statement: "Ormanda hem ekip çalışmasının hem de vahşi özgürlüğün sesi olan unutulmaz bir uluma yankılanır.", isHook: true, explanation: "Bu, bir ruh hali yaratmak ve sesin kaynağı hakkında merak uyandırmak için canlı, duyusal bir dil kullanır." },
+                { statement: "Çocukların daha akıllı olmak için kitap okuması önemlidir.", isHook: false, explanation: "Bu, çok fazla etkisi olmayan çok genel ve basit bir ifadedir." },
+                { statement: "Sandalyenizden ayrılmadan başka dünyalara seyahat edebilir, sihirbazlar veya ejderhalarla tanışabilirsiniz.", isHook: true, explanation: "Bu, okuma deneyimini tanımlamak için hayal gücü yüksek bir dil kullanır ve kulağa heyecan verici gelmesini sağlar." },
+                { statement: "Roma İmparatorluğu antik tarihte büyük ve güçlü bir kuvvetti.", isHook: false, explanation: "Bu ifade çok geniştir ve okuyucuyu yakalamak için herhangi bir spesifik, ilginç ayrıntı sunmaz." },
+                { statement: "Zirvesindeyken, Roma İmparatorluğu o kadar genişti ki, topraklarında güneş hiç batmazdı.", isHook: true, explanation: "Bu şaşırtıcı gerçek, bir ölçek ve güç hissi yaratarak konuyu daha ilgi çekici hale getirir." },
+                { statement: "Okyanusta yaşayan birçok farklı türde köpekbalığı vardır.", isHook: false, explanation: "Bu, çoğu insanın zaten bildiği basit, gerçekçi bir ifadedir. Heyecandan yoksundur." },
+                { statement: "450 milyon yıldır varlığını sürdürüyor, beş kitlesel yok oluştan sağ çıktı. O, köpekbalığıdır.", isHook: true, explanation: "Bu, konuyu açıklamadan önce inanılmaz gerçekleri listeleyerek gerilim yaratır ve daha dramatik hale getirir." },
+                { statement: "Bu makalede, uykunun sağlığınız için neden önemli olduğunu açıklayacağım.", isHook: false, explanation: "Ne yapacağınızı duyurmak, bir okuyucuyu etkilemek için etkili bir yol değildir." },
+                { statement: "Beyniniz, siz uyuduktan sonra en önemli işlerinden bazılarını yapar.", isHook: true, explanation: "Bu ifade sezgilere aykırıdır ve okuyucunun beynin ne yaptığını öğrenmek istemesini sağlar." },
+                { statement: "Everest Dağı en yüksek dağdır ve çok yüksektir.", isHook: false, explanation: "Bu gereksiz ve ilginç olmayan bir ifadedir. Yeni bir şey eklemez." },
+                { statement: "Dünyanın en yüksek zirvesinin tepesinde, antik deniz canlılarının fosilleşmiş iskeletleri var.", isHook: true, explanation: "Bu, bunun nasıl mümkün olduğunu merak etmenizi sağlayan büyüleyici ve beklenmedik bir gerçektir." },
+                { statement: "Zorbalık okullarda olan bir şeydir ve pek hoş değildir.", isHook: false, explanation: "Bu ifade, konunun ciddiyetini yansıtmayan bir hafife almadır." },
+                { statement: "Tek bir kaba söz, bir morluk geçtikten çok sonra, yıllarca bir insanın zihninde kalabilir.", isHook: true, explanation: "Bu, zorbalığın kalıcı etkisini açıklamak için güçlü bir metafor kullanır ve duygusal bir bağ kurar." },
+                { statement: "Bu makale Mars gezegenini ve nasıl bir yer olduğunu tartışacaktır.", isHook: false, explanation: "Bu, konunun basit bir duyurusudur ve okuyucuyu içine çekecek herhangi bir yaratıcı kıvılcımdan yoksundur." },
+                { statement: "Dünya'dan küçük kırmızı bir yıldızdır, ancak yüzeyinde Everest'ten on kat daha yüksek volkanlar bulunur.", isHook: true, explanation: "Bu, güçlü bir karşıtlık yaratır ve konuyu görkemli ve heyecan verici göstermek için etkileyici gerçekler kullanır." },
+                { statement: "Arılar, çiçeklerin tozlaşması için önemli olan böceklerdir.", isHook: false, explanation: "Bu, birçok öğrencinin fen dersinde öğrendiği yaygın bir bilgidir; taze bir kanca değildir." },
+                { statement: "Küçücük, vızıldayan bir böceğin yorulmak bilmeyen çalışması olmasaydı, tabağınız çok farklı görünürdü.", isHook: true, explanation: "Bu, geniş bir konuyu (arıları) gizemli bir şekilde doğrudan okuyucunun hayatına (yiyeceklerine) bağlar." },
+                { statement: "Leonardo da Vinci, Mona Lisa'yı çizen ünlü bir sanatçıydı.", isHook: false, explanation: "Bu çok ünlü bir gerçeği belirtir ancak okuyucuyu çekmek için benzersiz veya zorlayıcı bir açı sunmaz." },
+                { statement: "Dünyanın en ünlü portresini çizen adam aynı zamanda uçan makineler de tasarladı.", isHook: true, explanation: "Bu, ünlü bir kişi hakkında şaşırtıcı ve az bilinen bir gerçeği vurgulayarak merak uyandırır." },
+                { statement: "Amazon Yağmur Ormanı, çok sayıda ağacı olan çok büyük bir ormandır.", isHook: false, explanation: "Bu, belirli, güçlü ayrıntılardan yoksun, bariz ve ilginç olmayan bir tanımdır." },
+                { statement: "Genellikle 'gezegenimizin akciğerleri' olarak adlandırılan bu geniş orman, dünyanın oksijeninin %20'sini üretir.", isHook: true, explanation: "Bu, konunun önemini vurgulamak için güçlü bir metafor ve şaşırtıcı bir istatistik kullanır." },
+                { statement: "Çikolata, kakao çekirdeklerinden gelen popüler bir ikramdır.", isHook: false, explanation: "Bu, çok fazla heyecan veya merak uyandırmayan basit bir gerçektir." },
+                { statement: "Antik Maya ve Aztek medeniyetleri ona altından daha fazla değer verir, hatta para olarak kullanırlardı.", isHook: true, explanation: "Bu, okuyucunun sıradan bir ikrama bakışını değiştirebilecek büyüleyici bir tarihsel gerçeği sunar." },
+                { statement: "Geri dönüşüm, çevreyi korumaya yardımcı olmak için iyi bir uygulamadır.", isHook: false, explanation: "Doğru olsa da, bu ifade çok geneldir ve ilgi çekici bir kancadan çok bir slogan gibi durmaktadır." },
+                { statement: "Bugün attığınız plastik şişe, 500 yıl sonra hala bir çöp sahasında duruyor olabilir.", isHook: true, explanation: "Bu, okuyucunun eylemlerinin etkisini düşünmesini sağlamak için belirli, uzun vadeli bir sonuç kullanır." },
+                { statement: "Titanik, 1912'de Atlantik Okyanusu'nda batan büyük bir gemiydi.", isHook: false, explanation: "Bu, gerçek hikayenin dramasından ve duygusundan yoksun, tarihi bir olayın kuru bir özetidir." },
+                { statement: "Ona 'batmaz' deniyordu, ancak ilk seferinde dünyanın en görkemli gemisi ortadan kayboldu.", isHook: true, explanation: "Bu, bir ironi ve drama duygusu yaratarak okuyucunun başarısızlığın arkasındaki hikayeyi bilmek istemesini sağlar." },
+                { statement: "Bence ödev iyi değil ve öğrenciler çok fazla ödev alıyor.", isHook: false, explanation: "Bu, daha derin bir tartışma veya keşif davet etmeyen basit bir görüş ifadesidir." },
+                { statement: "Ya daha fazlasını öğrenmenin anahtarı sınıfta daha fazla değil, daha az zaman geçirmekse?", isHook: true, explanation: "Bu, eğitimle ilgili yaygın bir varsayıma meydan okuyan, düşündürücü bir soru ortaya koymaktadır." },
+                { statement: "Amerikan Devrimi'ne yol açan birkaç neden vardı.", isHook: false, explanation: "Bu, bir ders kitabı bölümünün başlangıcı gibi görünen gerçekçi ama sıkıcı bir ifadedir." },
+                { statement: "Her şey bir kartopu savaşıyla başladı, bir katliama dönüştü ve dünyayı değiştirdi.", isHook: true, explanation: "Bu, okuyucuyu çok daha büyük bir konuya çekmek için küçük, dramatik ve şaşırtıcı bir olaya odaklanır." },
+                { statement: "İnsan beyni, vücuttaki çok karmaşık ve önemli bir organdır.", isHook: false, explanation: "Bu doğru ama çok genel bir ifadedir ve belirli, ilginç bir ayrıntı sunmaz." },
+                { statement: "Beyniniz, siz uyurken bile küçük bir ampulü yakacak kadar elektrik üretir.", isHook: true, explanation: "Bu, okuyucuyu kendi beyinleri hakkında meraklandıran şaşırtıcı ve havalı bir gerçektir." },
+                { statement: "Bu makalede size Abraham Lincoln'ün hayatını anlatacağım.", isHook: false, explanation: "Niyetinizi duyurmak bir okuyucuyu etkilemek için etkili bir yol değildir. Anlatmak yerine göstermelisiniz." },
+                { statement: "Başkan olmadan önce, 300 maçta sadece bir kayıtlı yenilgisi olan bir güreş şampiyonuydu.", isHook: true, explanation: "Bu, tarihi bir figür hakkında şaşırtıcı ve az bilinen bir gerçeği ortaya çıkararak onu daha ilginç hale getirir." }
+            ]
+        };
+
+        function updateUIText(lang) {
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.dataset.translate;
+                if (uiText[lang][key]) {
+                    el.textContent = uiText[lang][key];
+                }
+            });
+        }
+
+        function selectLanguage(lang) {
+            selectedLanguage = lang;
+            updateUIText(lang);
+            languageSelectionScreen.classList.add('hidden');
+            instructionsScreen.classList.remove('hidden');
+        }
+
+        function showLanguageSelection() {
+            instructionsScreen.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            languageSelectionScreen.classList.remove('hidden');
+        }
+
+        function startGame() {
+            currentQuestionIndex = 0;
+            score = 0;
+            shuffledQuestions = [...allQuestions[selectedLanguage]].sort(() => Math.random() - 0.5);
+            scoreEl.textContent = score;
+            
+            instructionsScreen.classList.add('hidden');
+            feedbackScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const question = shuffledQuestions[currentQuestionIndex];
+            statementEl.textContent = question.statement;
+            
+            gameScreen.classList.remove('hidden');
+            feedbackScreen.classList.add('hidden');
+            
+            hookBtn.disabled = false;
+            notHookBtn.disabled = false;
+        }
+
+        function selectAnswer(userIsHook) {
+            hookBtn.disabled = true;
+            notHookBtn.disabled = true;
+
+            const question = shuffledQuestions[currentQuestionIndex];
+            const isCorrect = userIsHook === question.isHook;
+
+            if (isCorrect) {
+                score++;
+                scoreEl.textContent = score;
+                feedbackEl.textContent = uiText[selectedLanguage].feedback_correct;
+                feedbackEl.className = 'text-4xl font-bold mb-4 correct';
+            } else {
+                feedbackEl.textContent = uiText[selectedLanguage].feedback_incorrect;
+                feedbackEl.className = 'text-4xl font-bold mb-4 incorrect';
+            }
+            
+            explanationEl.textContent = question.explanation;
+
+            gameScreen.classList.add('hidden');
+            feedbackScreen.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < shuffledQuestions.length) {
+                showQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            finalScoreEl.textContent = `${score} / ${shuffledQuestions.length}`;
+            gameScreen.classList.add('hidden');
+            feedbackScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+        }
+
+        langBtns.forEach(btn => {
+            btn.addEventListener('click', () => selectLanguage(btn.dataset.lang));
+        });
+
+        backBtn.addEventListener('click', showLanguageSelection);
+        startBtn.addEventListener('click', startGame);
+        hookBtn.addEventListener('click', () => selectAnswer(true));
+        notHookBtn.addEventListener('click', () => selectAnswer(false));
+        nextBtn.addEventListener('click', nextQuestion);
+        restartBtn.addEventListener('click', startGame);
+        
+        // Initialize with default language text
+        updateUIText(selectedLanguage);
+
+    </script>
+</body>
+</html>
+
