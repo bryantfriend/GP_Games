@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paragraph Builder Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%239CA3AF' fill-opacity='0.1'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .slide {
+            display: none;
+        }
+        .slide.active {
+            display: block;
+        }
+        .option-card {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .option-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .option-card.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .option-card.correct {
+            border-color: #22c55e;
+            background-color: #f0fdf4;
+        }
+        .option-card.incorrect {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
+        .drop-zone {
+            min-height: 50px;
+            border: 2px dashed #9ca3af;
+            background-color: #f9fafb;
+            transition: background-color 0.2s;
+        }
+        .drop-zone.over {
+            background-color: #e5e7eb;
+        }
+        .draggable {
+            cursor: grab;
+        }
+        .draggable:active {
+            cursor: grabbing;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .feedback {
+            min-height: 24px;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 sm:p-6">
+
+    <div id="game-container" class="w-full max-w-4xl mx-auto">
+
+        <!-- Slide 0: Language Selection -->
+        <div class="slide active text-center p-8 bg-white rounded-2xl shadow-xl fade-in" data-slide="0">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Select Language</h1>
+            <div class="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+                <button class="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-transform transform hover:scale-105" onclick="setLanguage('en')">English</button>
+                <button class="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition-transform transform hover:scale-105" onclick="setLanguage('tr')">Türkçe</button>
+                <button class="w-full sm:w-auto px-8 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition-transform transform hover:scale-105" onclick="setLanguage('zh')">中文</button>
+            </div>
+        </div>
+
+        <!-- Slide 1: Title -->
+        <div class="slide text-center p-8 bg-white rounded-2xl shadow-xl fade-in" data-slide="1">
+            <h1 class="text-4xl sm:text-5xl font-bold text-gray-800" data-lang-key="title">✏️ Writing Strong Body Paragraphs</h1>
+            <p class="mt-4 text-lg sm:text-xl text-gray-600" data-lang-key="subtitle">“Now that we’ve written great introductions — let’s build the middle!”</p>
+            <p class="mt-2 text-sm text-gray-500" data-lang-key="grade">👩‍🏫 6th Grade Global Perspectives</p>
+            <button class="mt-8 px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-transform transform hover:scale-105" onclick="nextSlide()" data-lang-key="startButton">Let's Start!</button>
+        </div>
+
+        <!-- Slide 2: What is a Body Paragraph? -->
+        <div class="slide p-6 sm:p-8 bg-white rounded-2xl shadow-xl fade-in" data-slide="2">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800" data-lang-key="whatIsTitle">What Is a Body Paragraph?</h2>
+            <ul class="mt-4 space-y-3 text-gray-700 text-lg">
+                <li data-lang-key="whatIsLi1"><span class="text-blue-500 font-semibold">It’s the main part of your essay.</span></li>
+                <li data-lang-key="whatIsLi2">Each paragraph focuses on <span class="text-blue-500 font-semibold">one main idea.</span></li>
+                <li data-lang-key="whatIsLi3">It gives details, examples, and evidence to support your thesis.</li>
+            </ul>
+            <div class="mt-6 p-4 bg-yellow-100 border-l-4 border-yellow-400 rounded-r-lg">
+                <p class="text-lg text-yellow-800" data-lang-key="sandwich">💡 Think of it as the “meat” of your essay sandwich! 🍔</p>
+            </div>
+            <button class="mt-8 float-right px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition" onclick="nextSlide()" data-lang-key="gotItButton">Got it!</button>
+        </div>
+
+        <!-- Slide 3: Structure -->
+        <div class="slide p-6 sm:p-8 bg-white rounded-2xl shadow-xl fade-in" data-slide="3">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800" data-lang-key="structureTitle">Structure of a Body Paragraph</h2>
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div class="p-4 bg-blue-100 rounded-lg">
+                    <h3 class="font-bold text-xl text-blue-800" data-lang-key="topicSentenceTitle">1️⃣ Topic Sentence</h3>
+                    <p class="text-blue-700 mt-1" data-lang-key="topicSentenceDesc">Tells the main idea of the paragraph.</p>
+                </div>
+                <div class="p-4 bg-green-100 rounded-lg">
+                    <h3 class="font-bold text-xl text-green-800" data-lang-key="supportingDetailsTitle">2️⃣ Supporting Details</h3>
+                    <p class="text-green-700 mt-1" data-lang-key="supportingDetailsDesc">Explain, describe, or give examples.</p>
+                </div>
+                <div class="p-4 bg-purple-100 rounded-lg">
+                    <h3 class="font-bold text-xl text-purple-800" data-lang-key="concludingSentenceTitle">3️⃣ Concluding Sentence</h3>
+                    <p class="text-purple-700 mt-1" data-lang-key="concludingSentenceDesc">Wraps up and connects to the next paragraph.</p>
+                </div>
+            </div>
+            <div class="mt-6 p-4 bg-red-100 border-l-4 border-red-400 rounded-r-lg">
+                <p class="text-lg text-red-800" data-lang-key="oneIdea">🎯 One main idea per paragraph!</p>
+            </div>
+            <button class="mt-8 float-right px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition" onclick="nextSlide()" data-lang-key="nextButton">Next</button>
+        </div>
+
+        <!-- Slide 4: Step 1 Game -->
+        <div class="slide p-6 sm:p-8 bg-white rounded-2xl shadow-xl fade-in" data-slide="4">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800" data-lang-key="step1Title">Step 1: Write a Strong Topic Sentence</h2>
+            <p class="mt-2 text-gray-600" data-lang-key="step1Desc">Your topic sentence clearly states what the paragraph is about. Let's try it!</p>
+            <div class="mt-4 p-4 bg-gray-100 rounded-lg">
+                <p class="font-semibold text-lg" data-lang-key="step1Topic">Topic: The benefits of playing sports.</p>
+            </div>
+            <p class="mt-4 font-semibold text-gray-700" data-lang-key="step1Question">Which is the BEST topic sentence?</p>
+            <div id="q1-options" class="mt-2 space-y-3">
+                <div class="option-card border-2 border-gray-200 p-4 rounded-lg" onclick="checkAnswer(this, false, 'q1_feedback_wrong1')">
+                    <p data-lang-key="step1Opt1">For example, soccer helps you run faster and improves teamwork.</p>
+                </div>
+                <div class="option-card border-2 border-gray-200 p-4 rounded-lg" onclick="checkAnswer(this, true, 'q1_feedback_correct')">
+                    <p data-lang-key="step1Opt2">Playing sports is a great way for kids to stay healthy and learn important life skills.</p>
+                </div>
+                <div class="option-card border-2 border-gray-200 p-4 rounded-lg" onclick="checkAnswer(this, false, 'q1_feedback_wrong2')">
+                    <p data-lang-key="step1Opt3">Therefore, everyone should join a sports team to have fun and get exercise.</p>
+                </div>
+            </div>
+            <div id="q1-feedback" class="feedback mt-2 text-sm font-semibold"></div>
+            <button class="mt-4 float-right px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition hidden" onclick="nextSlide()" data-lang-key="nextButton">Next</button>
+        </div>
+        
+        <!-- Slide 5: Step 2 Game -->
+        <div class="slide p-6 sm:p-8 bg-white rounded-2xl shadow-xl fade-in" data-slide="5">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800" data-lang-key="step2Title">Step 2: Add Supporting Details</h2>
+            <p class="mt-2 text-gray-600" data-lang-key="step2Desc">Supporting details explain and prove your point with facts, examples, or reasons.</p>
+            <div class="mt-4 p-4 bg-gray-100 rounded-lg">
+                <p class="font-semibold text-lg" data-lang-key="step2Topic">Topic Sentence: Taking care of a pet teaches responsibility.</p>
+            </div>
+            <p class="mt-4 font-semibold text-gray-700" data-lang-key="step2Question">Which TWO sentences are good supporting details?</p>
+            <div id="q2-options" class="mt-2 space-y-3">
+                <div class="option-card border-2 border-gray-200 p-4 rounded-lg" onclick="checkAnswerMulti(this, true)">
+                    <p data-lang-key="step2Opt1">A pet needs to be fed and given water every day, which is a consistent daily chore.</p>
+                </div>
+                <div class="option-card border-2 border-gray-200 p-4 rounded-lg" onclick="checkAnswerMulti(this, false)">
+                    <p data-lang-key="step2Opt2">My favorite type of dog is a golden retriever.</p>
+                </div>
+                <div class="option-card border-2 border-gray-200 p-4 rounded-lg" onclick="checkAnswerMulti(this, true)">
+                    <p data-lang-key="step2Opt3">Additionally, owners must walk their pets for exercise and clean up after them.</p>
+                </div>
+            </div>
+            <div id="q2-feedback" class="feedback mt-2 text-sm font-semibold"></div>
+            <button class="mt-4 float-right px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition hidden" onclick="nextSlide()" data-lang-key="nextButton">Next</button>
+        </div>
+
+        <!-- Slide 6: Step 3 Game -->
+        <div class="slide p-6 sm:p-8 bg-white rounded-2xl shadow-xl fade-in" data-slide="6">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800" data-lang-key="step3Title">Step 3: End with a Concluding Sentence</h2>
+            <p class="mt-2 text-gray-600" data-lang-key="step3Desc">Your concluding sentence should wrap up your paragraph's point in a new way.</p>
+            <div class="mt-4 p-4 bg-gray-100 rounded-lg">
+                 <p class="font-semibold text-sm" data-lang-key="step3Topic">Topic Sentence: Social media helps people stay connected with friends and family.</p>
+                 <p class="text-sm text-gray-600" data-lang-key="step3Support">Support: It allows instant communication across long distances and people can share photos and updates easily.</p>
+            </div>
+            <p class="mt-4 font-semibold text-gray-700" data-lang-key="step3Question">Which is the BEST concluding sentence?</p>
+            <div id="q3-options" class="mt-2 space-y-3">
+                <div class="option-card border-2 border-gray-200 p-4 rounded-lg" onclick="checkAnswer(this, false, 'q3_feedback_wrong1')">
+                    <p data-lang-key="step3Opt1">Another reason social media is useful is for finding news.</p>
+                </div>
+                 <div class="option-card border-2 border-gray-200 p-4 rounded-lg" onclick="checkAnswer(this, true, 'q3_feedback_correct')">
+                    <p data-lang-key="step3Opt2">Because it bridges distances and makes sharing simple, social media is a powerful tool for maintaining relationships.</p>
+                </div>
+                <div class="option-card border-2 border-gray-200 p-4 rounded-lg" onclick="checkAnswer(this, false, 'q3_feedback_wrong2')">
+                    <p data-lang-key="step3Opt3">For example, you can video chat with grandparents who live far away.</p>
+                </div>
+            </div>
+            <div id="q3-feedback" class="feedback mt-2 text-sm font-semibold"></div>
+            <button class="mt-4 float-right px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition hidden" onclick="nextSlide()" data-lang-key="nextButton">Next</button>
+        </div>
+
+        <!-- Slide 7: Paragraph Formula -->
+        <div class="slide p-6 sm:p-8 bg-white rounded-2xl shadow-xl fade-in" data-slide="7">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800" data-lang-key="formulaTitle">🧩 The Perfect Paragraph Formula</h2>
+            <div class="mt-4 text-center text-xl sm:text-2xl font-bold text-gray-700 p-6 bg-gray-50 rounded-lg flex flex-wrap items-center justify-center gap-2 sm:gap-4">
+                <span class="p-3 bg-blue-200 text-blue-800 rounded-lg" data-lang-key="formulaTopic">Topic Sentence</span>
+                <span>+</span>
+                <span class="p-3 bg-green-200 text-green-800 rounded-lg" data-lang-key="formulaSupport">2-3 Supporting Sentences</span>
+                <span>+</span>
+                <span class="p-3 bg-purple-200 text-purple-800 rounded-lg" data-lang-key="formulaConcluding">Concluding Sentence</span>
+            </div>
+            <p class="mt-6 text-lg text-gray-600" data-lang-key="formulaDesc">Now, let's practice building one from scratch!</p>
+            <button class="mt-8 float-right px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition" onclick="nextSlide()" data-lang-key="buildButton">Let's Build!</button>
+        </div>
+
+        <!-- Slide 8: Group Practice Activity -->
+        <div class="slide p-6 sm:p-8 bg-white rounded-2xl shadow-xl fade-in" data-slide="8">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800" data-lang-key="practiceTitle">💡 Group Practice Activity</h2>
+            <p class="mt-2 text-gray-600" data-lang-key="practiceDesc">The topic is <span class="font-bold" data-lang-key="practiceTopic">Healthy Eating</span>. Drag and drop the sentences into the correct order to build a strong paragraph.</p>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-semibold text-center mb-2" data-lang-key="yourParagraph">Your Paragraph</h3>
+                    <div id="drop-zone" class="p-3 space-y-2 rounded-lg drop-zone"></div>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-center mb-2" data-lang-key="sentenceBank">Sentence Bank</h3>
+                    <div id="sentence-bank" class="p-3 space-y-2 rounded-lg bg-gray-100 drop-zone">
+                        <div class="draggable p-3 bg-white rounded-md shadow-sm border border-gray-200" draggable="true" data-order="4" data-lang-key="practiceOpt4">As a result, choosing healthy foods is essential for a long and active life.</div>
+                        <div class="draggable p-3 bg-white rounded-md shadow-sm border border-gray-200" draggable="true" data-order="1" data-lang-key="practiceOpt1">Eating a balanced diet is crucial for keeping your body and mind strong.</div>
+                        <div class="draggable p-3 bg-white rounded-md shadow-sm border border-gray-200" draggable="true" data-order="3" data-lang-key="practiceOpt3">Furthermore, nutritious food like fruits and vegetables provide vitamins that help you focus in school.</div>
+                        <div class="draggable p-3 bg-white rounded-md shadow-sm border border-gray-200" draggable="true" data-order="2" data-lang-key="practiceOpt2">For instance, foods rich in protein help build muscles, while carbohydrates provide energy for daily activities.</div>
+                    </div>
+                </div>
+            </div>
+            <div id="q4-feedback" class="feedback mt-2 text-sm font-semibold text-center"></div>
+            <button id="check-order-btn" class="mt-4 block mx-auto px-6 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition" onclick="checkOrder()" data-lang-key="checkOrderButton">Check Order</button>
+            <button class="mt-4 float-right px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition hidden" onclick="nextSlide()" data-lang-key="nextButton">Next</button>
+        </div>
+
+        <!-- Slide 9: Transition Words -->
+        <div class="slide p-6 sm:p-8 bg-white rounded-2xl shadow-xl fade-in" data-slide="9">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800" data-lang-key="transitionsTitle">🪄 Transition Words Bank</h2>
+            <p class="mt-2 text-gray-600" data-lang-key="transitionsDesc">Transitions make your writing flow smoothly. Choose the best transition word to complete the sentence.</p>
+            <div class="mt-6 p-4 bg-gray-100 rounded-lg text-lg">
+                <p data-lang-key="transitionsSentence">Pollution harms the environment; <span class="font-bold underline underline-offset-4" id="blank-space">_________</span>, dirty air can cause health problems.</p>
+            </div>
+            <div id="q5-options" class="mt-4 flex flex-wrap justify-center gap-3">
+                <button class="option-card border-2 border-gray-200 px-4 py-2 rounded-lg bg-white" onclick="checkAnswer(this, false, 'q5_feedback_wrong1')" data-lang-key="transitionsOpt1">For example</button>
+                <button class="option-card border-2 border-gray-200 px-4 py-2 rounded-lg bg-white" onclick="checkAnswer(this, false, 'q5_feedback_wrong2')" data-lang-key="transitionsOpt2">Finally</button>
+                <button class="option-card border-2 border-gray-200 px-4 py-2 rounded-lg bg-white" onclick="checkAnswer(this, true, 'q5_feedback_correct')" data-lang-key="transitionsOpt3">In addition</button>
+            </div>
+            <div id="q5-feedback" class="feedback mt-2 text-sm font-semibold text-center"></div>
+            <button class="mt-4 float-right px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition hidden" onclick="nextSlide()" data-lang-key="nextButton">Next</button>
+        </div>
+
+        <!-- Slide 10: Final Challenge -->
+        <div class="slide p-6 sm:p-8 bg-white rounded-2xl shadow-xl fade-in" data-slide="10">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800" data-lang-key="finalTitle">🎓 Final Challenge!</h2>
+            <p class="mt-2 text-gray-600" data-lang-key="finalDesc">Let's put it all together. Build a paragraph on the topic: <span class="font-bold" data-lang-key="finalTopic">"Technology in schools has both advantages and disadvantages."</span></p>
+            <div class="mt-6 space-y-6">
+                <div>
+                    <h3 class="font-semibold text-lg text-blue-700" data-lang-key="finalQ1">1. Choose your Topic Sentence:</h3>
+                    <div id="final-q1-options" class="mt-2 space-y-2">
+                        <div class="option-card border-2 border-gray-200 p-3 rounded-lg" onclick="checkFinalAnswer(this, true, 1)" data-lang-key="finalQ1Opt1">While technology offers many benefits for learning, it can also create distractions in the classroom.</div>
+                        <div class="option-card border-2 border-gray-200 p-3 rounded-lg" onclick="checkFinalAnswer(this, false, 1)" data-lang-key="finalQ1Opt2">I like using tablets in school.</div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-lg text-green-700" data-lang-key="finalQ2">2. Choose a Supporting Detail:</h3>
+                    <div id="final-q2-options" class="mt-2 space-y-2">
+                        <div class="option-card border-2 border-gray-200 p-3 rounded-lg" onclick="checkFinalAnswer(this, false, 2)" data-lang-key="finalQ2Opt1">In conclusion, technology is a mixed blessing.</div>
+                        <div class="option-card border-2 border-gray-200 p-3 rounded-lg" onclick="checkFinalAnswer(this, true, 2)" data-lang-key="finalQ2Opt2">For example, students can use computers to research topics quickly, but they might also get sidetracked by games or social media.</div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-lg text-purple-700" data-lang-key="finalQ3">3. Choose your Concluding Sentence:</h3>
+                    <div id="final-q3-options" class="mt-2 space-y-2">
+                         <div class="option-card border-2 border-gray-200 p-3 rounded-lg" onclick="checkFinalAnswer(this, true, 3)" data-lang-key="finalQ3Opt1">Therefore, schools must find a balance to use technology effectively without letting it hinder student focus.</div>
+                         <div class="option-card border-2 border-gray-200 p-3 rounded-lg" onclick="checkFinalAnswer(this, false, 3)" data-lang-key="finalQ3Opt2">The first computer was very big.</div>
+                    </div>
+                </div>
+            </div>
+             <button class="mt-8 float-right px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition hidden" onclick="nextSlide()" data-lang-key="finishButton">Finish!</button>
+        </div>
+
+        <!-- Slide 11: Completion -->
+        <div class="slide text-center p-8 bg-white rounded-2xl shadow-xl fade-in" data-slide="11">
+            <h1 class="text-4xl sm:text-5xl font-bold text-green-600" data-lang-key="completeTitle">🎉 Congratulations! 🎉</h1>
+            <p class="mt-4 text-lg sm:text-xl text-gray-600" data-lang-key="completeSub">You've mastered the art of building strong body paragraphs. You're ready to write amazing essays!</p>
+            <p class="mt-2 text-sm text-gray-500" data-lang-key="completePractice">Practice makes perfect! ✍️</p>
+            <button class="mt-8 px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-transform transform hover:scale-105" onclick="restartGame()" data-lang-key="playAgainButton">Play Again</button>
+        </div>
+
+    </div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    let currentLang = 'en';
+
+    const translations = {
+        en: {
+            title: '✏️ Writing Strong Body Paragraphs',
+            subtitle: '“Now that we’ve written great introductions — let’s build the middle!”',
+            grade: '👩‍🏫 6th Grade Global Perspectives',
+            startButton: "Let's Start!",
+            whatIsTitle: 'What Is a Body Paragraph?',
+            whatIsLi1: 'It’s the <span class="text-blue-500 font-semibold">main part</span> of your essay.',
+            whatIsLi2: 'Each paragraph focuses on <span class="text-blue-500 font-semibold">one main idea.</span>',
+            whatIsLi3: 'It gives details, examples, and evidence to support your thesis.',
+            sandwich: '💡 Think of it as the “meat” of your essay sandwich! 🍔',
+            gotItButton: 'Got it!',
+            nextButton: 'Next',
+            structureTitle: 'Structure of a Body Paragraph',
+            topicSentenceTitle: '1️⃣ Topic Sentence',
+            topicSentenceDesc: 'Tells the main idea of the paragraph.',
+            supportingDetailsTitle: '2️⃣ Supporting Details',
+            supportingDetailsDesc: 'Explain, describe, or give examples.',
+            concludingSentenceTitle: '3️⃣ Concluding Sentence',
+            concludingSentenceDesc: 'Wraps up and connects to the next paragraph.',
+            oneIdea: '🎯 One main idea per paragraph!',
+            step1Title: 'Step 1: Write a Strong Topic Sentence',
+            step1Desc: "Your topic sentence clearly states what the paragraph is about. Let's try it!",
+            step1Topic: 'Topic: The benefits of playing sports.',
+            step1Question: 'Which is the BEST topic sentence?',
+            step1Opt1: 'For example, soccer helps you run faster and improves teamwork.',
+            step1Opt2: 'Playing sports is a great way for kids to stay healthy and learn important life skills.',
+            step1Opt3: 'Therefore, everyone should join a sports team to have fun and get exercise.',
+            q1_feedback_wrong1: 'This is a supporting detail, not the main idea.',
+            q1_feedback_correct: 'Great job! This sentence states the main idea for the whole paragraph.',
+            q1_feedback_wrong2: 'This sounds like a concluding sentence. It wraps things up.',
+            step2Title: 'Step 2: Add Supporting Details',
+            step2Desc: 'Supporting details explain and prove your point with facts, examples, or reasons.',
+            step2Topic: 'Topic Sentence: Taking care of a pet teaches responsibility.',
+            step2Question: 'Which TWO sentences are good supporting details?',
+            step2Opt1: 'A pet needs to be fed and given water every day, which is a consistent daily chore.',
+            step2Opt2: 'My favorite type of dog is a golden retriever.',
+            step2Opt3: 'Additionally, owners must walk their pets for exercise and clean up after them.',
+            q2_feedback_correct: 'You found both supporting details! Excellent!',
+            q2_feedback_wrong: 'Not quite. Remember, supporting details give specific examples or reasons.',
+            step3Title: 'Step 3: End with a Concluding Sentence',
+            step3Desc: "Your concluding sentence should wrap up your paragraph's point in a new way.",
+            step3Topic: 'Topic Sentence: Social media helps people stay connected with friends and family.',
+            step3Support: 'Support: It allows instant communication across long distances and people can share photos and updates easily.',
+            step3Question: 'Which is the BEST concluding sentence?',
+            step3Opt1: 'Another reason social media is useful is for finding news.',
+            step3Opt2: 'Because it bridges distances and makes sharing simple, social media is a powerful tool for maintaining relationships.',
+            step3Opt3: 'For example, you can video chat with grandparents who live far away.',
+            q3_feedback_wrong1: 'This sounds like a topic sentence for a different paragraph.',
+            q3_feedback_correct: 'Perfect! This sentence summarizes the main idea in a new way.',
+            q3_feedback_wrong2: 'This is a specific example, which is a supporting detail.',
+            formulaTitle: '🧩 The Perfect Paragraph Formula',
+            formulaTopic: 'Topic Sentence',
+            formulaSupport: '2-3 Supporting Sentences',
+            formulaConcluding: 'Concluding Sentence',
+            formulaDesc: "Now, let's practice building one from scratch!",
+            buildButton: "Let's Build!",
+            practiceTitle: '💡 Group Practice Activity',
+            practiceDesc: 'The topic is <span class="font-bold">Healthy Eating</span>. Drag and drop the sentences into the correct order to build a strong paragraph.',
+            practiceTopic: 'Healthy Eating',
+            yourParagraph: 'Your Paragraph',
+            sentenceBank: 'Sentence Bank',
+            practiceOpt1: 'Eating a balanced diet is crucial for keeping your body and mind strong.',
+            practiceOpt2: 'For instance, foods rich in protein help build muscles, while carbohydrates provide energy for daily activities.',
+            practiceOpt3: 'Furthermore, nutritious food like fruits and vegetables provide vitamins that help you focus in school.',
+            practiceOpt4: 'As a result, choosing healthy foods is essential for a long and active life.',
+            checkOrderButton: 'Check Order',
+            q4_feedback_correct: "Perfect order! That's a well-structured paragraph.",
+            q4_feedback_wrong: "Not quite the right order. Try again! Think: Topic -> Details -> Conclusion.",
+            q4_feedback_not_all: "Make sure to drag all four sentences into the box!",
+            transitionsTitle: '🪄 Transition Words Bank',
+            transitionsDesc: 'Transitions make your writing flow smoothly. Choose the best transition word to complete the sentence.',
+            transitionsSentence: 'Pollution harms the environment; <span class="font-bold underline underline-offset-4" id="blank-space">_________</span>, dirty air can cause health problems.',
+            transitionsOpt1: 'For example',
+            transitionsOpt2: 'Finally',
+            transitionsOpt3: 'In addition',
+            q5_feedback_wrong1: 'This word shows an example, but we need one that adds another idea.',
+            q5_feedback_wrong2: 'This word concludes an idea. We are adding a new point here.',
+            q5_feedback_correct: "Yes! 'In addition' is perfect for adding a related idea.",
+            finalTitle: '🎓 Final Challenge!',
+            finalDesc: 'Let\'s put it all together. Build a paragraph on the topic: <span class="font-bold">"Technology in schools has both advantages and disadvantages."</span>',
+            finalTopic: '"Technology in schools has both advantages and disadvantages."',
+            finalQ1: '1. Choose your Topic Sentence:',
+            finalQ1Opt1: 'While technology offers many benefits for learning, it can also create distractions in the classroom.',
+            finalQ1Opt2: 'I like using tablets in school.',
+            finalQ2: '2. Choose a Supporting Detail:',
+            finalQ2Opt1: 'In conclusion, technology is a mixed blessing.',
+            finalQ2Opt2: 'For example, students can use computers to research topics quickly, but they might also get sidetracked by games or social media.',
+            finalQ3: '3. Choose your Concluding Sentence:',
+            finalQ3Opt1: 'Therefore, schools must find a balance to use technology effectively without letting it hinder student focus.',
+            finalQ3Opt2: 'The first computer was very big.',
+            finishButton: 'Finish!',
+            completeTitle: '🎉 Congratulations! 🎉',
+            completeSub: "You've mastered the art of building strong body paragraphs. You're ready to write amazing essays!",
+            completePractice: 'Practice makes perfect! ✍️',
+            playAgainButton: 'Play Again'
+        },
+        tr: {
+            title: '✏️ Güçlü Gelişme Paragrafları Yazma',
+            subtitle: '“Harika girişler yazdığımıza göre, şimdi ortayı inşa edelim!”',
+            grade: '👩‍🏫 6. Sınıf Küresel Perspektifler',
+            startButton: 'Başlayalım!',
+            whatIsTitle: 'Gelişme Paragrafı Nedir?',
+            whatIsLi1: 'Bu, makalenizin <span class="text-blue-500 font-semibold">ana kısmıdır</span>.',
+            whatIsLi2: 'Her paragraf <span class="text-blue-500 font-semibold">tek bir ana fikre</span> odaklanır.',
+            whatIsLi3: 'Tezinizi desteklemek için ayrıntılar, örnekler ve kanıtlar sunar.',
+            sandwich: '💡 Bunu makale sandviçinizin "eti" olarak düşünün! 🍔',
+            gotItButton: 'Anladım!',
+            nextButton: 'İleri',
+            structureTitle: 'Bir Gelişme Paragrafının Yapısı',
+            topicSentenceTitle: '1️⃣ Konu Cümlesi',
+            topicSentenceDesc: 'Paragrafın ana fikrini belirtir.',
+            supportingDetailsTitle: '2️⃣ Destekleyici Detaylar',
+            supportingDetailsDesc: 'Açıklar, tanımlar veya örnekler verir.',
+            concludingSentenceTitle: '3️⃣ Sonuç Cümlesi',
+            concludingSentenceDesc: 'Toparlar ve bir sonraki paragrafa bağlanır.',
+            oneIdea: '🎯 Her paragraf için bir ana fikir!',
+            step1Title: 'Adım 1: Güçlü Bir Konu Cümlesi Yazın',
+            step1Desc: 'Konu cümleniz, paragrafın ne hakkında olduğunu açıkça belirtir. Deneyelim!',
+            step1Topic: 'Konu: Spor yapmanın faydaları.',
+            step1Question: 'EN İYİ konu cümlesi hangisidir?',
+            step1Opt1: 'Örneğin, futbol daha hızlı koşmanıza yardımcı olur ve takım çalışmasını geliştirir.',
+            step1Opt2: 'Spor yapmak, çocukların sağlıklı kalması ve önemli yaşam becerileri öğrenmesi için harika bir yoldur.',
+            step1Opt3: 'Bu nedenle, herkes eğlenmek ve egzersiz yapmak için bir spor takımına katılmalıdır.',
+            q1_feedback_wrong1: 'Bu bir destekleyici detay, ana fikir değil.',
+            q1_feedback_correct: 'Harika iş! Bu cümle tüm paragrafın ana fikrini belirtiyor.',
+            q1_feedback_wrong2: 'Bu bir sonuç cümlesi gibi duruyor. Konuyu toparlıyor.',
+            step2Title: 'Adım 2: Destekleyici Detaylar Ekleyin',
+            step2Desc: 'Destekleyici ayrıntılar, görüşünüzü gerçekler, örnekler veya nedenlerle açıklar ve kanıtlar.',
+            step2Topic: 'Konu Cümlesi: Bir evcil hayvana bakmak sorumluluk öğretir.',
+            step2Question: 'Hangi İKİ cümle iyi destekleyici detaylardır?',
+            step2Opt1: 'Bir evcil hayvanın her gün beslenmesi ve su verilmesi gerekir, bu da tutarlı bir günlük iştir.',
+            step2Opt2: 'En sevdiğim köpek türü golden retriever.',
+            step2Opt3: 'Ayrıca, sahipleri evcil hayvanlarını egzersiz için gezdirmeli ve arkalarını temizlemelidir.',
+            q2_feedback_correct: 'İki destekleyici detayı da buldunuz! Mükemmel!',
+            q2_feedback_wrong: 'Tam olarak değil. Unutmayın, destekleyici detaylar belirli örnekler veya nedenler verir.',
+            step3Title: 'Adım 3: Bir Sonuç Cümlesi ile Bitirin',
+            step3Desc: 'Sonuç cümleniz, paragrafınızın ana fikrini yeni bir şekilde özetlemelidir.',
+            step3Topic: 'Konu Cümlesi: Sosyal medya, insanların arkadaşları ve aileleriyle bağlantıda kalmasına yardımcı olur.',
+            step3Support: 'Destek: Uzun mesafeler arasında anında iletişime izin verir ve insanlar kolayca fotoğraf ve güncelleme paylaşabilir.',
+            step3Question: 'EN İYİ sonuç cümlesi hangisidir?',
+            step3Opt1: 'Sosyal medyanın yararlı olmasının bir başka nedeni de haber bulmaktır.',
+            step3Opt2: 'Mesafeleri kapattığı ve paylaşımı basitleştirdiği için sosyal medya, ilişkileri sürdürmek için güçlü bir araçtır.',
+            step3Opt3: 'Örneğin, uzakta yaşayan büyükanne ve büyükbabanızla görüntülü sohbet edebilirsiniz.',
+            q3_feedback_wrong1: 'Bu, farklı bir paragraf için bir konu cümlesi gibi duruyor.',
+            q3_feedback_correct: 'Mükemmel! Bu cümle ana fikri yeni bir şekilde özetliyor.',
+            q3_feedback_wrong2: 'Bu, destekleyici bir detay olan özel bir örnektir.',
+            formulaTitle: '🧩 Mükemmel Paragraf Formülü',
+            formulaTopic: 'Konu Cümlesi',
+            formulaSupport: '2-3 Destekleyici Cümle',
+            formulaConcluding: 'Sonuç Cümlesi',
+            formulaDesc: 'Şimdi, sıfırdan bir tane oluşturmayı deneyelim!',
+            buildButton: 'Hadi İnşa Edelim!',
+            practiceTitle: '💡 Grup Pratiği Etkinliği',
+            practiceDesc: 'Konu <span class="font-bold">Sağlıklı Beslenme</span>. Güçlü bir paragraf oluşturmak için cümleleri doğru sıraya sürükleyip bırakın.',
+            practiceTopic: 'Sağlıklı Beslenme',
+            yourParagraph: 'Paragrafınız',
+            sentenceBank: 'Cümle Bankası',
+            practiceOpt1: 'Dengeli beslenmek, vücudunuzu ve zihninizi güçlü tutmak için çok önemlidir.',
+            practiceOpt2: 'Örneğin, protein açısından zengin yiyecekler kas yapımına yardımcı olurken, karbonhidratlar günlük aktiviteler için enerji sağlar.',
+            practiceOpt3: 'Ayrıca, meyve ve sebzeler gibi besleyici yiyecekler okulda odaklanmanıza yardımcı olan vitaminler sağlar.',
+            practiceOpt4: 'Sonuç olarak, sağlıklı yiyecekler seçmek uzun ve aktif bir yaşam için esastır.',
+            checkOrderButton: 'Sırayı Kontrol Et',
+            q4_feedback_correct: 'Mükemmel sıra! Bu iyi yapılandırılmış bir paragraf.',
+            q4_feedback_wrong: 'Sıra pek doğru değil. Tekrar deneyin! Düşünün: Konu -> Detaylar -> Sonuç.',
+            q4_feedback_not_all: 'Kutuya dört cümlenin hepsini sürüklediğinizden emin olun!',
+            transitionsTitle: '🪄 Geçiş Kelimeleri Bankası',
+            transitionsDesc: 'Geçişler yazınızın akıcı olmasını sağlar. Cümleyi tamamlamak için en iyi geçiş kelimesini seçin.',
+            transitionsSentence: 'Kirlilik çevreye zarar verir; <span class="font-bold underline underline-offset-4" id="blank-space">_________</span>, kirli hava sağlık sorunlarına neden olabilir.',
+            transitionsOpt1: 'Örneğin',
+            transitionsOpt2: 'Son olarak',
+            transitionsOpt3: 'Ek olarak',
+            q5_feedback_wrong1: 'Bu kelime bir örnek gösterir, ancak başka bir fikir ekleyen birine ihtiyacımız var.',
+            q5_feedback_wrong2: 'Bu kelime bir fikri sonuçlandırır. Burada yeni bir nokta ekliyoruz.',
+            q5_feedback_correct: "Evet! 'Ek olarak' ilgili bir fikir eklemek için mükemmeldir.",
+            finalTitle: '🎓 Son Meydan Okuma!',
+            finalDesc: 'Hadi hepsini bir araya getirelim. Şu konuda bir paragraf oluşturun: <span class="font-bold">"Okullardaki teknolojinin hem avantajları hem de dezavantajları vardır."</span>',
+            finalTopic: '"Okullardaki teknolojinin hem avantajları hem de dezavantajları vardır."',
+            finalQ1: '1. Konu Cümlenizi Seçin:',
+            finalQ1Opt1: 'Teknoloji öğrenme için birçok fayda sunarken, sınıfta dikkat dağıtıcı unsurlar da yaratabilir.',
+            finalQ1Opt2: 'Okulda tablet kullanmayı seviyorum.',
+            finalQ2: '2. Bir Destekleyici Detay Seçin:',
+            finalQ2Opt1: 'Sonuç olarak, teknoloji karışık bir nimettir.',
+            finalQ2Opt2: 'Örneğin, öğrenciler konuları hızlıca araştırmak için bilgisayarları kullanabilirler, ancak oyunlar veya sosyal medya tarafından dikkatleri dağılabilir.',
+            finalQ3: '3. Sonuç Cümlenizi Seçin:',
+            finalQ3Opt1: 'Bu nedenle, okullar öğrenci odağını engellemeden teknolojiyi etkili bir şekilde kullanmak için bir denge bulmalıdır.',
+            finalQ3Opt2: 'İlk bilgisayar çok büyüktü.',
+            finishButton: 'Bitir!',
+            completeTitle: '🎉 Tebrikler! 🎉',
+            completeSub: 'Güçlü gelişme paragrafları oluşturma sanatında ustalaştınız. Harika makaleler yazmaya hazırsınız!',
+            completePractice: 'Pratik yapmak mükemmelleştirir! ✍️',
+            playAgainButton: 'Tekrar Oyna'
+        },
+        zh: {
+            title: '✏️ 编写有力的正文段落',
+            subtitle: '“既然我们已经写好了精彩的引言——让我们来构建中间部分吧！”',
+            grade: '👩‍🏫 六年级全球视野',
+            startButton: '开始吧！',
+            whatIsTitle: '什么是正文段落？',
+            whatIsLi1: '它是你文章的<span class="text-blue-500 font-semibold">主要部分</span>。',
+            whatIsLi2: '每个段落都围绕<span class="text-blue-500 font-semibold">一个中心思想</span>展开。',
+            whatIsLi3: '它提供细节、例子和证据来支持你的论点。',
+            sandwich: '💡 把它想象成你文章三明治里的“肉”！🍔',
+            gotItButton: '明白了！',
+            nextButton: '下一个',
+            structureTitle: '正文段落的结构',
+            topicSentenceTitle: '1️⃣ 主题句',
+            topicSentenceDesc: '陈述段落的中心思想。',
+            supportingDetailsTitle: '2️⃣ 支撑细节',
+            supportingDetailsDesc: '解释、描述或举例说明。',
+            concludingSentenceTitle: '3️⃣ 总结句',
+            concludingSentenceDesc: '总结并连接到下一段。',
+            oneIdea: '🎯 每段一个中心思想！',
+            step1Title: '第一步：写一个强有力的主题句',
+            step1Desc: '你的主题句清晰地陈述了段落的内容。我们来试试吧！',
+            step1Topic: '主题：运动的好处。',
+            step1Question: '哪个是最好的主题句？',
+            step1Opt1: '例如，踢足球可以帮助你跑得更快，并提高团队合作能力。',
+            step1Opt2: '运动是孩子们保持健康和学习重要生活技能的好方法。',
+            step1Opt3: '因此，每个人都应该加入运动队，享受乐趣并锻炼身体。',
+            q1_feedback_wrong1: '这是一个支撑细节，不是中心思想。',
+            q1_feedback_correct: '干得漂亮！这个句子陈述了整个段落的中心思想。',
+            q1_feedback_wrong2: '这听起来像一个总结句。它在总结观点。',
+            step2Title: '第二步：添加支撑细节',
+            step2Desc: '支撑细节用事实、例子或理由来解释和证明你的观点。',
+            step2Topic: '主题句：照顾宠物可以培养责任感。',
+            step2Question: '哪两个句子是好的支撑细节？',
+            step2Opt1: '宠物每天都需要喂食和喂水，这是一项持续的日常杂务。',
+            step2Opt2: '我最喜欢的狗是金毛寻回犬。',
+            step2Opt3: '此外，主人还必须带宠物散步锻炼并清理它们的排泄物。',
+            q2_feedback_correct: '你找到了两个支撑细节！太棒了！',
+            q2_feedback_wrong: '不完全对。记住，支撑细节是提供具体的例子或理由。',
+            step3Title: '第三步：用总结句结尾',
+            step3Desc: '你的总结句应该用一种新的方式来总结你段落的观点。',
+            step3Topic: '主题句：社交媒体帮助人们与朋友和家人保持联系。',
+            step3Support: '支撑：它允许远距离即时通讯，人们可以轻松分享照片和动态。',
+            step3Question: '哪个是最好的总结句？',
+            step3Opt1: '社交媒体有用的另一个原因是用来查找新闻。',
+            step3Opt2: '因为它跨越了距离，使分享变得简单，所以社交媒体是维持关系的强大工具。',
+            step3Opt3: '例如，你可以与远方的祖父母进行视频聊天。',
+            q3_feedback_wrong1: '这听起来像是另一个段落的主题句。',
+            q3_feedback_correct: '完美！这个句子用一种新的方式总结了中心思想。',
+            q3_feedback_wrong2: '这是一个具体的例子，属于支撑细节。',
+            formulaTitle: '🧩 完美段落公式',
+            formulaTopic: '主题句',
+            formulaSupport: '2-3个支撑句',
+            formulaConcluding: '总结句',
+            formulaDesc: '现在，让我们从头开始练习构建一个段落吧！',
+            buildButton: '开始构建！',
+            practiceTitle: '💡 小组练习活动',
+            practiceDesc: '主题是<span class="font-bold">健康饮食</span>。将句子拖放到正确的顺序以构建一个强有力的段落。',
+            practiceTopic: '健康饮食',
+            yourParagraph: '你的段落',
+            sentenceBank: '句子库',
+            practiceOpt1: '均衡饮食对于保持身心强壮至关重要。',
+            practiceOpt2: '例如，富含蛋白质的食物有助于肌肉生长，而碳水化合物为日常活动提供能量。',
+            practiceOpt3: '此外，水果和蔬菜等营养丰富的食物提供维生素，帮助你在学校集中注意力。',
+            practiceOpt4: '因此，选择健康的食物对于长寿和积极的生活至关重要。',
+            checkOrderButton: '检查顺序',
+            q4_feedback_correct: '顺序完美！这是一个结构良好的段落。',
+            q4_feedback_wrong: '顺序不太对。再试一次！思考一下：主题 -> 细节 -> 总结。',
+            q4_feedback_not_all: '请确保将所有四个句子都拖到框中！',
+            transitionsTitle: '🪄 过渡词库',
+            transitionsDesc: '过渡词使你的写作流畅自然。选择最合适的过渡词来完成句子。',
+            transitionsSentence: '污染危害环境；<span class="font-bold underline underline-offset-4" id="blank-space">_________</span>，肮脏的空气会导致健康问题。',
+            transitionsOpt1: '例如',
+            transitionsOpt2: '最后',
+            transitionsOpt3: '此外',
+            q5_feedback_wrong1: '这个词用来举例，但我们需要一个补充说法的词。',
+            q5_feedback_wrong2: '这个词用来总结观点。我们在这里是添加一个新的观点。',
+            q5_feedback_correct: '是的！“此外”非常适合用来补充相关的观点。',
+            finalTitle: '🎓 最终挑战！',
+            finalDesc: '让我们把所有知识点整合起来。围绕这个主题构建一个段落：<span class="font-bold">“学校中的技术既有优点也有缺点。”</span>',
+            finalTopic: '“学校中的技术既有优点也有缺点。”',
+            finalQ1: '1. 选择你的主题句：',
+            finalQ1Opt1: '虽然技术为学习提供了许多好处，但它也可能在课堂上造成干扰。',
+            finalQ1Opt2: '我喜欢在学校使用平板电脑。',
+            finalQ2: '2. 选择一个支撑细节：',
+            finalQ2Opt1: '总而言之，技术是福祸相依的。',
+            finalQ2Opt2: '例如，学生可以使用电脑快速研究课题，但他们也可能被游戏或社交媒体分心。',
+            finalQ3: '3. 选择你的总结句：',
+            finalQ3Opt1: '因此，学校必须找到一个平衡点，以有效地使用技术，同时不让它妨碍学生的注意力。',
+            finalQ3Opt2: '第一台计算机非常大。',
+            finishButton: '完成！',
+            completeTitle: '🎉 恭喜！🎉',
+            completeSub: '你已经掌握了构建强有力正文段落的技巧。你准备好写出精彩的文章了！',
+            completePractice: '熟能生巧！✍️',
+            playAgainButton: '再玩一次'
+        }
+    };
+
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        const elements = document.querySelectorAll('[data-lang-key]');
+        elements.forEach(el => {
+            const key = el.dataset.langKey;
+            if (translations[lang] && translations[lang][key]) {
+                el.innerHTML = translations[lang][key];
+            }
+        });
+        nextSlide();
+    }
+
+    function showSlide(index) {
+        slides.forEach((slide, i) => {
+            slide.classList.toggle('active', i === index);
+        });
+    }
+
+    function nextSlide() {
+        if (currentSlide < slides.length - 1) {
+            currentSlide++;
+            showSlide(currentSlide);
+        }
+    }
+
+    function restartGame() {
+        location.reload();
+    }
+
+    function checkAnswer(element, isCorrect, feedbackKey) {
+        const parentOptions = element.parentElement;
+        const feedbackEl = document.getElementById(parentOptions.id.replace('options', 'feedback'));
+        const feedbackText = translations[currentLang][feedbackKey];
+        
+        if (isCorrect) {
+            // Disable all options only when the correct answer is chosen
+            parentOptions.querySelectorAll('.option-card').forEach(opt => {
+                opt.onclick = null;
+                opt.style.cursor = 'default';
+            });
+
+            element.classList.remove('incorrect'); // In case they clicked wrong first
+            element.classList.add('correct');
+            feedbackEl.textContent = feedbackText;
+            feedbackEl.classList.add('text-green-600');
+            feedbackEl.classList.remove('text-red-600');
+            parentOptions.parentElement.querySelector('button[onclick="nextSlide()"]').classList.remove('hidden');
+        } else {
+            element.classList.add('incorrect');
+            // Only disable the wrong option that was clicked
+            element.onclick = null;
+            element.style.cursor = 'default';
+            feedbackEl.textContent = feedbackText;
+            feedbackEl.classList.add('text-red-600');
+        }
+    }
+
+    let correctCount = 0;
+    
+    function checkAnswerMulti(element, isCorrect) {
+        // Prevent re-clicking the same option
+        if (element.onclick === null) return;
+
+        const feedbackEl = document.getElementById('q2-feedback');
+        const parentOptions = element.parentElement;
+
+        if (isCorrect) {
+            element.classList.add('correct');
+            element.onclick = null;
+            element.style.cursor = 'default';
+            correctCount++;
+            feedbackEl.textContent = ''; // Clear wrong feedback if any
+            feedbackEl.classList.remove('text-red-600');
+        } else {
+            element.classList.add('incorrect');
+            element.onclick = null;
+            element.style.cursor = 'default';
+            feedbackEl.textContent = translations[currentLang]['q2_feedback_wrong'];
+            feedbackEl.classList.add('text-red-600');
+        }
+
+
+        if (correctCount === 2) {
+            feedbackEl.textContent = translations[currentLang]['q2_feedback_correct'];
+            feedbackEl.classList.add('text-green-600');
+            parentOptions.parentElement.querySelector('button').classList.remove('hidden');
+            
+            // Disable the last (incorrect) option if it's still clickable
+            parentOptions.querySelectorAll('.option-card').forEach(opt => {
+                if(opt.onclick !== null) {
+                   opt.onclick = null;
+                   opt.style.cursor = 'default';
+                }
+            });
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const draggables = document.querySelectorAll('.draggable');
+        const containers = document.querySelectorAll('.drop-zone');
+        let draggedItem = null;
+
+        draggables.forEach(draggable => {
+            draggable.addEventListener('dragstart', () => {
+                draggedItem = draggable;
+                setTimeout(() => draggable.style.opacity = '0.5', 0);
+            });
+
+            draggable.addEventListener('dragend', () => {
+                setTimeout(() => {
+                    draggedItem.style.opacity = '1';
+                    draggedItem = null;
+                }, 0);
+            });
+        });
+
+        containers.forEach(container => {
+            container.addEventListener('dragover', e => {
+                e.preventDefault();
+                container.classList.add('over');
+            });
+
+            container.addEventListener('dragleave', () => {
+                container.classList.remove('over');
+            });
+
+            container.addEventListener('drop', e => {
+                e.preventDefault();
+                if (draggedItem) {
+                    container.appendChild(draggedItem);
+                }
+                container.classList.remove('over');
+            });
+        });
+    });
+
+    function checkOrder() {
+        const dropZone = document.getElementById('drop-zone');
+        const sentences = dropZone.querySelectorAll('.draggable');
+        const feedbackEl = document.getElementById('q4-feedback');
+        let isCorrect = true;
+
+        if (sentences.length !== 4) {
+             feedbackEl.textContent = translations[currentLang]['q4_feedback_not_all'];
+             feedbackEl.className = 'feedback mt-2 text-sm font-semibold text-center text-red-600';
+             return;
+        }
+
+        sentences.forEach((sentence, index) => {
+            if (parseInt(sentence.dataset.order) !== index + 1) {
+                isCorrect = false;
+            }
+        });
+
+        if (isCorrect) {
+            feedbackEl.textContent = translations[currentLang]['q4_feedback_correct'];
+            feedbackEl.className = 'feedback mt-2 text-sm font-semibold text-center text-green-600';
+            document.querySelector('[data-slide="8"] button.hidden').classList.remove('hidden');
+            document.getElementById('check-order-btn').style.display = 'none';
+        } else {
+            feedbackEl.textContent = translations[currentLang]['q4_feedback_wrong'];
+            feedbackEl.className = 'feedback mt-2 text-sm font-semibold text-center text-red-600';
+        }
+    }
+    
+    function checkFinalAnswer(element, isCorrect, questionNum) {
+        const parentOptions = element.parentElement;
+        
+        if (isCorrect) {
+            // Disable both options in the group once correct one is selected
+            parentOptions.querySelectorAll('.option-card').forEach(opt => {
+                opt.onclick = null;
+                opt.style.cursor = 'default';
+            });
+            element.classList.add('correct');
+        } else {
+            // Only disable the incorrect one
+            element.classList.add('incorrect');
+            element.onclick = null;
+            element.style.cursor = 'default';
+        }
+        
+        // Check if all 3 correct answers have been selected
+        const correctAnswers = document.querySelectorAll('#final-q1-options .correct, #final-q2-options .correct, #final-q3-options .correct').length;
+
+        if (correctAnswers === 3) {
+            document.querySelector('[data-slide="10"] button').classList.remove('hidden');
+        }
+    }
+</script>
+</body>
+</html>
+
