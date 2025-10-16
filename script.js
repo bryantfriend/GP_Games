@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
-            fileName: 'paragraphs.html',
-            title: 'How to create a good paragraph'
+            fileName: 'paraphraserelaygame.html',
+            title: 'Paraphrase relay game 🙉🫠'
         }, 
         {
             fileName: 'goodtopicsentence.html',
