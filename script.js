@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'charts.html',
+            title: 'Learning about Charts 📊📈'
+        }, 
+        {
             fileName: 'paraphraserelaygame.html',
             title: 'Paraphrase relay game 🙉🫠'
         }, 
