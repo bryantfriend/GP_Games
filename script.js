@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'debate1.html',
+            title: 'Comparing Perspectives 🗣️'
+        }, 
+        {
             fileName: 'charts.html',
             title: 'Learning about Charts 📊📈'
         }, 
