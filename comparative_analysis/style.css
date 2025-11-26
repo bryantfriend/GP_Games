@@ -1,0 +1,110 @@
+/* style.css */
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f0f9ff; /* Light blue background */
+}
+.lesson-card, .quiz-card {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+}
+.lesson-card:hover, .quiz-card:hover {
+    transform: translateY(-2px);
+}
+.compare-table th {
+    background-color: #f87171; /* Red-500 */
+    color: white;
+}
+.compare-table td {
+    background-color: #fecaca; /* Red-200 */
+    vertical-align: top; /* Align text at the top of cells */
+}
+.compare-table th, .compare-table td {
+    padding: 12px;
+    text-align: left;
+}
+.btn-primary {
+    background-color: #4f46e5; /* Indigo-600 */
+    transition: background-color 0.2s;
+}
+.btn-primary:hover {
+    background-color: #4338ca; /* Indigo-700 */
+}
+.btn-answer {
+    transition: background-color 0.2s, transform 0.1s;
+}
+.btn-answer:active {
+    transform: scale(0.98);
+}
+
+/* --- Mobile Optimization (Responsive Design) --- */
+
+/* Adjust font sizes and padding for smaller screens (mobile first approach) */
+#app {
+    padding: 0; /* Remove horizontal padding from the app container itself */
+}
+
+/* Target smaller devices for table optimization */
+@media (max-width: 768px) {
+    .compare-table {
+        /* Force table to behave more like a list/stack on small screens */
+        display: block;
+        width: 100%;
+    }
+    .compare-table thead {
+        /* Hide the table header on small screens but keep accessible */
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+    }
+    .compare-table tr {
+        display: block;
+        margin-bottom: 0.6rem;
+        border: 1px solid #f87171; /* Highlight rows */
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .compare-table td {
+        /* Make table cells act like block elements */
+        display: block;
+        text-align: right !important;
+        border-bottom: 1px dotted #f87171;
+    }
+    .compare-table td:before {
+        /* Add the criteria label back using the data attribute */
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: #991b1b; /* Red-900 */
+    }
+    /* Special handling for the first column (Criteria) */
+    .compare-table tr td:first-child {
+        display: none; /* Hide the criteria column itself */
+    }
+    .compare-table tr td {
+        padding: 8px 12px;
+    }
+    
+    /* Responsive font size adjustments */
+    .lesson-card h1, .quiz-card h1 {
+        font-size: 1.8rem;
+    }
+    .lesson-card h2, .quiz-card h2 {
+        font-size: 1.5rem;
+    }
+    .text-lg {
+        font-size: 1rem;
+    }
+}
+
+/* Vector Graphic Style */
+.mobile-vector {
+    max-width: 100px; /* Limit size */
+    height: auto;
+}
