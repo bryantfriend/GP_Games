@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: '/comparative_analysis/index.html',
+            title: 'Comparative Analsysis Lesson 📊📈'
+        }, 
+        {
             fileName: 'debate1.html',
             title: 'Comparing Perspectives 🗣️'
         }, 
