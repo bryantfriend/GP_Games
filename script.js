@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'cause_effect.html',
+            title: 'Cause and Effects '
+        }, 
+        {
             fileName: '/comparative_analysis/index.html',
             title: 'Comparative Analsysis Lesson 📊📈'
         }, 
