@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cause & Effect: Global Perspectives (Kyrgyzstan)</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .lesson-nav-btn {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .lesson-nav-btn:hover {
+            background-color: #2563eb;
+        }
+        .game-option-btn {
+            /* Mobile Optimization: Large, easy-to-tap target */
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+            padding: 1rem;
+            border-radius: 1rem;
+            text-align: left;
+            transition: all 0.2s;
+            cursor: pointer;
+            min-height: 80px; /* Ensure sufficient height for touch */
+            display: flex;
+            align-items: center;
+        }
+        .game-option-btn:hover {
+            background-color: #a7f3d0;
+            transform: scale(1.02);
+        }
+        .correct {
+            background-color: #34d399 !important; /* Green */
+            border-color: #059669 !important;
+            color: white !important;
+            font-weight: bold;
+        }
+        .incorrect {
+            background-color: #fca5a5 !important; /* Red */
+            border-color: #ef4444 !important;
+            color: #7f1d1d !important;
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% {transform: translateX(0);}
+            20%, 60% {transform: translateX(-5px);}
+            40%, 80% {transform: translateX(5px);}
+        }
+        /* Custom SVG for engagement */
+        .svg-icon {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 1rem;
+        }
+    </style>
+    <!-- Firebase Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // IMPORTANT: Log debug messages for Firestore to the console
+        setLogLevel('Debug');
+
+        let db, auth;
+        let userId = 'unknown';
+        let appId;
+
+        // --- Firebase Initialization and Authentication ---
+        const initFirebase = async () => {
+            try {
+                // Global variables are provided by the canvas environment
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+                if (!firebaseConfig) {
+                    console.error("Firebase config not found.");
+                    document.getElementById('firebase-status').textContent = 'Error: Firebase Config Missing.';
+                    return;
+                }
+
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Sign-in logic
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Firebase Auth Successful. User ID:", userId);
+                        document.getElementById('firebase-status').textContent = `User ID: ${userId}`;
+                        
+                        // Satisfy Firestore mandate: create a dummy document for authentication log
+                        const logRef = doc(db, `artifacts/${appId}/users/${userId}/auth_log`, 'last_login');
+                        setDoc(logRef, {
+                            timestamp: new Date().toISOString(),
+                            purpose: 'Cause and Effect Game Session',
+                            appId: appId
+                        }).catch(e => console.error("Error writing document: ", e));
+                        
+                    } else {
+                        console.log("No user signed in.");
+                        document.getElementById('firebase-status').textContent = 'Signed out.';
+                    }
+                    // Start the app logic after auth is ready
+                    window.dispatchEvent(new Event('firebaseReady'));
+                });
+
+            } catch (error) {
+                console.error("Error during Firebase initialization:", error);
+                document.getElementById('firebase-status').textContent = `Error: ${error.message}`;
+            }
+        };
+
+        window.onload = initFirebase;
+    </script>
+</head>
+<body class="bg-indigo-50 min-h-screen flex flex-col items-center p-4 sm:p-8">
+
+    <div class="w-full max-w-4xl space-y-6">
+        <header class="text-center pb-4">
+            <h1 class="text-4xl font-extrabold text-indigo-700">🇰🇬 Cause & Effect Game 🌍</h1>
+            <p class="text-xl text-gray-600 mt-2">Global Perspectives for 6th/7th Grade Students</p>
+            <div id="firebase-status" class="text-xs mt-2 p-1 bg-gray-200 rounded-lg shadow-inner">
+                Initializing Firebase...
+            </div>
+        </header>
+
+        <!-- Main Content Card -->
+        <div id="main-content" class="card p-6 sm:p-10">
+            <!-- Lesson Slides Container -->
+            <div id="lesson-view">
+                <!-- Slides will be injected here -->
+            </div>
+
+            <!-- Game View Container (Hidden initially) -->
+            <div id="game-view" class="hidden">
+                <h2 class="text-3xl font-bold text-teal-600 mb-6 text-center">🧠 Practice Game: Match the Outcome!</h2>
+
+                <div id="score-display" class="text-xl font-semibold text-center mb-4 text-gray-700">Score: 0 / 0</div>
+
+                <div class="bg-yellow-100 p-6 rounded-xl border-4 border-yellow-400 mb-6 shadow-md">
+                    <p class="text-lg font-bold text-yellow-800">🤔 CAUSE:</p>
+                    <p id="game-cause" class="text-2xl mt-2 font-extrabold text-gray-800"></p>
+                </div>
+
+                <!-- Grid columns default to 1 for mobile, expanding to 3 on medium screens -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="effect-options">
+                    <!-- Option buttons will be injected here -->
+                </div>
+                
+                <div id="feedback-message" class="text-center mt-6 text-2xl font-bold min-h-[40px]"></div>
+
+                <div class="text-center mt-8">
+                    <button id="next-question-btn" class="lesson-nav-btn hidden bg-teal-500 hover:bg-teal-700">Next Question →</button>
+                    <button id="restart-game-btn" class="lesson-nav-btn hidden bg-red-500 hover:bg-red-700">Restart Game</button>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons (Lesson) -->
+            <div id="lesson-nav" class="flex justify-between items-center mt-8">
+                <button id="prev-btn" class="lesson-nav-btn opacity-50 cursor-not-allowed" disabled>← Previous</button>
+                <div id="slide-indicator" class="text-lg font-semibold text-gray-500">Slide 1 of 10</div>
+                <button id="next-btn" class="lesson-nav-btn">Next →</button>
+                <button id="start-game-btn" class="lesson-nav-btn hidden bg-green-500 hover:bg-green-700">Start Game!</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // --- Lesson Data (Unchanged) ---
+        const lessonSlides = [
+            {
+                title: "Slide 1: Welcome to Cause and Effect! 🇰🇬🌍",
+                content: "In Global Perspectives, we look at how actions and events (Causes) lead to results (Effects). It’s like a chain reaction! Let's explore this using examples from our home, Kyrgyzstan, and the wider world.",
+                emoji: "✨",
+                icon: '<svg class="svg-icon mx-auto text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="8 12 12 16 16 12"></polyline></svg>'
+            },
+            {
+                title: "Slide 2: What is a CAUSE? (The 'Why' 🤔)",
+                content: "The **Cause** is the action or event that makes something else happen. It answers the question: **Why did this happen?** Think of it as the starting point of a sequence.",
+                emoji: "➡️",
+                icon: '<svg class="svg-icon mx-auto text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>'
+            },
+            {
+                title: "Slide 3: What is an EFFECT? (The 'What happened' 💡)",
+                content: "The **Effect** is the result or outcome of the cause. It answers the question: **What was the result?** The Effect always comes after the Cause.",
+                emoji: "💥",
+                icon: '<svg class="svg-icon mx-auto text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1v2s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><path d="M4 19s1-1 4-1 5 2 8 2 4-1 4-1v2s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="2" y1="15" x2="2" y2="19"></line><line x1="22" y1="15" x2="22" y2="19"></line></svg>'
+            },
+            {
+                title: "Slide 4: 🏔️ Local Example: Water from the Mountains",
+                content: "🇰🇬 **Cause:** The Ala-Too mountains receive heavy snow and ice (like the Enilchek glacier). **Effect:** This ice melts in the summer, providing essential water for rivers, irrigation, and drinking water for Bishkek and villages.",
+                emoji: "💧",
+                icon: '<svg class="svg-icon mx-auto text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L19 22H5L12 2Z"></path><path d="M12 10L16 16H8L12 10Z"></path></svg>'
+            },
+            {
+                title: "Slide 5: 🐑 Local Example: Overgrazing in the Jailoos",
+                content: "🇰🇬 **Cause:** Too many animals (sheep, goats) grazing in one small area (overgrazing) in the summer jailoos (pastures). **Effect:** The grass roots are destroyed, leading to soil erosion when it rains or winds blow. This affects future farming.",
+                emoji: "🌱",
+                icon: '<svg class="svg-icon mx-auto text-yellow-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10s-5.6-3.8-10-3.8-10 3.8-10 3.8"></path><path d="M22 14s-5.6 3.8-10 3.8-10-3.8-10-3.8"></path><path d="M22 18s-5.6 3.8-10 3.8-10-3.8-10-3.8"></path></svg>'
+            },
+            {
+                title: "Slide 6: 🌍 Global Perspective: Technology & Education",
+                content: "📖 **Cause:** Students in developing countries get access to modern smartphones and the Internet. **Effect:** They can access online lessons, learn English, and share local cultural knowledge globally, improving education and understanding.",
+                emoji: "📱",
+                icon: '<svg class="svg-icon mx-auto text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12" y2="18"></line></svg>'
+            },
+            {
+                title: "Slide 7: 🌳 Global Perspective: Saving Issyk-Kul",
+                content: "🗑️ **Cause:** People around Issyk-Kul lake (or any famous lake) decide to stop using single-use plastic bags and switch to reusable *sumkas* (bags). **Effect:** There is less plastic pollution harming the fish and the lake's beauty. This is responsible global citizenship!",
+                emoji: "♻️",
+                icon: '<svg class="svg-icon mx-auto text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M15 9l-3 3-3-3"></path><path d="M9 13l3 3 3-3"></path></svg>'
+            },
+            {
+                title: "Slide 8: Keywords for Cause",
+                content: "Look for these words in a sentence to find the Cause: **Because**, **Since**, **Due to**, **If**, **The reason why...** These words signal the beginning of the action.",
+                emoji: "❓",
+                icon: '<svg class="svg-icon mx-auto text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 9.5a5.5 5.5 0 0 0 5.093 5.483l-.004.017a5.5 5.5 0 0 0 5.093-5.483l.004-.017A5.5 5.5 0 0 0 14.5 4h-5.5a5.5 5.5 0 0 0-5.483 5.093l.017.004a5.5 5.5 0 0 0 5.483 5.093z"></path></svg>'
+            },
+            {
+                title: "Slide 9: Keywords for Effect",
+                content: "Look for these words to find the Effect (the result): **Therefore**, **As a result**, **So**, **Then**, **Consequently**, **Leads to...** These words signal the result of the action.",
+                emoji: "✅",
+                icon: '<svg class="svg-icon mx-auto text-teal-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>'
+            },
+            {
+                title: "Slide 10: Let's Practice! 🎮",
+                content: "You've learned the difference between Cause and Effect and seen examples from our home and the world. Now, let's play a game to test your skills!",
+                emoji: "🏆",
+                icon: '<svg class="svg-icon mx-auto text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>'
+            }
+        ];
+
+        // --- Game Data (Updated with 10 Questions) ---
+        const gameQuestions = [
+            // Q1-Q5 (Existing Questions)
+            {
+                cause: "The snow leopard population in the Tien Shan mountains increases.",
+                options: [
+                    "There are fewer domestic sheep grazing in the pastures.",
+                    "The number of wild mountain goats (its food source) decreases.",
+                    "The average temperature in Bishkek rises significantly."
+                ],
+                correctIndex: 1, 
+                topic: "Ecology"
+            },
+            {
+                cause: "A student decides to spend an hour every day learning English vocabulary.",
+                options: [
+                    "They will learn how to bake traditional *boorsok* bread.",
+                    "They will be able to communicate with tourists visiting Issyk-Kul.",
+                    "The mountain roads near Naryn become smoother."
+                ],
+                correctIndex: 1,
+                topic: "Global Perspective"
+            },
+            {
+                cause: "The Kyrgyz government invests heavily in developing solar and wind power.",
+                options: [
+                    "The country's reliance on coal and gas for electricity generation decreases.",
+                    "The cost of traditional hats (*kalpak*) doubles in the market.",
+                    "The number of horses participating in *Kyz Kuumai* drops."
+                ],
+                correctIndex: 0,
+                topic: "Environment"
+            },
+            {
+                cause: "A severe drought hits the Chui valley in the summer.",
+                options: [
+                    "Farmers plant their crops earlier than usual.",
+                    "The water level in rivers and irrigation canals becomes lower.",
+                    "The price of gold from the Jerooy mine increases."
+                ],
+                correctIndex: 1,
+                topic: "Local Life"
+            },
+            {
+                cause: "A student is chosen to represent Kyrgyzstan at a UN youth conference.",
+                options: [
+                    "They become a professional *komuz* player overnight.",
+                    "They gain new perspectives and share their culture with students from 100+ countries.",
+                    "It causes the sun to set later in the day."
+                ],
+                correctIndex: 1,
+                topic: "Global Perspective"
+            },
+            // Q6-Q10 (New Questions)
+            {
+                cause: "Many families move from a rural village to Bishkek for work opportunities.",
+                options: [
+                    "The price of bread in the village markets increases.",
+                    "It becomes more difficult to pass down traditional crafts like *Shyrdak* rug making to the younger generation in the city.",
+                    "The level of water in Lake Issyk-Kul rises."
+                ],
+                correctIndex: 1, 
+                topic: "Local/Culture"
+            },
+            {
+                cause: "A new textile factory opens and hires 500 local workers in a small Kyrgyz town.",
+                options: [
+                    "The cost of flying from Manas airport increases.",
+                    "The village experiences higher unemployment rates.",
+                    "Unemployment in that town decreases, and local businesses (like shops and cafes) earn more money."
+                ],
+                correctIndex: 2, 
+                topic: "Global/Economics"
+            },
+            {
+                cause: "Global climate change causes the winter season to be consistently warmer in the lowlands.",
+                options: [
+                    "The winter snowfall increases dramatically in the mountains.",
+                    "Farmers in the lowlands can plant some crops earlier, but the risk of damage from a late spring frost increases.",
+                    "The primary currency of Kyrgyzstan changes from the Som to the Dollar."
+                ],
+                correctIndex: 1, 
+                topic: "Environment/Climate"
+            },
+            {
+                cause: "The local council invests in filling all the deep potholes on the roads near the school and marketplace.",
+                options: [
+                    "Bicycles and vehicles travel more safely and quickly, reducing damage to tires and lessening traffic noise.",
+                    "Students have to walk much farther to get to school.",
+                    "The cost of electricity triples in the next month."
+                ],
+                correctIndex: 0, 
+                topic: "Local/Infrastructure"
+            },
+            {
+                cause: "A community health campaign successfully teaches everyone to wash their hands frequently and correctly.",
+                options: [
+                    "The consumption of traditional Kyrgyz dairy products increases.",
+                    "There are fewer tourists visiting the country in the summer.",
+                    "Fewer students in the school get sick with colds and stomach problems, leading to better attendance."
+                ],
+                correctIndex: 2, 
+                topic: "Global/Health"
+            }
+        ];
+
+        // --- State Variables ---
+        let currentSlide = 0;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let totalAnswered = 0;
+
+        // --- DOM Elements ---
+        const lessonView = document.getElementById('lesson-view');
+        const gameView = document.getElementById('game-view');
+        const lessonNav = document.getElementById('lesson-nav');
+        const slideIndicator = document.getElementById('slide-indicator');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const gameCause = document.getElementById('game-cause');
+        const effectOptions = document.getElementById('effect-options');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const nextQuestionBtn = document.getElementById('next-question-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const restartGameBtn = document.getElementById('restart-game-btn');
+
+        // --- Lesson Functions ---
+
+        const updateLessonView = () => {
+            const slide = lessonSlides[currentSlide];
+
+            lessonView.innerHTML = `
+                <div class="text-center">
+                    <div class="inline-block p-4 rounded-full bg-indigo-100 mb-6">
+                        ${slide.icon}
+                    </div>
+                    <h2 class="text-3xl font-extrabold text-gray-900 mb-4">${slide.emoji} ${slide.title}</h2>
+                    <p class="text-xl text-gray-700 leading-relaxed">${slide.content}</p>
+                </div>
+            `;
+
+            slideIndicator.textContent = `Slide ${currentSlide + 1} of ${lessonSlides.length}`;
+
+            // Handle navigation button states
+            prevBtn.disabled = currentSlide === 0;
+            prevBtn.classList.toggle('opacity-50', currentSlide === 0);
+            prevBtn.classList.toggle('cursor-not-allowed', currentSlide === 0);
+
+            if (currentSlide === lessonSlides.length - 1) {
+                nextBtn.classList.add('hidden');
+                startGameBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+                startGameBtn.classList.add('hidden');
+            }
+        };
+
+        const handleNext = () => {
+            if (currentSlide < lessonSlides.length - 1) {
+                currentSlide++;
+                updateLessonView();
+            }
+        };
+
+        const handlePrevious = () => {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateLessonView();
+            }
+        };
+
+        // --- Game Functions ---
+
+        const startGame = () => {
+            lessonView.classList.add('hidden');
+            lessonNav.classList.add('hidden');
+            gameView.classList.remove('hidden');
+            score = 0;
+            totalAnswered = 0;
+            currentQuestionIndex = 0;
+            gameQuestions.sort(() => Math.random() - 0.5); // Shuffle questions for replayability
+            loadQuestion();
+        };
+
+        const loadQuestion = () => {
+            if (currentQuestionIndex >= gameQuestions.length) {
+                endGame();
+                return;
+            }
+
+            const question = gameQuestions[currentQuestionIndex];
+            gameCause.textContent = question.cause;
+            feedbackMessage.textContent = '';
+            feedbackMessage.classList.remove('text-green-600', 'text-red-600', 'text-indigo-700'); // Clear old colors
+            nextQuestionBtn.classList.add('hidden');
+            restartGameBtn.classList.add('hidden');
+            
+            // Re-enable options
+            effectOptions.innerHTML = '';
+            question.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'game-option-btn';
+                button.textContent = `▶️ ${option}`;
+                button.dataset.index = index;
+                button.onclick = () => checkAnswer(index);
+                effectOptions.appendChild(button);
+            });
+            updateScoreDisplay();
+        };
+
+        const checkAnswer = (selectedIndex) => {
+            // Disable all buttons immediately after an answer is chosen
+            Array.from(effectOptions.children).forEach(btn => {
+                btn.onclick = null;
+            });
+
+            const question = gameQuestions[currentQuestionIndex];
+            const isCorrect = selectedIndex === question.correctIndex;
+            const selectedButton = effectOptions.children[selectedIndex];
+            const correctButton = effectOptions.children[question.correctIndex];
+
+            totalAnswered++;
+
+            if (isCorrect) {
+                score++;
+                selectedButton.classList.add('correct');
+                feedbackMessage.textContent = '🥳 Correct! That is the logical Effect.';
+                feedbackMessage.classList.add('text-green-600');
+            } else {
+                selectedButton.classList.add('incorrect');
+                correctButton.classList.add('correct');
+                feedbackMessage.textContent = '❌ Incorrect. The correct Effect is highlighted in green.';
+                feedbackMessage.classList.add('text-red-600');
+            }
+            
+            nextQuestionBtn.classList.remove('hidden');
+            updateScoreDisplay();
+        };
+
+        const handleNextQuestion = () => {
+            currentQuestionIndex++;
+            loadQuestion();
+        };
+
+        const endGame = () => {
+            gameCause.textContent = `You finished the game!`;
+            effectOptions.innerHTML = ''; // Clear options
+            nextQuestionBtn.classList.add('hidden');
+            restartGameBtn.classList.remove('hidden');
+
+            let finalMessage;
+            if (score === gameQuestions.length) {
+                finalMessage = `🌟 Amazing! You got ${score} out of ${gameQuestions.length} correct. You are a Cause & Effect Master!`;
+            } else if (score >= gameQuestions.length * 0.7) {
+                finalMessage = `👍 Excellent! You scored ${score} out of ${gameQuestions.length}. Keep practicing!`;
+            } else {
+                finalMessage = `🤔 You scored ${score} out of ${gameQuestions.length}. Review the lesson slides and try again!`;
+            }
+
+            feedbackMessage.textContent = finalMessage;
+            feedbackMessage.classList.add('text-indigo-700');
+        };
+
+        const restartGame = () => {
+            currentQuestionIndex = 0;
+            score = 0;
+            totalAnswered = 0;
+            gameQuestions.sort(() => Math.random() - 0.5); // Reshuffle for new game
+            loadQuestion();
+        };
+
+        const updateScoreDisplay = () => {
+            scoreDisplay.textContent = `Score: ${score} / ${totalAnswered} (Total Questions: ${gameQuestions.length})`;
+        };
+
+        // --- Event Listeners ---
+        prevBtn.addEventListener('click', handlePrevious);
+        nextBtn.addEventListener('click', handleNext);
+        startGameBtn.addEventListener('click', startGame);
+        nextQuestionBtn.addEventListener('click', handleNextQuestion);
+        restartGameBtn.addEventListener('click', restartGame);
+
+        // --- Initialization ---
+        document.addEventListener('firebaseReady', () => {
+            // Wait for Firebase to be ready before initializing app UI (optional, but good practice)
+            console.log("Firebase is ready. Starting UI initialization.");
+            updateLessonView();
+        });
+
+        // Fallback if firebaseReady event takes long (start lesson immediately)
+        if (typeof window.db === 'undefined') {
+            updateLessonView();
+        }
+        
+    </script>
+</body>
+</html>
