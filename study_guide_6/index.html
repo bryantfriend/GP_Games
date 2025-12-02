@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Perspectives Study Guide</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a fun, engaging 6th-grade look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f9ff; /* Light blue background */
+        }
+        .card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease-in-out;
+        }
+        .activity-button {
+            transition: transform 0.1s;
+            /* Ensure large touch target on mobile */
+            min-height: 4rem; 
+        }
+        .activity-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .slide-content {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Style for the answer feedback box */
+        .feedback-box {
+            min-height: 4rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            font-weight: 600;
+        }
+
+        /* Drag and Drop Styles */
+        .draggable {
+            cursor: grab;
+            transition: all 0.2s;
+            /* Make sure text is visible when dragging on mobile */
+            z-index: 10; 
+        }
+        .draggable:active {
+            opacity: 0.8;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .dropzone {
+            min-height: 100px;
+            border: 2px dashed #a5b4fc; /* Tailwind indigo-300 */
+            background-color: #eef2ff; /* Tailwind indigo-50 */
+            transition: background-color 0.2s;
+        }
+        .dropzone.hovering {
+            background-color: #c7d2fe; /* Tailwind indigo-200 */
+            border-color: #4f46e5; /* Tailwind indigo-600 */
+        }
+        
+        /* Mobile Specific Layout Adjustments */
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 2.5rem; /* Smaller main title */
+            }
+            h2 {
+                font-size: 2rem; /* Smaller section title */
+            }
+            .activity-button {
+                padding: 1rem;
+                font-size: 1.125rem;
+            }
+            /* Stack dropzones vertically on small screens */
+            #map-builder-area {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="text-center mb-10">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-blue-700">🌍 Global Perspectives Prep Hub 🚀</h1>
+        <p class="text-xl text-gray-600 mt-2">Master Perspectives, Bias, and Viewpoints!</p>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-4xl mx-auto">
+
+        <!-- Slideshow Section -->
+        <section id="slideshow" class="mb-12">
+            <h2 class="text-3xl font-bold text-indigo-600 mb-4 border-b-2 border-indigo-300 pb-2">Part 1: The Learning Slideshow 🧠</h2>
+            
+            <div id="slide-container" class="card bg-white p-6 md:p-10 rounded-xl min-h-[350px] flex flex-col justify-between">
+                <!-- Slides will be injected here -->
+            </div>
+
+            <div class="flex justify-between mt-4">
+                <button onclick="changeSlide(-1)" id="prev-btn" class="px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-400 transition duration-150 flex items-center">
+                    &larr; Back
+                </button>
+                <div id="slide-dots" class="flex items-center space-x-2">
+                    <!-- Dots will be injected here -->
+                </div>
+                <button onclick="changeSlide(1)" id="next-btn" class="px-6 py-3 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600 transition duration-150 flex items-center">
+                    Next &rarr;
+                </button>
+            </div>
+        </section>
+
+        <!-- Activities Section -->
+        <section id="activities" class="mt-12">
+            <h2 class="text-3xl font-bold text-emerald-600 mb-6 border-b-2 border-emerald-300 pb-2">Part 2: Practice & Play 🕹️</h2>
+            
+            <div id="activity-selector" class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                <button onclick="showActivity('quiz')" class="activity-button bg-yellow-400 text-yellow-900 p-6 rounded-xl font-bold text-lg hover:bg-yellow-500">
+                    1. Quick Quiz 📝
+                </button>
+                <button onclick="showActivity('bias-buster')" class="activity-button bg-pink-400 text-pink-900 p-6 rounded-xl font-bold text-lg hover:bg-pink-500">
+                    2. Bias Buster 🤔
+                </button>
+                <button onclick="showActivity('map-builder')" class="activity-button bg-sky-400 text-sky-900 p-6 rounded-xl font-bold text-lg hover:bg-sky-500">
+                    3. Map Builder 🗺️
+                </button>
+            </div>
+
+            <!-- Activity Containers -->
+            <div id="quiz-activity" class="activity-container hidden card bg-white p-6 md:p-8 rounded-xl">
+                <h3 class="text-2xl font-bold text-emerald-700 mb-4">Quick Quiz: Test Your Knowledge!</h3>
+                <div id="quiz-content"></div>
+                <button onclick="submitQuiz()" class="mt-4 px-6 py-3 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600">
+                    Check Answers
+                </button>
+                <p id="quiz-result" class="mt-4 font-semibold"></p>
+            </div>
+
+            <div id="bias-buster-activity" class="activity-container hidden card bg-white p-6 md:p-8 rounded-xl">
+                <h3 class="text-2xl font-bold text-emerald-700 mb-4">Bias Buster: Fact or Opinion?</h3>
+                <p id="bias-statement" class="text-xl font-medium mb-4 p-4 bg-gray-100 rounded-lg"></p>
+                <div class="flex space-x-4">
+                    <button onclick="checkBias('Biased')" class="flex-1 px-4 py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600">
+                        Biased 🚫
+                    </button>
+                    <button onclick="checkBias('Factual')" class="flex-1 px-4 py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600">
+                        Factual ✅
+                    </button>
+                </div>
+                <p id="bias-feedback" class="mt-4 font-semibold min-h-[2rem]"></p>
+                <button onclick="nextBiasStatement()" class="mt-4 px-6 py-3 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600">
+                    Next Statement
+                </button>
+                <p class="mt-4 text-sm text-gray-500">Score: <span id="bias-score">0</span></p>
+            </div>
+
+            <!-- UPGRADED ACTIVITY: Perspective Map Builder (Question 6 Practice) -->
+            <div id="map-builder-activity" class="activity-container hidden card bg-white p-6 md:p-8 rounded-xl">
+                <h3 class="text-2xl font-bold text-emerald-700 mb-4">3. Perspective Map Builder: Drag & Drop! 🗺️</h3>
+                <p class="text-lg font-bold text-blue-600 mb-4">Topic: Should plastic bags be banned?</p>
+
+                <div id="draggable-statements" class="mb-6 p-4 border rounded-lg bg-gray-100 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <p class="col-span-full font-semibold text-gray-700">Drag these viewpoints to the correct perspective below:</p>
+                    <!-- Statements are loaded here -->
+                </div>
+
+                <div id="map-builder-area" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Dropzones are loaded here -->
+                </div>
+                
+                <button onclick="checkMapBuilder()" class="mt-6 px-6 py-3 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600">
+                    Check Map
+                </button>
+                <p id="map-builder-result" class="mt-4 font-semibold"></p>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        // --- DATA ---
+        const slides = [
+            {
+                title: "Slide 1: What is a Perspective? 🤔",
+                emoji: "👁️",
+                content: `
+                    <p class="text-lg mb-4">A <strong>Perspective</strong> is your unique point of view on a topic.</p>
+                    <ul class="list-disc list-inside space-y-2 ml-4">
+                        <li>It is <strong>shaped by your experiences</strong>, feelings, culture, and beliefs.</li>
+                        <li>It is <strong>NOT</strong> just a random opinion, and it's <strong>NOT</strong> always a fact. (Hint: Look at Question 1 on the exam!)</li>
+                    </ul>
+                    <div class="mt-4 p-3 bg-blue-100 rounded-lg border-l-4 border-blue-500">
+                        <strong>Example:</strong> Two students see a pop quiz. One feels nervous (bad past experience), the other feels excited (good past experience). Different perspectives!
+                    </div>
+                `
+            },
+            {
+                title: "Slide 2: Spotting Bias! 🚩",
+                emoji: "⚖️",
+                content: `
+                    <p class="text-lg mb-4"><strong>Bias</strong> means showing unfair favor for (or against) something, usually based on strong personal feelings.</p>
+                    <ul class="list-disc list-inside space-y-2 ml-4">
+                        <li>A biased statement is <strong>unbalanced</strong> and often uses emotional or absolute words.</li>
+                        <li><strong>Look out for words like:</strong> *best, worst, only, everyone hates, everyone loves, must.*</li>
+                    </ul>
+                    <div class="mt-4 p-3 bg-red-100 rounded-lg border-l-4 border-red-500">
+                        <strong>Test Example:</strong> "Cats are the best pets because dogs are annoying." This is biased because it attacks dogs to praise cats. (Addresses Q2, Q5)
+                    </div>
+                `
+            },
+            {
+                title: "Slide 3: The Perspective Map 🗺️",
+                emoji: "🧩",
+                content: `
+                    <p class="text-lg mb-4">The main <strong>Purpose of a Perspective Map</strong> is to:</p>
+                    <ul class="list-disc list-inside space-y-2 ml-4">
+                        <li><strong>Compare Viewpoints</strong> on a single issue. (Hint: Look at Question 3 and 6 on the exam!)</li>
+                        <li>It helps you see the whole picture by organizing different ideas from different people.</li>
+                    </ul>
+                    <div class="mt-4 p-3 bg-green-100 rounded-lg border-l-4 border-green-500">
+                        <strong>Example Issue:</strong> School uniforms. A map helps compare the student's viewpoint (less individuality) with the teacher's viewpoint (less distraction). (Addresses Q4)
+                    </div>
+                `
+            },
+            {
+                title: "Slide 4: Why Differences Happen 🧍↔️🧍",
+                emoji: "💡",
+                content: `
+                    <p class="text-lg mb-4">Different people can see the <strong>same situation differently</strong> because:</p>
+                    <ul class="list-disc list-inside space-y-2 ml-4">
+                        <li>Their personal <strong>experiences, backgrounds, and needs</strong> shape their focus.</li>
+                        <li>If you're hungry, your perspective is different from someone who just ate! (Addresses Q7, Q8)</li>
+                    </ul>
+                    <div class="mt-4 p-3 bg-yellow-100 rounded-lg border-l-4 border-yellow-500">
+                        <strong>Bus Example (Question 7):</strong> The student sitting is probably thinking about rest or homework. The elderly passenger standing is likely focused on discomfort and courtesy.
+                    </div>
+                `
+            }
+        ];
+
+        let currentSlide = 0;
+
+        // Quiz Data (Q1, Q2, Q3)
+        const quizQuestions = [
+            {
+                question: "1. A perspective is:",
+                options: ["A fact everyone agrees on", "A point of view shaped by experience", "A random opinion", "A summary"],
+                answer: 1 // index 1
+            },
+            {
+                question: "2. Which sentence shows bias?",
+                options: ["“Some people enjoy sports.”", "“Cats are the best pets because dogs are annoying.”", "“A year has 12 months.”"],
+                answer: 1 // index 1
+            },
+            {
+                question: "3. The main purpose of a perspective map is:",
+                options: ["To decorate notes", "To compare viewpoints", "To list facts", "To make a timeline"],
+                answer: 1 // index 1
+            }
+        ];
+
+        // Bias Buster Data (Q5 logic)
+        const biasStatements = [
+            { statement: "Water freezes at 0 degrees Celsius.", type: "Factual" },
+            { statement: "Pineapples are the most delicious fruit in the world.", type: "Biased" },
+            { statement: "Everyone who uses a cell phone walks around without looking.", type: "Biased" },
+            { statement: "The Eiffel Tower is located in Paris, France.", type: "Factual" },
+            { statement: "Reading a book is always boring and a waste of time.", type: "Biased" },
+            { statement: "School begins at 8:00 AM.", type: "Factual" },
+        ];
+        let currentBiasIndex = 0;
+        let biasScore = 0;
+        let biasUsedStatements = [];
+
+        // Perspective Map Builder Data (Q6)
+        const mapBuilderData = [
+            { id: 1, role: "Shopper", text: "They are convenient and reusable bags are easy to forget when rushing." },
+            { id: 2, role: "Store Owner", text: "Plastic bags are much cheaper for the business than buying paper or reusable bags in bulk." },
+            { id: 3, role: "Environmental Activist", text: "The bags pollute oceans and destroy wildlife habitats when they are not recycled properly." },
+            { id: 4, role: "Shopper", text: "Bans are annoying because I sometimes forget my reusable bag and need a way to carry groceries." },
+            { id: 5, role: "Store Owner", text: "Training staff to ask customers about bags adds extra time and confusion at the checkout line." },
+            { id: 6, role: "Environmental Activist", text: "Governments need to use taxes from the bags to fund major clean-up projects." },
+        ];
+        
+        // --- SLIDESHOW FUNCTIONS ---
+
+        function updateDots() {
+            const dotsContainer = document.getElementById('slide-dots');
+            dotsContainer.innerHTML = '';
+            slides.forEach((_, index) => {
+                const dot = document.createElement('span');
+                dot.classList.add('w-3', 'h-3', 'rounded-full', 'cursor-pointer', 'transition-colors', 'duration-300');
+                dot.style.backgroundColor = index === currentSlide ? '#4c51bf' : '#b2b2b2';
+                dot.onclick = () => showSlide(index);
+                dotsContainer.appendChild(dot);
+            });
+        }
+
+        function showSlide(n) {
+            if (n >= slides.length) {
+                // Transition to activities when all slides are viewed
+                document.getElementById('slideshow').classList.add('hidden');
+                document.getElementById('activities').classList.remove('hidden');
+                document.getElementById('next-btn').disabled = true;
+                return;
+            }
+            if (n < 0) {
+                currentSlide = 0;
+                return;
+            }
+
+            currentSlide = n;
+            const slide = slides[currentSlide];
+            const container = document.getElementById('slide-container');
+            
+            // Fade out, update content, fade in
+            container.classList.remove('slide-content');
+            setTimeout(() => {
+                container.innerHTML = `
+                    <h3 class="text-3xl font-extrabold text-gray-800 mb-4 flex items-center">
+                        <span class="text-4xl mr-3">${slide.emoji}</span> ${slide.title}
+                    </h3>
+                    <div class="text-gray-700">
+                        ${slide.content}
+                    </div>
+                `;
+                container.classList.add('slide-content');
+            }, 100); 
+
+            // Update navigation buttons
+            document.getElementById('prev-btn').disabled = currentSlide === 0;
+            document.getElementById('next-btn').textContent = currentSlide === slides.length - 1 ? 'Go to Activities 🚀' : 'Next →';
+            
+            updateDots();
+        }
+
+        function changeSlide(direction) {
+            showSlide(currentSlide + direction);
+        }
+
+        // --- ACTIVITY SELECTION ---
+
+        function showActivity(id) {
+            document.querySelectorAll('.activity-container').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`${id}-activity`).classList.remove('hidden');
+            
+            // Initialize specific activity
+            if (id === 'quiz') {
+                loadQuiz();
+            } else if (id === 'bias-buster') {
+                loadBiasBuster();
+            } else if (id === 'map-builder') {
+                loadMapBuilder();
+            }
+        }
+
+        // --- QUIZ FUNCTIONS ---
+
+        function loadQuiz() {
+            const quizContent = document.getElementById('quiz-content');
+            quizContent.innerHTML = quizQuestions.map((q, qIndex) => `
+                <div class="mb-6 p-4 border rounded-lg bg-indigo-50">
+                    <p class="font-bold text-lg mb-2">${q.question}</p>
+                    ${q.options.map((option, oIndex) => `
+                        <div class="flex items-center mb-1">
+                            <input type="radio" id="q${qIndex}o${oIndex}" name="question${qIndex}" value="${oIndex}" class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                            <label for="q${qIndex}o${oIndex}" class="ml-3 text-gray-700">${option}</label>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+            document.getElementById('quiz-result').textContent = '';
+        }
+
+        function submitQuiz() {
+            let correctCount = 0;
+            quizQuestions.forEach((q, qIndex) => {
+                const selected = document.querySelector(`input[name="question${qIndex}"]:checked`);
+                const isCorrect = selected && parseInt(selected.value) === q.answer;
+                
+                // Visual feedback
+                const container = selected ? selected.closest('.p-4') : null;
+                if (container) {
+                    container.classList.remove('bg-indigo-50', 'bg-red-100', 'bg-green-100');
+                    if (isCorrect) {
+                        container.classList.add('bg-green-100');
+                    } else {
+                        container.classList.add('bg-red-100');
+                    }
+                }
+
+                if (isCorrect) {
+                    correctCount++;
+                }
+            });
+
+            const resultEl = document.getElementById('quiz-result');
+            resultEl.classList.remove('text-red-600', 'text-green-600');
+
+            if (correctCount === quizQuestions.length) {
+                resultEl.textContent = `🎉 Awesome! You got all ${correctCount} questions correct! You are a Bias-Spotting Master!`;
+                resultEl.classList.add('text-green-600');
+            } else {
+                resultEl.textContent = `Keep going! You got ${correctCount} out of ${quizQuestions.length} correct. Review the slides and try again!`;
+                resultEl.classList.add('text-red-600');
+            }
+        }
+
+        // --- BIAS BUSTER FUNCTIONS ---
+
+        function getRandomBiasStatement() {
+            if (biasUsedStatements.length === biasStatements.length) {
+                biasUsedStatements = []; // Reset if all statements have been used
+            }
+            let availableStatements = biasStatements.filter(s => !biasUsedStatements.includes(s));
+            if (availableStatements.length === 0) availableStatements = biasStatements; // Fallback
+            
+            const randomIndex = Math.floor(Math.random() * availableStatements.length);
+            const statement = availableStatements[randomIndex];
+            biasUsedStatements.push(statement);
+            return statement;
+        }
+
+        function loadBiasBuster() {
+            currentBiasIndex = 0;
+            biasScore = 0;
+            biasUsedStatements = [];
+            document.getElementById('bias-score').textContent = biasScore;
+            document.getElementById('bias-feedback').textContent = 'Is this statement Biased or Factual?';
+            document.getElementById('bias-feedback').classList.remove('text-red-600', 'text-green-600');
+            nextBiasStatement();
+        }
+        
+        function nextBiasStatement() {
+            currentBiasIndex++;
+            const statement = getRandomBiasStatement();
+            document.getElementById('bias-statement').textContent = statement.statement;
+            document.getElementById('bias-statement').dataset.correctType = statement.type;
+            document.getElementById('bias-feedback').textContent = '';
+        }
+
+        function checkBias(guess) {
+            const statementEl = document.getElementById('bias-statement');
+            const feedbackEl = document.getElementById('bias-feedback');
+            const correctType = statementEl.dataset.correctType;
+            
+            feedbackEl.classList.remove('text-red-600', 'text-green-600');
+
+            if (guess === correctType) {
+                feedbackEl.textContent = `Correct! This is ${correctType}. 🌟`;
+                feedbackEl.classList.add('text-green-600');
+                biasScore++;
+            } else {
+                feedbackEl.textContent = `Oops! Not quite. This statement is ${correctType}. Remember to look for absolute words!`;
+                feedbackEl.classList.add('text-red-600');
+                biasScore = Math.max(0, biasScore - 0.5); // Subtract half a point for wrong answer
+            }
+            document.getElementById('bias-score').textContent = Math.floor(biasScore);
+        }
+
+        // --- PERSPECTIVE MAP BUILDER FUNCTIONS ---
+
+        function loadMapBuilder() {
+            const statementsContainer = document.getElementById('draggable-statements');
+            const mapArea = document.getElementById('map-builder-area');
+            const mapResult = document.getElementById('map-builder-result');
+
+            // Reset
+            mapResult.textContent = '';
+            mapArea.innerHTML = '';
+
+            // 1. Create Draggable Statements
+            // Shuffle statements to ensure order doesn't give away answers
+            const shuffledStatements = mapBuilderData.sort(() => 0.5 - Math.random());
+            
+            let statementHTML = '<p class="col-span-full font-semibold text-gray-700">Drag these viewpoints to the correct perspective below:</p>';
+            
+            shuffledStatements.forEach(item => {
+                statementHTML += `
+                    <div id="drag-${item.id}" draggable="true" data-role="${item.role}" 
+                         class="draggable p-3 bg-white rounded-lg border border-gray-300 text-sm shadow-sm hover:border-sky-500">
+                        ${item.text}
+                    </div>
+                `;
+            });
+            statementsContainer.innerHTML = statementHTML;
+
+            // 2. Create Dropzones
+            const roles = ["Shopper", "Store Owner", "Environmental Activist"];
+            let dropzoneHTML = roles.map(role => `
+                <div class="dropzone p-3 rounded-lg text-center" data-role="${role}">
+                    <h4 class="font-extrabold text-lg text-sky-700 mb-2">${role}</h4>
+                    <p class="text-sm text-gray-500">Drop viewpoints here</p>
+                    <div class="viewpoint-container mt-2 space-y-2">
+                        <!-- Dropped items go here -->
+                    </div>
+                </div>
+            `).join('');
+            mapArea.innerHTML = dropzoneHTML;
+
+            // 3. Attach Drag and Drop Listeners (Web and Touch)
+            document.querySelectorAll('.draggable').forEach(draggable => {
+                // Web Drag
+                draggable.addEventListener('dragstart', dragStart);
+
+                // Touch Drag (Emulation)
+                draggable.addEventListener('touchstart', touchStart);
+                draggable.addEventListener('touchmove', touchMove);
+                draggable.addEventListener('touchend', touchEnd);
+            });
+
+            document.querySelectorAll('.dropzone').forEach(dropzone => {
+                // Web Drag
+                dropzone.addEventListener('dragover', dragOver);
+                dropzone.addEventListener('dragenter', dragEnter);
+                dropzone.addEventListener('dragleave', dragLeave);
+                dropzone.addEventListener('drop', drop);
+            });
+        }
+
+        let draggedElement = null;
+        let touchDragElement = null;
+        let originalParent = null;
+
+        // --- WEB DRAG LISTENERS ---
+
+        function dragStart(e) {
+            draggedElement = e.target;
+            originalParent = e.target.parentElement;
+            e.dataTransfer.setData('text/plain', e.target.id);
+            setTimeout(() => e.target.classList.add('hidden'), 0);
+        }
+
+        function dragOver(e) {
+            e.preventDefault(); 
+            e.currentTarget.classList.add('hovering');
+        }
+
+        function dragEnter(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('hovering');
+        }
+
+        function dragLeave(e) {
+            e.currentTarget.classList.remove('hovering');
+        }
+
+        function drop(e) {
+            e.preventDefault();
+            const dropzone = e.currentTarget;
+            dropzone.classList.remove('hovering');
+            
+            const data = e.dataTransfer.getData('text/plain');
+            const draggable = document.getElementById(data);
+            
+            if (draggable) {
+                draggable.classList.remove('hidden');
+                const viewpointContainer = dropzone.querySelector('.viewpoint-container');
+                viewpointContainer.appendChild(draggable);
+            }
+        }
+
+        // --- TOUCH DRAG LISTENERS (Mobile Fix) ---
+        
+        function getTouchTarget(x, y) {
+            // Find the element at the touch point excluding the item being dragged
+            draggedElement.style.display = 'none'; // Temporarily hide dragged item
+            const target = document.elementFromPoint(x, y);
+            draggedElement.style.display = ''; // Restore dragged item
+            return target;
+        }
+
+        function touchStart(e) {
+            // Only handle single touch
+            if (e.touches.length !== 1) return; 
+            
+            e.preventDefault(); // Prevents scrolling
+            touchDragElement = e.target.closest('.draggable');
+            if (!touchDragElement) return;
+
+            originalParent = touchDragElement.parentElement;
+            draggedElement = touchDragElement;
+
+            touchDragElement.style.position = 'fixed';
+            touchDragElement.style.width = touchDragElement.offsetWidth + 'px';
+            touchDragElement.style.zIndex = 1000;
+            touchDragElement.classList.add('shadow-xl', 'scale-105');
+
+            // Store initial offset
+            const rect = touchDragElement.getBoundingClientRect();
+            touchDragElement.xOffset = e.touches[0].clientX - rect.left;
+            touchDragElement.yOffset = e.touches[0].clientY - rect.top;
+        }
+
+        function touchMove(e) {
+            if (!touchDragElement) return;
+            e.preventDefault();
+
+            const touch = e.touches[0];
+            
+            // Move the element
+            touchDragElement.style.left = (touch.clientX - touchDragElement.xOffset) + 'px';
+            touchDragElement.style.top = (touch.clientY - touchDragElement.yOffset) + 'px';
+
+            // Check for dropzone hover visual feedback
+            const target = getTouchTarget(touch.clientX, touch.clientY);
+            
+            // Remove 'hovering' from all dropzones
+            document.querySelectorAll('.dropzone.hovering').forEach(dz => dz.classList.remove('hovering'));
+            
+            // Add 'hovering' to the current target dropzone
+            const dropzone = target ? target.closest('.dropzone') : null;
+            if (dropzone) {
+                dropzone.classList.add('hovering');
+            }
+        }
+
+        function touchEnd(e) {
+            if (!touchDragElement) return;
+
+            const touch = e.changedTouches[0];
+            
+            // Find the element beneath the touch point
+            const target = getTouchTarget(touch.clientX, touch.clientY);
+            const dropzone = target ? target.closest('.dropzone') : null;
+            
+            // Reset styles
+            touchDragElement.style.position = '';
+            touchDragElement.style.width = '';
+            touchDragElement.style.zIndex = '';
+            touchDragElement.classList.remove('shadow-xl', 'scale-105');
+            document.querySelectorAll('.dropzone.hovering').forEach(dz => dz.classList.remove('hovering'));
+
+
+            if (dropzone) {
+                // Drop successful
+                const viewpointContainer = dropzone.querySelector('.viewpoint-container');
+                viewpointContainer.appendChild(touchDragElement);
+            } else {
+                // Return to original container if drop failed
+                originalParent.appendChild(touchDragElement);
+            }
+
+            // Cleanup
+            draggedElement = null;
+            touchDragElement = null;
+            originalParent = null;
+        }
+
+        // --- CHECKER FUNCTION ---
+
+        function checkMapBuilder() {
+            let correctCount = 0;
+            const totalStatements = mapBuilderData.length;
+            const resultEl = document.getElementById('map-builder-result');
+            resultEl.classList.remove('text-red-600', 'text-green-600');
+            
+            document.querySelectorAll('.dropzone').forEach(dropzone => {
+                const correctRole = dropzone.dataset.role;
+                const viewpointContainer = dropzone.querySelector('.viewpoint-container');
+                
+                viewpointContainer.querySelectorAll('.draggable').forEach(draggable => {
+                    const assignedRole = draggable.dataset.role;
+                    
+                    // Reset styling
+                    draggable.classList.remove('bg-red-100', 'bg-green-100', 'border-red-500', 'border-green-500');
+
+                    if (assignedRole === correctRole) {
+                        correctCount++;
+                        draggable.classList.add('bg-green-100', 'border-green-500');
+                    } else {
+                        draggable.classList.add('bg-red-100', 'border-red-500');
+                    }
+                });
+            });
+
+            if (correctCount === totalStatements) {
+                resultEl.textContent = `🥳 Perfect! You built the whole map correctly! You are a Perspective Map Master!`;
+                resultEl.classList.add('text-green-600');
+            } else {
+                resultEl.textContent = `Nice try! You correctly placed ${correctCount} out of ${totalStatements}. Check the red boxes and try again!`;
+                resultEl.classList.add('text-red-600');
+            }
+        }
+
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            showSlide(0);
+            document.getElementById('activities').classList.add('hidden'); // Hide activities until slideshow is done
+        };
+
+    </script>
+</body>
+</html>
