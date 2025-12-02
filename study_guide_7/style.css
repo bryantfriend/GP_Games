@@ -1,77 +1,105 @@
 :root {
-    --primary-color: #4f46e5;
-    --secondary-color: #10b981;
+  --primary-color: #4f46e5;
+  --secondary-color: #10b981;
 }
 
 body {
-    font-family: 'Inter', sans-serif;
-    background-color: #f3f4f6;
+  font-family: 'Inter', sans-serif;
+  background-color: #f3f4f6;
 }
 
 .card {
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1),
-                0 2px 4px -2px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.game-tab {
-    @apply px-3 py-2 text-sm font-medium rounded-t-lg transition border-b-2 border-transparent text-gray-500 hover:text-indigo-700 hover:border-indigo-300;
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.15),
+    0 4px 6px -2px rgba(0, 0, 0, 0.08);
 }
 
-.game-tab.active {
-    @apply text-indigo-700 border-indigo-500 bg-indigo-50;
-}
+/* Buttons and tabs are handled by Tailwind classes in HTML/JS */
 
-/* Flashcard flip */
+/* --- FLASHCARD FLIP EFFECT --- */
 .quiz-card {
-    min-height: 250px;
-    perspective: 1000px;
-    cursor: pointer;
-    max-width: 90%;
-    margin-left: auto;
-    margin-right: auto;
+  min-height: 200px;
+  perspective: 1000px;
+  cursor: pointer;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .card-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.6s;
-    transform-style: preserve-3d;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
 }
 
 .is-flipped .card-inner {
-    transform: rotateY(180deg);
+  transform: rotateY(180deg);
 }
 
 .card-face {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    backface-visibility: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    border-radius: 0.75rem;
-    border: 2px solid var(--primary-color);
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+  border-radius: 1.2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .card-front {
-    background: white;
+  background: white;
+  border: 4px solid #4f46e5;
+  color: #4f46e5;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .card-back {
-    background: var(--primary-color);
-    color: white;
-    transform: rotateY(180deg);
+  background: #4f46e5;
+  color: white;
+  border: 4px solid #3730a3;
+  transform: rotateY(180deg);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-.mcq-option {
-    @apply px-4 py-3 bg-white text-indigo-700 border-2 border-indigo-300 rounded-xl hover:bg-indigo-50 transition shadow-sm text-left w-full;
+/* Feedback pulse animations */
+@keyframes feedback-pulse-correct {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.01); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes feedback-pulse-wrong {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.01); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-/* Lesson slide visual tweaks */
+#game-feedback.bg-green-100:not(.hidden) {
+  animation: feedback-pulse-correct 0.8s ease-out;
+}
+#game-feedback.bg-red-100:not(.hidden) {
+  animation: feedback-pulse-wrong 0.8s ease-out;
+}
+
+/* Lesson slide tweaks */
 #lesson-slide h3 {
   font-size: 1.1rem;
   font-weight: 700;
@@ -82,12 +110,6 @@ body {
 #lesson-slide h3 span.emoji {
   margin-right: 0.4rem;
 }
-#lesson-slide ul {
-  list-style-type: disc;
-  padding-left: 1.25rem;
-}
-
-/* Small “vector-ish” badges */
 .lesson-badge {
   display: inline-flex;
   align-items: center;
@@ -99,25 +121,58 @@ body {
   color: #4f46e5;
 }
 
+/* GAME CONTAINER THEMES (per game) */
+#game-container {
+  border-radius: 1rem;
+  transition: background 0.4s ease, transform 0.2s ease;
+}
+
+body[data-game="flashcard"] #game-container {
+  background: radial-gradient(circle at top, #e0f2fe, #eef2ff);
+}
+body[data-game="bias"] #game-container {
+  background: radial-gradient(circle at top, #fee2e2, #fffbeb);
+}
+body[data-game="scenariopicker"] #game-container {
+  background: radial-gradient(circle at top, #ecfeff, #dcfce7);
+}
+body[data-game="stakeholder"] #game-container {
+  background: radial-gradient(circle at top, #f0fdf4, #fef3c7);
+}
+body[data-game="truefalse"] #game-container {
+  background: radial-gradient(circle at top, #e0f2fe, #e5e7eb);
+}
+
+/* Slight "pop" when hovering over quiz options on devices that support hover */
+@media (hover: hover) {
+  .mcq-btn-selector:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* WhatsApp floating button tweaks */
 #whatsapp-bubble {
   position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
+  bottom: 0.75rem;
+  right: 0.75rem;
   z-index: 50;
   text-decoration: none;
 }
 #whatsapp-bubble .wa-inner {
   display: flex;
   align-items: center;
-  padding: 0.6rem 0.9rem;
+  padding: 0.4rem 0.6rem;
   border-radius: 9999px;
   background: #22c55e; /* green-500 */
   color: #ffffff;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.18);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 #whatsapp-bubble:hover .wa-inner {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 30px rgba(0,0,0,0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   background: #16a34a; /* green-600 */
 }
