@@ -1,149 +1,132 @@
-// ======================================================
-// GLOBAL STATE
-// ======================================================
-let activeGame = "flashcard";
-let currentQuizIndex = 0;
-let currentLessonIndex = 0; // for slideshow
+// js/main.js
+"use strict";
+
+const lessonSlides = window.lessonSlides;
 
 // ======================================================
-// DOM REFS
+// LESSON SLIDESHOW LOGIC
 // ======================================================
-const gameContainer   = document.getElementById("game-container");
-const gameFeedback    = document.getElementById("game-feedback");
-const gameNavControls = document.getElementById("game-nav-controls");
+let currentLessonIndex = 0;
 
-// Lesson DOM
-const lessonSlideEl       = document.getElementById("lesson-slide");
-const lessonLabelEl       = document.getElementById("lesson-slide-label");
-const lessonProgressBarEl = document.getElementById("lesson-progress-bar");
-const lessonPrevBtn       = document.getElementById("lesson-prev-btn");
-const lessonNextBtn       = document.getElementById("lesson-next-btn");
+// DOM refs (populated on init)
+let lessonSlideEl;
+let lessonLabelEl;
+let lessonProgressBarEl;
+let lessonPrevBtn;
+let lessonNextBtn;
+let lessonTitleEl;
 
-function setLanguage(lang) {
-    currentLanguage = lang;
+const cacheLessonDom = () => {
+  lessonSlideEl = document.getElementById("lesson-slide");
+  lessonLabelEl = document.getElementById("lesson-slide-label");
+  lessonProgressBarEl = document.getElementById("lesson-progress-bar");
+  lessonPrevBtn = document.getElementById("lesson-prev-btn");
+  lessonNextBtn = document.getElementById("lesson-next-btn");
+  lessonTitleEl = document.getElementById("lesson-top-title");
+};
 
-    // translate every data-lang-key element
-    document.querySelectorAll("[data-lang-key]").forEach(el => {
-        const key = el.getAttribute("data-lang-key");
-        el.textContent = t(key);
-    });
+const renderLessonSlide = () => {
+  if (!Array.isArray(window.lessonSlides) || !lessonSlides.length) return;
+  if (!lessonSlideEl) return;
 
-    // re-render all games
-    showGame(activeGame);
-
-    // 🚀 FIX: always show slide 1 after switching languages
-    currentLessonIndex = 0;
-    renderLessonSlide();
-
-    // Re-render Lucide icons
-    lucide.createIcons();
-}
-
-
-// ======================================================
-// LESSON SLIDE DATA
-// (uses existing i18n keys: c1Title, c1p1, etc.)
-// ======================================================
-const lessonSlides = [
-  {
-    titleKey: "c1Title",
-    emoji: "🔍",
-    bulletKeys: ["c1p1", "c1Example"],
-    badgeKey: null
-  },
-  {
-    titleKey: "c2Title",
-    emoji: "⚖️",
-    bulletKeys: ["c2p1", "c2l1", "c2l2", "c2l3", "c2Biased", "c2Neutral"],
-    badgeKey: null
-  },
-  {
-    titleKey: "c3Title",
-    emoji: "👥",
-    bulletKeys: ["c3p1", "c3l1", "c3l1a", "c3l1b", "c3l1c"],
-    badgeKey: null
-  },
-  {
-    titleKey: "c4Title",
-    emoji: "💡",
-    bulletKeys: ["c4p1", "c4l1", "c4l2", "c4p2"],
-    badgeKey: null
-  }
-];
-
-function renderLessonSlide() {
   const slide = lessonSlides[currentLessonIndex];
-  if (!slide || !lessonSlideEl) return;
+  if (!slide) return;
 
   const total = lessonSlides.length;
-  const num   = currentLessonIndex + 1;
+  const num = currentLessonIndex + 1;
 
-  // Update top title bar
-  const titleEl = document.getElementById("lesson-top-title");
-  if (titleEl) titleEl.textContent = t(slide.titleKey);
+  // Update top title
+  if (lessonTitleEl) {
+    lessonTitleEl.textContent = slide.title;
+  }
 
   // Label: "Slide 1 / 4"
   if (lessonLabelEl) {
-    lessonLabelEl.textContent =
-      `${t("lessonSlideLabel")} ${num} / ${total}`;
+    lessonLabelEl.textContent = `Slide ${num} / ${total}`;
   }
 
   // Progress bar
   if (lessonProgressBarEl) {
-    const pct = ((num) / total) * 100;
+    const pct = (num / total) * 100;
     lessonProgressBarEl.style.width = `${pct}%`;
   }
 
-  // Prev/Next enable/disable
-  lessonPrevBtn.disabled = currentLessonIndex === 0;
-  lessonNextBtn.disabled = currentLessonIndex === total - 1;
-
-  // Build bullet content
-  const bulletsHtml = slide.bulletKeys
-    .map(key => `<li>${t(key)}</li>`)
-    .join("");
+  // Build compact bullet row
+  const compactBullets = slide.bullets
+    .map(text => `<span class="whitespace-normal">• ${text}</span>`)
+    .join('<span class="mx-3 text-indigo-400">|</span>');
 
   // Render slide body
   lessonSlideEl.innerHTML = `
     <div class="space-y-3 sm:space-y-4">
       <div class="flex items-center justify-between">
-        <h3><span class="emoji">${slide.emoji}</span> ${t(slide.titleKey)}</h3>
-        <span class="lesson-badge">GP Exam Prep</span>
+        <h3 class="text-lg sm:text-xl font-semibold text-gray-900">
+          <span class="mr-2">${slide.emoji}</span>${slide.title}
+        </h3>
+        <span
+          class="lesson-badge text-xs sm:text-sm px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 font-semibold">
+          ${slide.badge}
+        </span>
       </div>
-      <ul class="text-sm sm:text-base text-gray-800 leading-relaxed">
-        ${bulletsHtml}
-      </ul>
+      <div class="text-sm sm:text-base text-gray-800 leading-snug flex flex-wrap items-center">
+        ${compactBullets}
+      </div>
     </div>
   `;
-}
+};
 
+const changeLessonSlide = direction => {
+  if (!Array.isArray(window.lessonSlides) || !lessonSlides.length) return;
 
-// Navigation
-function nextLessonSlide() {
-  if (currentLessonIndex < lessonSlides.length - 1) {
-    currentLessonIndex++;
-    renderLessonSlide();
+  const total = lessonSlides.length;
+  const nextIndex = currentLessonIndex + direction;
+
+  if (nextIndex < 0 || nextIndex >= total) return;
+  currentLessonIndex = nextIndex;
+  renderLessonSlide();
+
+  // Enable/disable buttons based on new index
+  if (lessonPrevBtn) {
+    lessonPrevBtn.disabled = currentLessonIndex === 0;
   }
-}
-function prevLessonSlide() {
-  if (currentLessonIndex > 0) {
-    currentLessonIndex--;
-    renderLessonSlide();
+  if (lessonNextBtn) {
+    lessonNextBtn.disabled = currentLessonIndex === total - 1;
   }
-}
+};
 
-// Expose for inline onclick
-window.nextLessonSlide = nextLessonSlide;
-window.prevLessonSlide = prevLessonSlide;
+const initStudyGuide = () => {
+  cacheLessonDom();
+  if (!lessonSlideEl || !window.lessonSlides || !lessonSlides.length) return;
+
+  // Initial button state + listeners
+  if (lessonPrevBtn) {
+    lessonPrevBtn.disabled = true;
+    lessonPrevBtn.addEventListener("click", () => changeLessonSlide(-1));
+  }
+  if (lessonNextBtn) {
+    lessonNextBtn.addEventListener("click", () => changeLessonSlide(1));
+  }
+
+  renderLessonSlide();
+};
+
+// (Optional) export in case you ever need these globally
+window.renderLessonSlide = renderLessonSlide;
 
 // ======================================================
 // APP INITIALIZATION
 // ======================================================
-window.onload = () => {
-  // initial language set from selector value
-  const langSel = document.getElementById("language-selector");
-  const initialLang = langSel ? langSel.value : "en";
-  setLanguage(initialLang);
+document.addEventListener("DOMContentLoaded", () => {
+  // Study guide slides
+  initStudyGuide();
 
-  // in setLanguage we will re-render icons & games & lessons
-};
+  // Games (defined in games.js)
+  if (typeof window.initGames === "function") {
+    window.initGames();
+  }
+
+  // Create initial lucide icons
+  if (window.lucide && typeof lucide.createIcons === "function") {
+  lucide.createIcons();
+}
+});
