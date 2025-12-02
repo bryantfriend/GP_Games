@@ -1,483 +1,567 @@
+// js/games.js
+"use strict";
+
 // ======================================================
-// FEEDBACK
+// GLOBAL GAME STATE & SCORE
 // ======================================================
-function showFeedback(messageKey, isCorrect, hintKey = null) {
-    const baseText = t(messageKey);
-    const hintText = hintKey ? " " + t(hintKey) : "";
+let activeGame = "flashcard";
+let flashIndex = 0;
+let biasIndex = 0;
+let scenarioIndex = 0;
+let stakeIndex = 0;
+let tfIndex = 0;
 
-    gameFeedback.textContent = baseText + hintText;
-    gameFeedback.className =
-        `text-center mt-4 p-3 rounded-lg font-semibold text-sm sm:text-base text-white transition duration-300 
-         ${isCorrect ? "bg-emerald-500" : "bg-red-500"}`;
-    gameFeedback.style.display = "block";
+const score = {
+  total: 0,
+  correct: 0,
+  incorrect: 0,
+  streak: 0,
+  bestStreak: 0
+};
 
-    gameNavControls.innerHTML = "";
+const answeredQuestions = {};
 
-    // Don't auto-hide "Quiz Complete" messages
-    if (!messageKey.toLowerCase().includes("quizcomplete")) {
-        setTimeout(() => {
-            gameFeedback.style.display = "none";
-        }, 3000);
+const gameContainer = document.getElementById("game-container");
+const gameFeedback = document.getElementById("game-feedback");
+const gameNavControls = document.getElementById("game-nav-controls");
+const scoreEl = document.getElementById("game-score");
+const correctEl = document.getElementById("game-correct");
+const incorrectEl = document.getElementById("game-incorrect");
+const streakEl = document.getElementById("game-streak");
+const bestStreakEl = document.getElementById("game-best-streak");
+const soundCorrect = document.getElementById("sound-correct");
+const soundIncorrect = document.getElementById("sound-incorrect");
+
+// Completely mute sounds to avoid NotSupportedError in some browsers
+if (soundCorrect) soundCorrect.play = () => {};
+if (soundIncorrect) soundIncorrect.play = () => {};
+
+const BTN_PRIMARY_CLASSES =
+  "px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition";
+const BTN_SECONDARY_CLASSES =
+  "px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition";
+const MCQ_OPTION_CLASSES =
+  "px-4 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition shadow-sm text-left w-full font-medium";
+const MCQ_CORRECT_CLASSES =
+  "bg-green-500 border-green-700 text-white shadow-lg";
+const MCQ_WRONG_CLASSES =
+  "bg-red-500 border-red-700 text-white shadow-lg";
+
+const MCQ_SELECT_CLASS = "mcq-btn-selector";
+
+// Track per-game completion so students (and you) can see progress
+const gameCompletion = {
+  flashcard: false,
+  bias: false,
+  scenariopicker: false,
+  stakeholder: false,
+  truefalse: false
+};
+
+// ======================================================
+// HELPERS: COMPLETION + SCOREBOARD
+// ======================================================
+const markGameCompleted = gameName => {
+  if (!gameCompletion[gameName]) {
+    gameCompletion[gameName] = true;
+    updateGameTabs();
+  }
+};
+
+const updateScoreboard = () => {
+  if (scoreEl) scoreEl.textContent = score.total;
+  if (correctEl) correctEl.textContent = score.correct;
+  if (incorrectEl) incorrectEl.textContent = score.incorrect;
+
+  if (streakEl) {
+    let emoji = "";
+    if (score.streak >= 5) emoji = " 🔥";
+    else if (score.streak >= 3) emoji = " ⭐";
+    streakEl.textContent = `${score.streak}${emoji}`;
+  }
+
+  if (bestStreakEl) {
+    bestStreakEl.textContent = score.bestStreak;
+  }
+};
+
+const updateCompletionFromQuestionKey = questionKey => {
+  if (!questionKey) return;
+  const [gameName] = questionKey.split("-");
+  const data = gameData[gameName];
+  if (!data || !Array.isArray(data.questions)) return;
+
+  for (let i = 0; i < data.questions.length; i++) {
+    if (!answeredQuestions[`${gameName}-${i}`]) {
+      return; // not finished yet
     }
-}
+  }
+  markGameCompleted(gameName);
+};
 
+const handleScore = (isCorrect, questionKey) => {
+  if (!questionKey) return;
+  if (answeredQuestions[questionKey]) return;
+
+  if (isCorrect) {
+    score.total += 10;
+    score.correct += 1;
+    score.streak += 1;
+    if (score.streak > score.bestStreak) score.bestStreak = score.streak;
+    if (soundCorrect) soundCorrect.play();
+  } else {
+    score.total -= 5;
+    score.incorrect += 1;
+    score.streak = 0;
+    if (soundIncorrect) soundIncorrect.play();
+  }
+
+  answeredQuestions[questionKey] = true;
+  updateScoreboard();
+  updateCompletionFromQuestionKey(questionKey);
+};
 
 // ======================================================
-// SWITCH GAME
+// UI HELPERS
 // ======================================================
-function showGame(gameId) {
-    activeGame = gameId;
+const updateGameTabs = () => {
+  document.querySelectorAll(".game-tab").forEach(btn => {
+    const game = btn.getAttribute("data-game");
+    if (!game) return;
 
-    // highlight tab
-    document.querySelectorAll(".game-tab").forEach(tab => {
-        tab.classList.toggle("active", tab.getAttribute("data-game") === gameId);
+    // Base classes
+    btn.classList.remove(
+      "text-indigo-700",
+      "border-indigo-600",
+      "bg-white",
+      "shadow-inner",
+      "active"
+    );
+
+    if (game === activeGame) {
+      btn.classList.add(
+        "active",
+        "text-indigo-700",
+        "border-indigo-600",
+        "bg-white",
+        "shadow-inner"
+      );
+    }
+
+    // Add a simple ✅ marker for completed games
+    const baseLabel = btn.getAttribute("data-label") || btn.textContent.trim();
+    btn.setAttribute("data-label", baseLabel);
+
+    if (gameCompletion[game]) {
+      if (!baseLabel.endsWith("✅")) {
+        btn.textContent = `${baseLabel} ✅`;
+      }
+    } else {
+      btn.textContent = baseLabel;
+    }
+  });
+};
+
+const showFeedback = (message, isCorrect = null) => {
+  if (!gameFeedback) return;
+
+  gameFeedback.textContent = message;
+  gameFeedback.classList.remove(
+    "hidden",
+    "bg-green-100",
+    "text-green-800",
+    "bg-red-100",
+    "text-red-800"
+  );
+
+  if (isCorrect === true) {
+    gameFeedback.classList.add("bg-green-100", "text-green-800");
+  } else if (isCorrect === false) {
+    gameFeedback.classList.add("bg-red-100", "text-red-800");
+  }
+};
+
+const resetGameUI = () => {
+  if (gameFeedback) {
+    gameFeedback.classList.add("hidden");
+    gameFeedback.textContent = "";
+    gameFeedback.classList.remove(
+      "bg-green-100",
+      "text-green-800",
+      "bg-red-100",
+      "text-red-800"
+    );
+  }
+
+  document.querySelectorAll(`.${MCQ_SELECT_CLASS}`).forEach(btn => {
+    btn.classList.remove(
+      ...MCQ_CORRECT_CLASSES.split(" "),
+      ...MCQ_WRONG_CLASSES.split(" "),
+      "opacity-50",
+      "pointer-events-none"
+    );
+  });
+};
+
+// ======================================================
+// FLASHCARDS — key concepts for the whole exam
+// ======================================================
+const renderFlashcard = () => {
+  resetGameUI();
+  const cards = gameData.flashcard;
+  const card = cards[flashIndex];
+  if (!gameContainer || !card) return;
+
+  // If they’ve reached the last card, mark this game as completed
+  if (flashIndex === cards.length - 1) {
+    markGameCompleted("flashcard");
+  }
+
+  gameContainer.innerHTML = `
+    <div class="w-full max-w-md mx-auto text-center space-y-4">
+      <div class="flex items-center justify-center text-lg font-semibold text-gray-700 mb-2">
+        <i data-lucide="layers-3" class="w-5 h-5 text-indigo-500 mr-2"></i>
+        Card ${flashIndex + 1} / ${cards.length}
+      </div>
+      <div id="flashcard-wrapper" class="quiz-card">
+        <div class="card-inner">
+          <div class="card-face card-front"><p>${card.front}</p></div>
+          <div class="card-face card-back"><p>${card.back}</p></div>
+        </div>
+      </div>
+      <p class="text-sm text-gray-500">Tap the card to flip it! 👆</p>
+    </div>
+  `;
+
+  gameNavControls.innerHTML = `
+    <button id="flash-prev" class="${BTN_SECONDARY_CLASSES} mr-2" ${flashIndex === 0 ? "disabled" : ""}>⬅️ Previous Card</button>
+    <button id="flash-next" class="${BTN_PRIMARY_CLASSES}" ${flashIndex === cards.length - 1 ? "disabled" : ""}>Next Card ➡️</button>
+  `;
+
+  const flashWrapper = document.getElementById("flashcard-wrapper");
+  if (flashWrapper) {
+    flashWrapper.addEventListener("click", () =>
+      flashWrapper.classList.toggle("is-flipped")
+    );
+  }
+
+  if (window.lucide && typeof window.lucide.createIcons === "function") {
+    window.lucide.createIcons();
+  }
+
+  document.getElementById("flash-prev")?.addEventListener("click", () => {
+    if (flashIndex > 0) {
+      flashIndex--;
+      renderFlashcard();
+    }
+  });
+
+  document.getElementById("flash-next")?.addEventListener("click", () => {
+    if (flashIndex < cards.length - 1) {
+      flashIndex++;
+      renderFlashcard();
+    }
+  });
+};
+
+// ======================================================
+// GENERIC MCQ ENGINE (used for bias, assumptions, stakeholders)
+// ======================================================
+const setupMcqGame = (data, indexRef, renderer) => {
+  resetGameUI();
+
+  const q = data.questions[indexRef.value];
+  if (!q || !gameContainer) return;
+
+  const gameType = activeGame;
+  const icon =
+    gameType === "bias"
+      ? "type"
+      : gameType === "scenariopicker"
+      ? "lightbulb"
+      : gameType === "stakeholder"
+      ? "users"
+      : "help-circle";
+
+  const optionsHtml = q.options
+    .map(
+      (opt, idx) => `
+      <button
+        class="mcq-option ${MCQ_OPTION_CLASSES} ${MCQ_SELECT_CLASS}"
+        data-opt-idx="${idx}"
+        data-game-type="${gameType}-${indexRef.value}">
+        ${opt}
+      </button>
+    `
+    )
+    .join("");
+
+  const primaryText = q.statement || q.instruction || "";
+  const subtitle =
+    q.subtitle ||
+    (gameType === "bias"
+      ? "Choose the sentence that is most neutral or best identifies the bias."
+      : gameType === "scenariopicker"
+      ? "Choose the best explanation or assumption."
+      : "Choose the stakeholder / perspective that best fits the scenario.");
+
+  gameContainer.innerHTML = `
+    <div class="w-full max-w-xl mx-auto space-y-4 text-center">
+      <div class="flex items-center justify-center text-lg font-semibold text-gray-700 mb-2">
+        <i data-lucide="${icon}" class="w-5 h-5 text-indigo-500 mr-2"></i>
+        Question ${indexRef.value + 1} / ${data.questions.length}
+      </div>
+      <p class="text-sm text-gray-600">${subtitle}</p>
+      <div class="rounded-2xl bg-indigo-50 border border-indigo-200 p-5 font-bold text-gray-800 text-left shadow-inner">
+        ${primaryText}
+      </div>
+      <div class="space-y-3 mt-4">${optionsHtml}</div>
+    </div>
+  `;
+
+  gameNavControls.innerHTML = `
+    <button id="${gameType}-prev" class="${BTN_SECONDARY_CLASSES} mr-2" ${indexRef.value === 0 ? "disabled" : ""}>⬅️ Previous</button>
+    <button id="${gameType}-next" class="${BTN_PRIMARY_CLASSES}" ${indexRef.value === data.questions.length - 1 ? "disabled" : ""}>Next ➡️</button>
+  `;
+
+  if (window.lucide && typeof window.lucide.createIcons === "function") {
+    window.lucide.createIcons();
+  }
+
+  // Handle option click
+  document.querySelectorAll(`.${MCQ_SELECT_CLASS}`).forEach(btn => {
+    btn.addEventListener("click", e => {
+      const currentBtn = e.currentTarget;
+      if (currentBtn.classList.contains("pointer-events-none")) return;
+
+      const idx = Number(currentBtn.getAttribute("data-opt-idx"));
+      const correct = idx === q.correctIndex;
+      const questionKey = currentBtn.getAttribute("data-game-type");
+
+      handleScore(correct, questionKey);
+
+      currentBtn.classList.add(
+        ...(correct ? MCQ_CORRECT_CLASSES.split(" ") : MCQ_WRONG_CLASSES.split(" "))
+      );
+
+      if (!correct) {
+        const correctBtn = document.querySelector(
+          `[data-game-type="${questionKey}"][data-opt-idx="${q.correctIndex}"]`
+        );
+        correctBtn?.classList.add(
+          ...MCQ_CORRECT_CLASSES.split(" "),
+          "opacity-50"
+        );
+      }
+
+      showFeedback(
+        correct ? q.feedbackCorrect : q.feedbackWrong,
+        correct
+      );
+
+      document
+        .querySelectorAll(`[data-game-type="${questionKey}"]`)
+        .forEach(b => b.classList.add("pointer-events-none"));
     });
+  });
 
-    gameFeedback.style.display = "none";
-    gameNavControls.innerHTML = "";
-    gameContainer.innerHTML = "";
+  // Navigation
+  const prevBtn = document.getElementById(`${gameType}-prev`);
+  const nextBtn = document.getElementById(`${gameType}-next`);
 
-    // reset indices when switching games
-    if (gameId === "flashcard") currentQuizIndex = 0;
-    if (gameId === "bias") gameData.bias.currentStatement = 0;
-    if (gameId === "scenariopicker") gameData.scenariopicker.currentQuestion = 0;
-    if (gameId === "stakeholder") gameData.stakeholder.currentQuestion = 0;
-    if (gameId === "truefalse") gameData.truefalse.currentQuestion = 0;
+  if (prevBtn) {
+    prevBtn.addEventListener("click", () => {
+      if (indexRef.value > 0) {
+        indexRef.set(indexRef.value - 1);
+        renderer();
+      }
+    });
+  }
 
-    switch (gameId) {
-        case "flashcard":       renderFlashcard();        break;
-        case "bias":            renderBiasDetector();     break;
-        case "scenariopicker":  renderScenarioPicker();   break;
-        case "stakeholder":     renderStakeholderMatch(); break;
-        case "truefalse":       renderTrueFalseQuiz();    break;
-    }
-}
-
-
-// ======================================================
-// GAME 1 – FLASHCARDS
-// ======================================================
-function renderFlashcard() {
-    if (!gameData.flashcard || gameData.flashcard.length === 0) return;
-
-    currentQuizIndex = currentQuizIndex % gameData.flashcard.length;
-    const card = gameData.flashcard[currentQuizIndex];
-
-    gameContainer.innerHTML = `
-        <div class="flex flex-col items-center space-y-4 w-full">
-            <div class="flex justify-between w-full max-w-lg mb-4">
-                <span id="card-counter" class="text-lg font-medium text-indigo-700"></span>
-                <button id="next-button"
-                        class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-md flex items-center"
-                        onclick="nextCard()"></button>
-            </div>
-
-            <div id="quiz-container" class="w-full quiz-card" onclick="flipCard()">
-                <div id="flashcard" class="card-inner shadow-xl">
-                    <div class="card-face card-front flex-col">
-                        <span class="text-xs text-gray-500 mb-2">${t("qTerm")}</span>
-                        <p id="card-front-text"
-                           class="text-lg sm:text-xl font-bold text-gray-900 p-2">
-                           ${t(card.frontKey)}
-                        </p>
-                        <span class="text-sm mt-4 text-indigo-500">${t("qClick")}</span>
-                    </div>
-
-                    <div class="card-face card-back flex-col">
-                        <span class="text-xs font-semibold uppercase opacity-80 mb-2">
-                            ${t("qAnswer")}
-                        </span>
-                        <p id="card-back-text"
-                           class="text-lg sm:text-xl font-light p-2">
-                           ${t(card.backKey)}
-                        </p>
-                        <i data-lucide="rotate-ccw" class="w-5 h-5 mt-4 opacity-70"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    lucide.createIcons();
-    updateCardCounter();
-    updateNextButtonState();
-}
-
-function flipCard() {
-    document.getElementById("quiz-container").classList.toggle("is-flipped");
-}
-
-function nextCard() {
-    const quizContainer = document.getElementById("quiz-container");
-    quizContainer.classList.remove("is-flipped");
-
-    setTimeout(() => {
-        currentQuizIndex = (currentQuizIndex + 1) % gameData.flashcard.length;
-        const card = gameData.flashcard[currentQuizIndex];
-
-        document.getElementById("card-front-text").innerHTML = t(card.frontKey);
-        document.getElementById("card-back-text").innerHTML = t(card.backKey);
-
-        updateCardCounter();
-        updateNextButtonState();
-    }, 300);
-}
-
-function updateCardCounter() {
-    document.getElementById("card-counter").textContent =
-        `Card ${currentQuizIndex + 1} / ${gameData.flashcard.length}`;
-}
-
-function updateNextButtonState() {
-    const nextButton = document.getElementById("next-button");
-    if (!nextButton) return;
-
-    if (currentQuizIndex === gameData.flashcard.length - 1) {
-        nextButton.innerHTML =
-            `<span>${t("qRestart")}</span>
-             <i data-lucide="rotate-ccw" class="w-5 h-5 text-white ml-1"></i>`;
-    } else {
-        nextButton.innerHTML =
-            `<span>${t("qNext")}</span>
-             <i data-lucide="arrow-right" class="w-5 h-5 text-white ml-1"></i>`;
-    }
-
-    lucide.createIcons();
-}
-
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => {
+      if (indexRef.value < data.questions.length - 1) {
+        indexRef.set(indexRef.value + 1);
+        renderer();
+      }
+    });
+  }
+};
 
 // ======================================================
-// GAME 2 – BIAS DETECTOR (MULTI-QUESTION)
+// SPECIFIC MCQ RENDERERS (tied to exam sections)
 // ======================================================
-function renderBiasDetector() {
-    const data = gameData.bias;
-    const idx  = data.currentStatement;
-    const q    = data.questions[idx];
+const biasRef = {
+  value: biasIndex,
+  set(v) {
+    biasIndex = v;
+    this.value = v;
+  }
+};
+const scenarioRef = {
+  value: scenarioIndex,
+  set(v) {
+    scenarioIndex = v;
+    this.value = v;
+  }
+};
+const stakeRef = {
+  value: stakeIndex,
+  set(v) {
+    stakeIndex = v;
+    this.value = v;
+  }
+};
 
-    const options = [
-        { key: q.correctKey, value: t(q.correctKey) },
-        ...q.incorrectKeys.map(k => ({ key: k, value: t(k) }))
-    ].sort(() => Math.random() - 0.5);
-
-    const optionsHTML = options
-        .map(
-            opt => `
-            <button class="mcq-option bias-option"
-                    onclick="checkMCQ(this, '${opt.key}', '${q.correctKey}', '${q.correctMsgKey}', '${q.wrongMsgKey}', 'bias')">
-                ${opt.value}
-            </button>`
-        )
-        .join("");
-
-    gameContainer.innerHTML = `
-        <div class="w-full max-w-lg space-y-4">
-            <p class="text-center text-gray-600 font-medium">
-                ${t("qLabelQuestion") || "Question"} ${idx + 1} / ${data.questions.length}
-            </p>
-
-            <p class="text-center text-gray-600">${t("bInstruction")}</p>
-
-            <div class="p-4 bg-indigo-100 border-l-4 border-indigo-500 rounded-lg text-lg text-gray-800 text-center font-semibold">
-                ${t(q.statementKey)}
-            </div>
-
-            <div class="flex flex-col space-y-3">
-                ${optionsHTML}
-            </div>
-        </div>
-    `;
-
-    gameNavControls.innerHTML = "";
+function renderBias() {
+  // Section A Q2 – recognising loaded language + neutral rewrite
+  setupMcqGame(gameData.bias, biasRef, renderBias);
 }
 
-function nextBiasQuestion() {
-    const data = gameData.bias;
-    data.currentStatement = (data.currentStatement + 1) % data.questions.length;
-    gameNavControls.innerHTML = "";
-    renderBiasDetector();
-}
-
-function restartBiasQuiz() {
-    gameData.bias.currentStatement = 0;
-    gameNavControls.innerHTML = "";
-    renderBiasDetector();
-}
-
-
-// ======================================================
-// GAME 3 – SCENARIO PICKER (MULTI-QUESTION)
-// ======================================================
 function renderScenarioPicker() {
-    const data = gameData.scenariopicker;
-    const idx  = data.currentQuestion;
-    const q    = data.questions[idx];
-
-    const options = q.optionsKeys
-        .map((key, index) => ({ index, value: t(key) }))
-        .sort(() => Math.random() - 0.5);
-
-    const html = options
-        .map(
-            o => `
-            <button class="mcq-option scenariopicker-option"
-                    onclick="checkMCQ(this, ${o.index}, ${q.correctIndex}, '${q.correctMsgKey}', '${q.wrongMsgKey}', 'scenariopicker')">
-                ${o.value}
-            </button>`
-        )
-        .join("");
-
-    gameContainer.innerHTML = `
-        <div class="w-full max-w-lg space-y-4">
-            <p class="text-center text-gray-600 font-medium">
-                ${t("qLabelQuestion") || "Question"} ${idx + 1} / ${data.questions.length}
-            </p>
-
-            <p class="text-center text-gray-600">${t(q.instructionKey)}</p>
-            <div class="p-4 bg-yellow-100 border-l-4 border-yellow-500 rounded-lg">
-                ${t(q.instructionKey).split(". ")[0]}...
-            </div>
-
-            <div class="flex flex-col space-y-3 mt-4">${html}</div>
-        </div>
-    `;
-
-    gameNavControls.innerHTML = "";
+  // Section C assumptions + “both can be true” style reasoning
+  setupMcqGame(gameData.scenariopicker, scenarioRef, renderScenarioPicker);
 }
 
-function nextScenarioQuestion() {
-    const data = gameData.scenariopicker;
-    data.currentQuestion = (data.currentQuestion + 1) % data.questions.length;
-    gameNavControls.innerHTML = "";
-    renderScenarioPicker();
+function renderStakeholder() {
+  // Section B – stakeholder perspectives & perspective map
+  setupMcqGame(gameData.stakeholder, stakeRef, renderStakeholder);
 }
-
-function restartScenarioQuiz() {
-    gameData.scenariopicker.currentQuestion = 0;
-    gameNavControls.innerHTML = "";
-    renderScenarioPicker();
-}
-
 
 // ======================================================
-// GAME 4 – STAKEHOLDER MATCH (MULTI-QUESTION)
+// TRUE/FALSE GAME – “Can both statements be true?”
 // ======================================================
-function renderStakeholderMatch() {
-    const data = gameData.stakeholder;
-    const idx  = data.currentQuestion;
-    const q    = data.questions[idx];
+const renderTrueFalse = () => {
+  resetGameUI();
+  const data = gameData.truefalse;
+  const q = data.questions[tfIndex];
+  if (!q || !gameContainer) return;
 
-    const options = q.optionsKeys
-        .map((key, index) => ({ index, value: t(key) }))
-        .sort(() => Math.random() - 0.5);
+  const questionKey = `truefalse-${tfIndex}`;
 
-    const html = options
-        .map(
-            o => `
-            <button class="mcq-option stakeholder-option"
-                    onclick="checkMCQ(this, ${o.index}, ${q.correctIndex}, '${q.correctMsgKey}', '${q.wrongMsgKey}', 'stakeholder')">
-                ${o.value}
-            </button>`
-        )
-        .join("");
+  gameContainer.innerHTML = `
+    <div class="w-full max-w-xl mx-auto space-y-4 text-center">
+      <div class="flex items-center justify-center text-lg font-semibold text-gray-700 mb-2">
+        <i data-lucide="split" class="w-5 h-5 text-indigo-500 mr-2"></i>
+        Question ${tfIndex + 1} / ${data.questions.length}
+      </div>
+      <p class="text-sm text-gray-600">${q.instruction}</p>
 
-    gameContainer.innerHTML = `
-        <div class="w-full max-w-lg space-y-4">
-            <p class="text-center text-gray-600 font-medium">
-                ${t("qLabelQuestion") || "Question"} ${idx + 1} / ${data.questions.length}
-            </p>
-            <p class="text-center text-gray-600">${t(q.instructionKey)}</p>
-            <div class="flex flex-col space-y-3">${html}</div>
-        </div>
-    `;
+      <div class="rounded-2xl bg-indigo-50 border border-indigo-200 p-5 text-left space-y-3 font-bold text-gray-800 shadow-inner">
+        <p><i data-lucide="corner-down-right" class="w-4 h-4 mr-2 text-indigo-600"></i> A: ${q.statementA}</p>
+        <p><i data-lucide="corner-down-right" class="w-4 h-4 mr-2 text-indigo-600"></i> B: ${q.statementB}</p>
+      </div>
 
-    gameNavControls.innerHTML = "";
-}
+      <div class="space-y-3 mt-4">
+        <button id="tf-true" class="mcq-option ${MCQ_OPTION_CLASSES} ${MCQ_SELECT_CLASS}">
+          <i data-lucide="check-circle" class="inline w-5 h-5 mr-2"></i>
+          ${q.optionTrueText}
+        </button>
 
-function nextStakeholderQuestion() {
-    const data = gameData.stakeholder;
-    data.currentQuestion = (data.currentQuestion + 1) % data.questions.length;
-    gameNavControls.innerHTML = "";
-    renderStakeholderMatch();
-}
+        <button id="tf-false" class="mcq-option ${MCQ_OPTION_CLASSES} ${MCQ_SELECT_CLASS}">
+          <i data-lucide="x-circle" class="inline w-5 h-5 mr-2"></i>
+          ${q.optionFalseText}
+        </button>
+      </div>
+    </div>
+  `;
 
-function restartStakeholderQuiz() {
-    gameData.stakeholder.currentQuestion = 0;
-    gameNavControls.innerHTML = "";
-    renderStakeholderMatch();
-}
+  gameNavControls.innerHTML = `
+    <button id="tf-prev" class="${BTN_SECONDARY_CLASSES} mr-2" ${tfIndex === 0 ? "disabled" : ""}>⬅️ Previous</button>
+    <button id="tf-next" class="${BTN_PRIMARY_CLASSES}" ${tfIndex === data.questions.length - 1 ? "disabled" : ""}>Next ➡️</button>
+  `;
 
+  if (window.lucide && typeof window.lucide.createIcons === "function") {
+    window.lucide.createIcons();
+  }
 
-// ======================================================
-// GAME 5 – TRUE/FALSE QUIZ (MULTI-QUESTION)
-// ======================================================
-function renderTrueFalseQuiz() {
-    const data = gameData.truefalse;
-    const idx  = data.currentQuestion;
-    const q    = data.questions[idx];
+  const trueBtn = document.getElementById("tf-true");
+  const falseBtn = document.getElementById("tf-false");
 
-    gameContainer.innerHTML = `
-        <div class="w-full max-w-lg space-y-4">
-            <p class="text-center text-gray-600 font-medium">
-                ${t("qLabelQuestion") || "Question"} ${idx + 1} / ${data.questions.length}
-            </p>
+  const handleAnswer = isTrue => {
+    if (trueBtn.classList.contains("pointer-events-none")) return;
 
-            <p class="text-center text-gray-600">${t(q.instructionKey)}</p>
+    const correct = isTrue === q.correctAnswer;
+    const clicked = isTrue ? trueBtn : falseBtn;
+    const other = isTrue ? falseBtn : trueBtn;
 
-            <div class="flex flex-col space-y-2 bg-gray-50 p-3 rounded-lg">
-                <div class="font-bold text-gray-800">${t(q.statementAKey)}</div>
-                <div class="font-bold text-gray-800">${t(q.statementBKey)}</div>
-            </div>
+    handleScore(correct, questionKey);
 
-            <div class="flex flex-col space-y-3 mt-4">
+    clicked.classList.add(
+      ...(correct ? MCQ_CORRECT_CLASSES.split(" ") : MCQ_WRONG_CLASSES.split(" "))
+    );
+    other.classList.add("opacity-50");
 
-                <button class="mcq-option truefalse-option bg-green-500 text-white"
-                    onclick="checkMCQ(this, true, ${q.correctAnswer}, '${q.correctMsgKey}', '${q.wrongMsgKey}', 'truefalse')">
-                    ${t(q.optionTrueKey)}
-                </button>
+    showFeedback(
+      correct ? q.feedbackCorrect : q.feedbackWrong,
+      correct
+    );
 
-                <button class="mcq-option truefalse-option bg-red-500 text-white"
-                    onclick="checkMCQ(this, false, ${q.correctAnswer}, '${q.correctMsgKey}', '${q.wrongMsgKey}', 'truefalse')">
-                    ${t(q.optionFalseKey)}
-                </button>
+    trueBtn.classList.add("pointer-events-none");
+    falseBtn.classList.add("pointer-events-none");
+  };
 
-            </div>
-        </div>
-    `;
+  trueBtn.addEventListener("click", () => handleAnswer(true));
+  falseBtn.addEventListener("click", () => handleAnswer(false));
 
-    gameNavControls.innerHTML = "";
-}
-
-function nextTrueFalseQuestion() {
-    const data = gameData.truefalse;
-    data.currentQuestion = (data.currentQuestion + 1) % data.questions.length;
-    gameNavControls.innerHTML = "";
-    renderTrueFalseQuiz();
-}
-
-function restartTrueFalseQuiz() {
-    gameData.truefalse.currentQuestion = 0;
-    gameNavControls.innerHTML = "";
-    renderTrueFalseQuiz();
-}
-
-
-// ======================================================
-// GENERIC MCQ CHECKER
-// ======================================================
-function checkMCQ(button, selected, correct, msgCorrect, msgWrong, gameId) {
-    const buttons = document.querySelectorAll(`.${gameId}-option`);
-    buttons.forEach(btn => (btn.disabled = true));
-
-    gameNavControls.innerHTML = "";
-
-    const isCorrect = selected === correct;
-
-    if (isCorrect) {
-        button.classList.remove("bg-white", "text-indigo-700");
-        button.classList.add("bg-emerald-500", "text-white");
-
-        showFeedback(msgCorrect, true);
-
-        // Per-game navigation
-        if (gameId === "bias") {
-            const data  = gameData.bias;
-            const total = data.questions.length;
-            const idx   = data.currentStatement;
-
-            if (idx < total - 1) {
-                gameFeedback.style.display = "none";
-                gameNavControls.innerHTML = `
-                    <button class="px-6 py-3 bg-indigo-600 text-white rounded-xl shadow-lg mt-4"
-                            onclick="nextBiasQuestion()">
-                        ${t("qNext")} (${idx + 2}/${total})
-                    </button>`;
-            } else {
-                gameFeedback.textContent = t("qQuizComplete");
-                gameFeedback.classList.add("bg-emerald-500");
-                gameNavControls.innerHTML = `
-                    <button class="px-6 py-3 bg-indigo-600 text-white rounded-xl shadow-lg mt-4"
-                            onclick="restartBiasQuiz()">
-                        ${t("qRestart")}
-                    </button>`;
-            }
-
-        } else if (gameId === "scenariopicker") {
-            const data  = gameData.scenariopicker;
-            const total = data.questions.length;
-            const idx   = data.currentQuestion;
-
-            if (idx < total - 1) {
-                gameFeedback.style.display = "none";
-                gameNavControls.innerHTML = `
-                    <button class="px-6 py-3 bg-indigo-600 text-white rounded-xl shadow-lg mt-4"
-                            onclick="nextScenarioQuestion()">
-                        ${t("qNext")} (${idx + 2}/${total})
-                    </button>`;
-            } else {
-                gameFeedback.textContent = t("qQuizComplete");
-                gameFeedback.classList.add("bg-emerald-500");
-                gameNavControls.innerHTML = `
-                    <button class="px-6 py-3 bg-indigo-600 text-white rounded-xl shadow-lg mt-4"
-                            onclick="restartScenarioQuiz()">
-                        ${t("qRestart")}
-                    </button>`;
-            }
-
-        } else if (gameId === "stakeholder") {
-            const data  = gameData.stakeholder;
-            const total = data.questions.length;
-            const idx   = data.currentQuestion;
-
-            if (idx < total - 1) {
-                gameFeedback.style.display = "none";
-                gameNavControls.innerHTML = `
-                    <button class="px-6 py-3 bg-indigo-600 text-white rounded-xl shadow-lg mt-4"
-                            onclick="nextStakeholderQuestion()">
-                        ${t("qNext")} (${idx + 2}/${total})
-                    </button>`;
-            } else {
-                gameFeedback.textContent = t("qQuizComplete");
-                gameFeedback.classList.add("bg-emerald-500");
-                gameNavControls.innerHTML = `
-                    <button class="px-6 py-3 bg-indigo-600 text-white rounded-xl shadow-lg mt-4"
-                            onclick="restartStakeholderQuiz()">
-                        ${t("qRestart")}
-                    </button>`;
-            }
-
-        } else if (gameId === "truefalse") {
-            const data  = gameData.truefalse;
-            const total = data.questions.length;
-            const idx   = data.currentQuestion;
-
-            if (idx < total - 1) {
-                gameFeedback.style.display = "none";
-                gameNavControls.innerHTML = `
-                    <button class="px-6 py-3 bg-indigo-600 text-white rounded-xl shadow-lg mt-4"
-                            onclick="nextTrueFalseQuestion()">
-                        ${t("qNext")} (${idx + 2}/${total})
-                    </button>`;
-            } else {
-                gameFeedback.textContent = t("qQuizComplete");
-                gameFeedback.classList.add("bg-emerald-500");
-                gameNavControls.innerHTML = `
-                    <button class="px-6 py-3 bg-indigo-600 text-white rounded-xl shadow-lg mt-4"
-                            onclick="restartTrueFalseQuiz()">
-                        ${t("qRestart")}
-                    </button>`;
-            }
-
-        } else {
-            // fallback – not really used now
-            setTimeout(() => showGame(gameId), 2500);
-        }
-
-    } else {
-        button.classList.add("bg-red-500", "text-white");
-        showFeedback(msgWrong, false, "hintTryAgain");
-
-        setTimeout(() => {
-            buttons.forEach(btn => (btn.disabled = false));
-        }, 1500);
+  document.getElementById("tf-prev")?.addEventListener("click", () => {
+    if (tfIndex > 0) {
+      tfIndex--;
+      renderTrueFalse();
     }
-}
+  });
+
+  document.getElementById("tf-next")?.addEventListener("click", () => {
+    if (tfIndex < data.questions.length - 1) {
+      tfIndex++;
+      renderTrueFalse();
+    } else {
+      markGameCompleted("truefalse");
+    }
+  });
+};
+
+// ======================================================
+// MAIN SWITCHER
+// ======================================================
+const showGame = gameName => {
+  activeGame = gameName;
+  updateGameTabs();
+  document.body.dataset.game = gameName;
+
+  switch (gameName) {
+    case "flashcard":
+      renderFlashcard();
+      break;
+    case "bias":
+      renderBias();
+      break;
+    case "scenariopicker":
+      renderScenarioPicker();
+      break;
+    case "stakeholder":
+      renderStakeholder();
+      break;
+    case "truefalse":
+      renderTrueFalse();
+      break;
+    default:
+      renderFlashcard();
+  }
+};
+
+const initGames = () => {
+  document.querySelectorAll(".game-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const g = btn.getAttribute("data-game");
+      if (g) showGame(g);
+    });
+  });
+
+  updateScoreboard();
+  updateGameTabs();
+  showGame("flashcard");
+};
+
+window.showGame = showGame;
+window.initGames = initGames;
