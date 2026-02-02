@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'claimsorter.html',
+            title: 'Claims vs. Opinions 🤔'
+        }, 
+        {
             fileName: 'cause_effect.html',
             title: 'Cause and Effects '
         }, 
