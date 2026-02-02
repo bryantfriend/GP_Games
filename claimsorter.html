@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logic Lab: Claim, Opinion, or Argument?</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 1);
+        }
+
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .progress-fill {
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="game-app" class="w-full max-w-2xl">
+        <div class="glass-card rounded-3xl shadow-2xl overflow-hidden">
+            
+            <!-- Header -->
+            <div class="bg-slate-900 p-6 text-white flex justify-between items-center">
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Logic Lab</h1>
+                    <p id="difficulty-label" class="text-slate-400 text-xs uppercase tracking-widest font-semibold">Select Difficulty</p>
+                </div>
+                <div id="stats-display" class="hidden flex gap-4">
+                    <div class="text-center">
+                        <div id="score" class="text-2xl font-bold">0</div>
+                        <div class="text-[10px] uppercase text-slate-400">Score</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="streak" class="text-2xl font-bold text-yellow-400">0</div>
+                        <div class="text-[10px] uppercase text-slate-400">Streak</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="progress-container" class="w-full h-1.5 bg-slate-200 hidden">
+                <div id="progress-bar" class="progress-fill h-full bg-indigo-600" style="width: 0%"></div>
+            </div>
+
+            <div class="p-8">
+                <!-- Difficulty Selection Screen -->
+                <div id="setup-screen" class="fade-in">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2">Choose Your Path</h2>
+                        <p class="text-slate-500">Select a difficulty level to begin your training.</p>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4">
+                        <button onclick="startGame('Novice')" class="group flex items-center justify-between p-6 rounded-2xl border-2 border-slate-100 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-left">
+                            <div>
+                                <span class="block text-emerald-600 font-bold text-lg">Novice</span>
+                                <span class="text-slate-500 text-sm">Clear, everyday statements. (20 Questions)</span>
+                            </div>
+                            <span class="text-2xl group-hover:translate-x-1 transition-transform">🌱</span>
+                        </button>
+                        <button onclick="startGame('Scholar')" class="group flex items-center justify-between p-6 rounded-2xl border-2 border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left">
+                            <div>
+                                <span class="block text-indigo-600 font-bold text-lg">Scholar</span>
+                                <span class="text-slate-500 text-sm">Academic and nuanced logic. (20 Questions)</span>
+                            </div>
+                            <span class="text-2xl group-hover:translate-x-1 transition-transform">📚</span>
+                        </button>
+                        <button onclick="startGame('Philosopher')" class="group flex items-center justify-between p-6 rounded-2xl border-2 border-slate-100 hover:border-purple-500 hover:bg-purple-50 transition-all text-left">
+                            <div>
+                                <span class="block text-purple-600 font-bold text-lg">Philosopher</span>
+                                <span class="text-slate-500 text-sm">Complex and subtle reasoning. (20 Questions)</span>
+                            </div>
+                            <span class="text-2xl group-hover:translate-x-1 transition-transform">🏛️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Game Container -->
+                <div id="question-container" class="hidden fade-in">
+                    <div class="mb-8">
+                        <span id="breadcrumb" class="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold uppercase mb-4">
+                            Analysis
+                        </span>
+                        <h2 id="statement-text" class="text-2xl font-semibold text-slate-800 leading-snug min-h-[4rem]"></h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="action-buttons">
+                        <button onclick="handleAnswer('Claim')" class="option-btn py-4 px-6 rounded-2xl bg-white border-2 border-slate-200 text-slate-700 font-bold hover:border-indigo-500 hover:text-indigo-600 focus:outline-none">Claim</button>
+                        <button onclick="handleAnswer('Opinion')" class="option-btn py-4 px-6 rounded-2xl bg-white border-2 border-slate-200 text-slate-700 font-bold hover:border-indigo-500 hover:text-indigo-600 focus:outline-none">Opinion</button>
+                        <button onclick="handleAnswer('Argument')" class="option-btn py-4 px-6 rounded-2xl bg-white border-2 border-slate-200 text-slate-700 font-bold hover:border-indigo-500 hover:text-indigo-600 focus:outline-none">Argument</button>
+                    </div>
+
+                    <div id="feedback-area" class="mt-8 hidden fade-in">
+                        <div id="feedback-banner" class="p-4 rounded-2xl mb-4 flex items-center gap-3">
+                            <span id="feedback-icon" class="text-2xl"></span>
+                            <div>
+                                <h3 id="feedback-title" class="font-bold text-lg"></h3>
+                                <p id="feedback-explanation" class="text-slate-600 text-sm italic"></p>
+                            </div>
+                        </div>
+                        <button onclick="nextQuestion()" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-colors">
+                            Continue &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- End Screen -->
+                <div id="end-screen" class="hidden text-center py-10 fade-in">
+                    <div class="text-6xl mb-6">🏆</div>
+                    <h2 class="text-3xl font-bold text-slate-800 mb-2">Training Complete!</h2>
+                    <p id="end-message" class="text-slate-500 mb-8"></p>
+                    <div class="flex justify-center gap-8 mb-10">
+                        <div>
+                            <div id="final-score" class="text-4xl font-black text-indigo-600">0</div>
+                            <div class="text-xs uppercase font-bold text-slate-400">Final Score</div>
+                        </div>
+                        <div>
+                            <div id="accuracy" class="text-4xl font-black text-emerald-500">0%</div>
+                            <div class="text-xs uppercase font-bold text-slate-400">Accuracy</div>
+                        </div>
+                    </div>
+                    <button onclick="returnToSetup()" class="px-8 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all">
+                        Change Difficulty
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 px-4 opacity-60">
+            <div class="text-center">
+                <span class="text-indigo-600 font-bold text-[10px] uppercase block">Claim</span>
+                <span class="text-slate-500 text-[10px]">A verifiable statement of fact.</span>
+            </div>
+            <div class="text-center">
+                <span class="text-indigo-600 font-bold text-[10px] uppercase block">Opinion</span>
+                <span class="text-slate-500 text-[10px]">A subjective belief or preference.</span>
+            </div>
+            <div class="text-center">
+                <span class="text-indigo-600 font-bold text-[10px] uppercase block">Argument</span>
+                <span class="text-slate-500 text-[10px]">A claim supported by logic/reasons.</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const questionData = {
+            Novice: [
+                { text: "The sun rises in the east.", type: "Claim", explanation: "This is a basic geographical fact that is observable and verifiable." },
+                { text: "I think dogs are the best pets.", type: "Opinion", reason: "The phrase 'I think' and the word 'best' indicate a personal preference." },
+                { text: "The capital of Japan is Tokyo.", type: "Claim", explanation: "This is a verifiable fact about geography and government." },
+                { text: "You should wear a coat because it is snowing outside.", type: "Argument", explanation: "It makes a recommendation and gives a reason ('because...')." },
+                { text: "Pizza tastes better when it is cold.", type: "Opinion", explanation: "Taste is entirely subjective and varies from person to person." },
+                { text: "Humans have five fingers on each hand.", type: "Claim", explanation: "This is a biological statement that can be verified by observation." },
+                { text: "Math is easier than English.", type: "Opinion", explanation: "The difficulty of a subject depends on the individual student's strengths." },
+                { text: "We should recycle because it reduces the amount of waste in landfills.", type: "Argument", explanation: "A proposal ('recycle') is supported by a specific benefit/reason." },
+                { text: "Apples are more delicious than oranges.", type: "Opinion", explanation: "A preference for one fruit over another is a matter of personal taste." },
+                { text: "Water boils at 100 degrees Celsius at sea level.", type: "Claim", explanation: "This is a scientific fact that can be measured and proven." },
+                { text: "Hiking is the most boring hobby.", type: "Opinion", explanation: "Whether a hobby is boring is a personal feeling, not a fact." },
+                { text: "You should wash your hands to prevent the spread of germs.", type: "Argument", explanation: "It links an action with a logical health-related reason." },
+                { text: "The Great Wall of China is in China.", type: "Claim", explanation: "This is a clear, verifiable geographical fact." },
+                { text: "Red is a very pretty color.", type: "Opinion", explanation: "Beauty is in the eye of the beholder; this is an aesthetic judgment." },
+                { text: "Birds can fly.", type: "Claim", explanation: "This is a biological fact observable in most avian species." },
+                { text: "You should save money so that you can buy a house later.", type: "Argument", explanation: "It provides a future goal as a reason for a current action." },
+                { text: "Soccer is better than football.", type: "Opinion", explanation: "The superiority of a sport is a matter of preference and fandom." },
+                { text: "The sky looks blue today.", type: "Claim", explanation: "This is a description of an observable state that can be verified." },
+                { text: "Vegetables are healthy for you.", type: "Claim", explanation: "This is a nutritional fact backed by medical science." },
+                { text: "You should read more books because it improves your vocabulary.", type: "Argument", explanation: "It encourages an activity by providing a logical benefit." }
+            ],
+            Scholar: [
+                { text: "The Industrial Revolution led to a massive shift in urban populations.", type: "Claim", explanation: "This is a verifiable historical trend supported by data." },
+                { text: "Classic literature is fundamentally more valuable than modern thrillers.", type: "Opinion", explanation: "Assigning 'value' to art is a subjective cultural judgment." },
+                { text: "Governments should increase NASA's budget since space exploration drives technological innovation on Earth.", type: "Argument", explanation: "A policy suggestion supported by a logical, causal link." },
+                { text: "Quantum entanglement involves particles sharing states regardless of distance.", type: "Claim", explanation: "This is a core principle of physics that can be experimentally tested." },
+                { text: "The Mona Lisa is a deeper work of art than any modern photograph.", type: "Opinion", explanation: "Depth in art is an interpretative quality, not a measurable fact." },
+                { text: "Plastic bags should be taxed because they constitute the majority of oceanic microplastic pollution.", type: "Argument", explanation: "A specific tax proposal is justified with environmental evidence." },
+                { text: "The GDP of Germany decreased in the last fiscal quarter.", type: "Claim", explanation: "This is an economic fact based on reported statistics." },
+                { text: "A minimalist lifestyle is the most fulfilling way to live.", type: "Opinion", explanation: "What constitutes a 'fulfilling' life is a subjective philosophical belief." },
+                { text: "Students should learn to code because automation is projected to replace 30% of entry-level jobs.", type: "Argument", explanation: "A recommendation for education based on economic projections." },
+                { text: "William Shakespeare wrote thirty-nine plays during his lifetime.", type: "Claim", explanation: "This is a historical claim that can be verified through academic research." },
+                { text: "Abstract expressionism is often confusing and lacks technical skill.", type: "Opinion", explanation: "This reflects a personal aesthetic critique rather than a fact." },
+                { text: "Social media platforms should be regulated given their impact on teenage mental health trends.", type: "Argument", explanation: "A call for regulation backed by a specific social concern." },
+                { text: "The Treaty of Versailles was signed in 1919.", type: "Claim", explanation: "A factual statement regarding a specific historical event." },
+                { text: "Jazz is a more complex musical genre than traditional folk music.", type: "Opinion", explanation: "Musical 'complexity' can be argued, but is often a subjective interpretation." },
+                { text: "Public transport should be free since it reduces traffic congestion and carbon emissions.", type: "Argument", explanation: "A policy proposal supported by two distinct logical reasons." },
+                { text: "Photosynthesis converts light energy into chemical energy.", type: "Claim", explanation: "A verifiable biological process." },
+                { text: "Modern architecture is cold and lacks the soul of Victorian design.", type: "Opinion", explanation: "A subjective aesthetic preference using emotional language like 'soul'." },
+                { text: "You should study logic because it protects you from falling for common fallacies.", type: "Argument", explanation: "Suggests a course of study based on a practical utility." },
+                { text: "The speed of light is roughly 299,792,458 meters per second.", type: "Claim", explanation: "A precise, measurable physical constant." },
+                { text: "Beethoven's Ninth Symphony is the greatest achievement in Western music.", type: "Opinion", explanation: "Superlatives like 'greatest' are subjective judgments of quality." }
+            ],
+            Philosopher: [
+                { text: "Utilitarianism suggests that the most ethical action is the one that maximizes utility.", type: "Claim", explanation: "This is a factual description of what a specific philosophical theory states." },
+                { text: "Human nature is inherently cooperative rather than competitive.", type: "Opinion", explanation: "This is a fundamental philosophical belief that cannot be conclusively proven." },
+                { text: "Democracy is the only just form of government because it respects the autonomy of every citizen.", type: "Argument", explanation: "A moral assertion ('only just') supported by a philosophical principle ('autonomy')." },
+                { text: "The 'Turing Test' measures a machine's ability to exhibit intelligent behavior equivalent to a human.", type: "Claim", explanation: "This is a factual definition of a specific scientific concept." },
+                { text: "It is better to be a human being dissatisfied than a pig satisfied.", type: "Opinion", explanation: "John Stuart Mill's famous value judgment on the quality of pleasures." },
+                { text: "Artificial Intelligence should be granted legal rights once it achieves consciousness, as consciousness is the root of moral status.", type: "Argument", explanation: "A complex ethical proposal justified by a foundational premise about consciousness." },
+                { text: "The universe began with a singularity approximately 13.8 billion years ago.", type: "Claim", explanation: "The current scientific consensus based on cosmological evidence." },
+                { text: "Beauty is a purely social construct with no objective reality.", type: "Opinion", explanation: "A philosophical stance on the nature of aesthetics." },
+                { text: "Privacy is a fundamental right since without it, individual freedom of expression is impossible.", type: "Argument", explanation: "Defends a right by providing a logical necessity for its existence." },
+                { text: "Socrates was executed by the Athenian state in 399 BCE.", type: "Claim", explanation: "A verifiable historical fact from antiquity." },
+                { text: "Life is fundamentally a struggle for power.", type: "Opinion", explanation: "A Nietzschean interpretation of existence that is a perspective, not a fact." },
+                { text: "Society should prioritize equity over equality because people start from different positions of privilege.", type: "Argument", explanation: "A sociological argument comparing two concepts with a specific justification." },
+                { text: "Neurons communicate through electrical and chemical signals.", type: "Claim", explanation: "A biological fact verifiable via neuroscience." },
+                { text: "Existential dread is a more authentic state than daily happiness.", type: "Opinion", explanation: "An existentialist value judgment on human emotion." },
+                { text: "Freedom of speech should not protect hate speech because such speech actively harms the democratic participation of marginalized groups.", type: "Argument", explanation: "A legal/ethical boundary proposal supported by a social impact reason." },
+                { text: "The Magna Carta was signed by King John of England.", type: "Claim", explanation: "A historical fact regarding a legal document." },
+                { text: "Altruism is actually a subtle form of selfishness.", type: "Opinion", explanation: "A psychological/philosophical theory that interprets motivation subjectively." },
+                { text: "A Universal Basic Income should be implemented to decouple human survival from labor in an automated economy.", type: "Argument", explanation: "An economic proposal with a specific logical goal." },
+                { text: "Light behaves as both a particle and a wave depending on the experiment.", type: "Claim", explanation: "A verifiable observation from quantum mechanics." },
+                { text: "Suffering is the only universal truth.", type: "Opinion", explanation: "A metaphysical assertion that is a matter of belief/perspective." }
+            ]
+        };
+
+        let currentLevel = "";
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let streak = 0;
+        let correctAnswers = 0;
+
+        const setupScreen = document.getElementById('setup-screen');
+        const questionContainer = document.getElementById('question-container');
+        const endScreen = document.getElementById('end-screen');
+        const statementText = document.getElementById('statement-text');
+        const feedbackArea = document.getElementById('feedback-area');
+        const actionButtons = document.getElementById('action-buttons');
+        const feedbackBanner = document.getElementById('feedback-banner');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackExplanation = document.getElementById('feedback-explanation');
+        const feedbackIcon = document.getElementById('feedback-icon');
+        const progressBar = document.getElementById('progress-bar');
+        const scoreDisplay = document.getElementById('score');
+        const streakDisplay = document.getElementById('streak');
+        const diffLabel = document.getElementById('difficulty-label');
+
+        function startGame(difficulty) {
+            currentLevel = difficulty;
+            currentQuestions = [...questionData[difficulty]];
+            currentIndex = 0;
+            score = 0;
+            streak = 0;
+            correctAnswers = 0;
+            
+            setupScreen.classList.add('hidden');
+            questionContainer.classList.remove('hidden');
+            document.getElementById('stats-display').classList.remove('hidden');
+            document.getElementById('progress-container').classList.remove('hidden');
+            
+            diffLabel.innerText = `Level: ${difficulty}`;
+            updateStats();
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (currentIndex >= currentQuestions.length) {
+                showEndScreen();
+                return;
+            }
+
+            const q = currentQuestions[currentIndex];
+            statementText.innerText = q.text;
+            feedbackArea.classList.add('hidden');
+            actionButtons.classList.remove('hidden');
+            document.getElementById('breadcrumb').innerText = `Challenge ${currentIndex + 1} / 20`;
+            
+            Array.from(actionButtons.children).forEach(btn => {
+                btn.disabled = false;
+                btn.className = "option-btn py-4 px-6 rounded-2xl bg-white border-2 border-slate-200 text-slate-700 font-bold hover:border-indigo-500 hover:text-indigo-600 focus:outline-none";
+            });
+
+            updateProgress();
+        }
+
+        function handleAnswer(choice) {
+            const q = currentQuestions[currentIndex];
+            const buttons = Array.from(actionButtons.children);
+            buttons.forEach(btn => btn.disabled = true);
+            
+            const isCorrect = choice === q.type;
+            
+            if (isCorrect) {
+                score += (10 + (streak * 2));
+                streak++;
+                correctAnswers++;
+                showFeedback(true, "Correct!", q.explanation);
+            } else {
+                streak = 0;
+                showFeedback(false, `That was a ${q.type}`, q.explanation);
+            }
+
+            updateStats();
+        }
+
+        function showFeedback(isCorrect, title, explanation) {
+            feedbackArea.classList.remove('hidden');
+            actionButtons.classList.add('hidden');
+            feedbackTitle.innerText = title;
+            feedbackExplanation.innerText = explanation;
+            
+            if (isCorrect) {
+                feedbackBanner.className = "p-4 rounded-2xl mb-4 flex items-center gap-3 bg-emerald-50 text-emerald-800 border border-emerald-100";
+                feedbackIcon.innerText = "⭐";
+                feedbackTitle.className = "font-bold text-lg text-emerald-800";
+            } else {
+                feedbackBanner.className = "p-4 rounded-2xl mb-4 flex items-center gap-3 bg-rose-50 text-rose-800 border border-rose-100";
+                feedbackIcon.innerText = "🧐";
+                feedbackTitle.className = "font-bold text-lg text-rose-800";
+            }
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            showQuestion();
+        }
+
+        function updateStats() {
+            scoreDisplay.innerText = score;
+            streakDisplay.innerText = streak;
+        }
+
+        function updateProgress() {
+            const progress = (currentIndex / 20) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function showEndScreen() {
+            questionContainer.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+            progressBar.style.width = "100%";
+            
+            document.getElementById('final-score').innerText = score;
+            const acc = Math.round((correctAnswers / 20) * 100);
+            document.getElementById('accuracy').innerText = `${acc}%`;
+            
+            let msg = "Great work in the lab!";
+            if (acc === 100) msg = "Masterful! A perfect score in the lab.";
+            else if (acc < 50) msg = "Keep practicing. Logic is a muscle!";
+            document.getElementById('end-message').innerText = msg;
+        }
+
+        function returnToSetup() {
+            endScreen.classList.add('hidden');
+            setupScreen.classList.remove('hidden');
+            document.getElementById('stats-display').classList.add('hidden');
+            document.getElementById('progress-container').classList.add('hidden');
+            diffLabel.innerText = "Select Difficulty";
+        }
+    </script>
+</body>
+</html>
