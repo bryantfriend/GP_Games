@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fallacy Face-Off 🧠⚡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        
+        :root {
+            --bg-dark: #0f172a;
+            --accent-blue: #3b82f6;
+            --accent-emerald: #10b981;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            min-height: 100vh;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        /* Animated SVG Background */
+        .bg-animate {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
+        }
+
+        .floating-svg {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            from { transform: translateY(100vh) rotate(0deg); }
+            to { transform: translateY(-10vh) rotate(360deg); }
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Animations */
+        .pulse-brain {
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px #60a5fa); }
+            50% { transform: scale(1.1); filter: drop-shadow(0 0 20px #60a5fa); }
+        }
+
+        .shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #ffd700;
+            top: 50%;
+            left: 50%;
+            animation: explode 0.8s ease-out forwards;
+        }
+
+        @keyframes explode {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+        }
+
+        .correct-glow {
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.4);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex items-center justify-center">
+
+    <!-- Background Elements -->
+    <div class="bg-animate" id="bg-elements"></div>
+
+    <div id="game-container" class="max-w-4xl w-full mx-auto relative z-10">
+        
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="glass rounded-[2rem] p-10 card-enter text-center">
+            <div class="mb-6 flex justify-center">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" class="pulse-brain">
+                    <path d="M9.5 2C10.3 2 11 2.7 11 3.5V5.5C11 6.3 10.3 7 9.5 7H7.5C6.7 7 6 6.3 6 5.5V3.5C6 2.7 6.7 2 7.5 2H9.5ZM14.5 2C15.3 2 16 2.7 16 3.5V5.5C16 6.3 15.3 7 14.5 7H12.5C11.7 7 11 6.3 11 5.5V3.5C11 2.7 11.7 2 12.5 2H14.5ZM7.5 9C6.7 9 6 9.7 6 10.5V12.5C6 13.3 6.7 14 7.5 14H9.5C10.3 14 11 13.3 11 12.5V10.5C11 9.7 10.3 9 9.5 9H7.5ZM12.5 9C11.7 9 11 9.7 11 10.5V12.5C11 13.3 11.7 14 12.5 14H14.5C15.3 14 16 13.3 16 12.5V10.5C16 9.7 15.3 9 14.5 9H12.5Z" fill="#60a5fa" opacity="0.8"/>
+                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="4 4"/>
+                    <path d="M8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12Z" fill="#3b82f6"/>
+                </svg>
+            </div>
+            <h1 class="text-5xl font-black mb-2 bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+                Fallacy Face-Off
+            </h1>
+            <p class="text-slate-400 text-lg mb-10">Global Perspectives Battle 🌍✨</p>
+            
+            <div class="space-y-8 max-w-md mx-auto">
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="relative">
+                        <span class="absolute -top-3 left-4 bg-slate-900 px-2 text-xs font-bold text-blue-400 uppercase">Team Alpha 🔵</span>
+                        <input type="text" id="team1-input" placeholder="Team 1 Name" 
+                            class="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-center text-xl font-bold">
+                    </div>
+                    <div class="relative">
+                        <span class="absolute -top-3 left-4 bg-slate-900 px-2 text-xs font-bold text-emerald-400 uppercase">Team Omega 🟢</span>
+                        <input type="text" id="team2-input" placeholder="Team 2 Name" 
+                            class="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-4 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-center text-xl font-bold">
+                    </div>
+                </div>
+                <button onclick="startGame()" class="group w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-black py-5 rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.5)] transform transition hover:scale-105 active:scale-95 flex items-center justify-center space-x-3">
+                    <span class="text-xl">ENTER THE ARENA</span>
+                    <i class="fas fa-bolt animate-pulse"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden space-y-6">
+            <!-- Progress Bar -->
+            <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div id="progress-fill" class="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-500" style="width: 0%"></div>
+            </div>
+
+            <!-- Scoreboard -->
+            <div class="grid grid-cols-2 gap-6">
+                <div id="score-card-1" class="glass p-6 rounded-3xl border-b-4 border-blue-500 transition-all transform">
+                    <div class="flex items-center justify-between">
+                        <div id="team1-display-name" class="font-black text-blue-400 text-xl truncate">Team 1</div>
+                        <span class="text-2xl">🔵</span>
+                    </div>
+                    <div id="team1-score" class="text-5xl font-black mt-2">0</div>
+                </div>
+                <div id="score-card-2" class="glass p-6 rounded-3xl border-b-4 border-emerald-500 transition-all opacity-50 transform">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">🟢</span>
+                        <div id="team2-display-name" class="font-black text-emerald-400 text-xl text-right truncate">Team 2</div>
+                    </div>
+                    <div id="team2-score" class="text-5xl font-black text-right mt-2">0</div>
+                </div>
+            </div>
+
+            <!-- Main Argument Display -->
+            <div id="main-card" class="glass rounded-[2.5rem] p-10 card-enter relative overflow-hidden min-h-[400px] flex flex-col justify-center">
+                <div class="absolute top-0 right-0 p-6 flex items-center space-x-2">
+                    <span id="question-counter" class="text-sm font-black text-slate-500 bg-slate-800/50 px-3 py-1 rounded-lg">1 / 24</span>
+                </div>
+                
+                <div class="mb-8">
+                    <div id="turn-indicator" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-black uppercase tracking-widest bg-blue-500/20 text-blue-400">
+                        <i class="fas fa-star mr-2"></i> <span>Team 1's Move</span>
+                    </div>
+                </div>
+
+                <div id="argument-box" class="flex flex-col items-center justify-center text-center">
+                    <p id="argument-text" class="text-2xl md:text-3xl font-bold leading-relaxed italic text-white drop-shadow-md">
+                        "Loading argument..."
+                    </p>
+                </div>
+
+                <!-- Explanation Box -->
+                <div id="explanation-container" class="hidden mt-8 p-6 bg-slate-900/60 rounded-3xl border border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div id="feedback-header" class="text-2xl font-black mb-3"></div>
+                    <div id="explanation-text" class="text-slate-300 text-lg leading-relaxed"></div>
+                </div>
+
+                <!-- Choice Buttons -->
+                <div id="choice-buttons" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10">
+                    <button onclick="checkAnswer('Slippery Slope')" class="group p-5 bg-slate-800/80 hover:bg-blue-600 border border-slate-700 rounded-2xl font-black text-lg transition-all hover:scale-[1.05] hover:shadow-[0_10px_20px_rgba(59,130,246,0.3)]">
+                        Slippery Slope 🪜
+                    </button>
+                    <button onclick="checkAnswer('Bandwagon')" class="group p-5 bg-slate-800/80 hover:bg-indigo-600 border border-slate-700 rounded-2xl font-black text-lg transition-all hover:scale-[1.05] hover:shadow-[0_10px_20px_rgba(99,102,241,0.3)]">
+                        Bandwagon 🏎️
+                    </button>
+                    <button onclick="checkAnswer('No Fallacy')" class="group p-5 bg-slate-800/80 hover:bg-emerald-600 border border-slate-700 rounded-2xl font-black text-lg transition-all hover:scale-[1.05] hover:shadow-[0_10px_20px_rgba(16,185,129,0.3)]">
+                        No Fallacy ✅
+                    </button>
+                </div>
+
+                <!-- Next Button -->
+                <div id="next-button-container" class="hidden mt-10 text-center">
+                    <button onclick="nextQuestion()" class="px-12 py-5 bg-white text-slate-900 font-black text-xl rounded-2xl hover:bg-blue-100 transition-all hover:scale-110 active:scale-95 flex items-center justify-center mx-auto space-x-3 shadow-2xl">
+                        <span>CONTINUE BATTLE</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                
+                <!-- Confetti Container -->
+                <div id="confetti-anchor" class="absolute inset-0 pointer-events-none"></div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="hidden glass rounded-[3rem] p-12 text-center card-enter relative overflow-hidden">
+            <div class="relative z-10">
+                <div class="text-8xl mb-6">🏆</div>
+                <h2 class="text-5xl font-black mb-4">The Verdict is In!</h2>
+                <div id="winner-text" class="text-3xl font-black text-blue-400 mb-10 drop-shadow-lg"></div>
+                
+                <div class="grid grid-cols-2 gap-8 mb-12 max-w-lg mx-auto">
+                    <div class="p-8 bg-blue-500/10 rounded-[2rem] border border-blue-500/20">
+                        <div id="end-team1-name" class="text-sm font-black uppercase text-blue-400 mb-2">Team 1</div>
+                        <div id="end-team1-score" class="text-6xl font-black">0</div>
+                    </div>
+                    <div class="p-8 bg-emerald-500/10 rounded-[2rem] border border-emerald-500/20">
+                        <div id="end-team2-name" class="text-sm font-black uppercase text-emerald-400 mb-2">Team 2</div>
+                        <div id="end-team2-score" class="text-6xl font-black">0</div>
+                    </div>
+                </div>
+                
+                <button onclick="location.reload()" class="bg-gradient-to-r from-blue-600 to-emerald-600 text-white px-12 py-5 rounded-2xl font-black text-xl hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] transition-all transform hover:scale-105">
+                    PLAY NEW MATCH 🔄
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FALLACY_DATA = [
+            { text: "If we allow students to use AI for one essay, they'll stop thinking altogether, then we won't need schools, and eventually, human civilization will lose the ability to read.", type: "Slippery Slope", explanation: "This suggests a chain of increasingly extreme events starting from a single action without proof that those consequences are inevitable. 🪜" },
+            { text: "Millions of people around the world are switching to electric vehicles, so it must be the only logical choice for every single person.", type: "Bandwagon", explanation: "This argues that because many people are doing something, it is correct for everyone, ignoring individual circumstances. 🏎️" },
+            { text: "Studies from reputable medical organizations show that regular exercise reduces the risk of heart disease in adults over 40.", type: "No Fallacy", explanation: "This is a logical statement backed by empirical scientific evidence and medical consensus. ✅" },
+            { text: "If we let this country join the trade agreement, they'll dominate our markets, our local businesses will fail, and we will all end up in poverty.", type: "Slippery Slope", explanation: "It assumes a catastrophic economic outcome will automatically follow a single policy change without considering complex variables. 📉" },
+            { text: "Everyone at the climate summit is supporting this specific carbon tax, so it is obviously the perfect solution to global warming.", type: "Bandwagon", explanation: "Just because a large group supports an idea doesn't make it a 'perfect' solution by default. 🌍" },
+            { text: "Data from the last ten years indicates that as global temperatures rise, polar ice caps have been melting at an accelerated rate.", type: "No Fallacy", explanation: "This is an objective observation based on consistent data tracking and verifiable facts. 🧊" },
+            { text: "If we lower the voting age to 16, soon we'll be letting 10-year-olds vote, and then even our pets will be participating in elections!", type: "Slippery Slope", explanation: "It uses an absurd progression (teenagers to pets) to argue against a specific, separate policy change. 🐶" },
+            { text: "This smartphone is the best-selling model in 50 countries, so you should definitely buy it if you want the best quality.", type: "Bandwagon", explanation: "High sales (popularity) are used as proof of quality, which isn't always logically connected. 📱" },
+            { text: "History shows that societies that invest in universal literacy tend to have higher economic growth over several generations.", type: "No Fallacy", explanation: "This is a sound argument based on historical correlation and economic principles. 📚" },
+            { text: "If we allow this small park to be built, developers will see the city as 'soft' and eventually turn every single square inch of the city into concrete skyscrapers.", type: "Slippery Slope", explanation: "It makes a wild prediction that building one park will somehow trigger the destruction of all green space. 🏙️" },
+            { text: "All the popular influencers are saying that this new diet is the healthiest, so there's no reason to consult a doctor.", type: "Bandwagon", explanation: "It relies on the trendiness of the diet and influencer opinions rather than professional medical advice. 🥗" },
+            { text: "Vaccines have been proven through decades of clinical trials to significantly reduce the transmission of polio and measles.", type: "No Fallacy", explanation: "This is a claim supported by decades of verifiable peer-reviewed data and public health history. 💉" },
+            { text: "If you don't clean your room today, you'll become a lazy person, you'll fail out of college, and you'll end up living under a bridge.", type: "Slippery Slope", explanation: "It connects a minor daily habit to a life-shattering outcome without a logical link. 🧹" },
+            { text: "Everyone in my class says that the new superhero movie is the greatest film ever made, so it must be better than the classics.", type: "Bandwagon", explanation: "The opinion of a peer group is being used to define objective greatness. 🍿" },
+            { text: "Adding salt to water increases its boiling point because of a chemical property called boiling point elevation.", type: "No Fallacy", explanation: "This is a simple, verifiable fact of chemistry. 🧂" },
+            { text: "If we ban this one specific plastic straw, the government will soon ban all plastic, then all packaging, and we'll be forced to carry water in our hands.", type: "Slippery Slope", explanation: "It assumes that a small regulation on straws will inevitably lead to the total ban of all containers. 🥤" },
+            { text: "Most people in the survey believe that more money leads to more happiness, so we should focus only on wealth for a good life.", type: "Bandwagon", explanation: "Public opinion on a philosophical topic like happiness is used to dictate a definitive life path. 💰" },
+            { text: "Diversifying a financial portfolio across different sectors reduces the risk of total loss if one specific industry fails.", type: "No Fallacy", explanation: "This is a sound principle of risk management based on mathematical logic. 📈" },
+            { text: "If we allow one person to work from home, everyone will want to, then nobody will ever come to the office, and the company will go bankrupt by Tuesday.", type: "Slippery Slope", explanation: "It predicts total corporate collapse resulting from a single flexible work policy. 🏠" },
+            { text: "This brand of shoes is worn by 90% of professional athletes, so they are the only shoes that can prevent sports injuries.", type: "Bandwagon", explanation: "Athlete endorsement and popularity are used as proof of medical preventative benefits. 👟" },
+            { text: "Photosynthesis is the process by which green plants use sunlight to synthesize foods from carbon dioxide and water.", type: "No Fallacy", explanation: "This is a basic, established biological fact. 🌱" },
+            { text: "If we let this one protest happen, it will lead to more protests, then riots, then complete anarchy and the overthrow of the government.", type: "Slippery Slope", explanation: "It assumes an escalation to 'complete anarchy' from a single peaceful protest without evidence. ✊" },
+            { text: "The majority of voters in the poll prefer this candidate's personality, so they are clearly the most qualified to manage the economy.", type: "Bandwagon", explanation: "The personality's popularity is being conflated with professional economic competence. 🗳️" },
+            { text: "Consistent research shows that sleep deprivation impairs cognitive functions like memory and decision-making.", type: "No Fallacy", explanation: "This is a sound conclusion based on repeated neuroscientific research. 😴" }
+        ];
+
+        let state = {
+            team1Name: "Team 1",
+            team2Name: "Team 2",
+            team1Score: 0,
+            team2Score: 0,
+            currentTurn: 1,
+            currentIndex: 0,
+            shuffledArgs: [],
+            isAnswered: false
+        };
+
+        // Create Background SVGs
+        function initBackground() {
+            const container = document.getElementById('bg-elements');
+            const icons = ['💡', '🧩', '⚖️', '🧠', '🌀', '💎'];
+            for (let i = 0; i < 15; i++) {
+                const el = document.createElement('div');
+                el.className = 'floating-svg text-4xl';
+                el.innerText = icons[Math.floor(Math.random() * icons.length)];
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                el.style.animationDelay = (Math.random() * 20) + 's';
+                container.appendChild(el);
+            }
+        }
+
+        function spawnConfetti() {
+            const anchor = document.getElementById('confetti-anchor');
+            for (let i = 0; i < 40; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                const tx = (Math.random() - 0.5) * 600 + 'px';
+                const ty = (Math.random() - 0.5) * 600 + 'px';
+                c.style.setProperty('--tx', tx);
+                c.style.setProperty('--ty', ty);
+                c.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                anchor.appendChild(c);
+                setTimeout(() => c.remove(), 800);
+            }
+        }
+
+        function startGame() {
+            const t1 = document.getElementById('team1-input').value.trim();
+            const t2 = document.getElementById('team2-input').value.trim();
+            state.team1Name = t1 || "Team Alpha";
+            state.team2Name = t2 || "Team Omega";
+            
+            document.getElementById('team1-display-name').innerText = state.team1Name;
+            document.getElementById('team2-display-name').innerText = state.team2Name;
+            
+            state.shuffledArgs = [...FALLACY_DATA].sort(() => Math.random() - 0.5);
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            if (state.currentIndex >= state.shuffledArgs.length) return;
+            state.isAnswered = false;
+            
+            const currentArg = state.shuffledArgs[state.currentIndex];
+            document.getElementById('argument-text').innerText = `"${currentArg.text}"`;
+            document.getElementById('question-counter').innerText = `${state.currentIndex + 1} / 24`;
+            
+            const progress = ((state.currentIndex) / 24) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+            
+            const turnText = state.currentTurn === 1 ? state.team1Name : state.team2Name;
+            const indicator = document.getElementById('turn-indicator');
+            indicator.querySelector('span').innerText = `${turnText}'s Turn`;
+            
+            const card1 = document.getElementById('score-card-1');
+            const card2 = document.getElementById('score-card-2');
+            
+            if (state.currentTurn === 1) {
+                indicator.className = "inline-flex items-center px-4 py-2 rounded-full text-sm font-black uppercase tracking-widest bg-blue-500/20 text-blue-400";
+                card1.style.opacity = "1";
+                card1.style.transform = "scale(1.05)";
+                card2.style.opacity = "0.5";
+                card2.style.transform = "scale(1)";
+            } else {
+                indicator.className = "inline-flex items-center px-4 py-2 rounded-full text-sm font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-400";
+                card1.style.opacity = "0.5";
+                card1.style.transform = "scale(1)";
+                card2.style.opacity = "1";
+                card2.style.transform = "scale(1.05)";
+            }
+
+            document.getElementById('choice-buttons').classList.remove('hidden');
+            document.getElementById('explanation-container').classList.add('hidden');
+            document.getElementById('next-button-container').classList.add('hidden');
+            document.getElementById('main-card').classList.remove('correct-glow', 'shake');
+        }
+
+        function checkAnswer(choice) {
+            if (state.isAnswered) return;
+            state.isAnswered = true;
+
+            const currentData = state.shuffledArgs[state.currentIndex];
+            const isCorrect = choice === currentData.type;
+            const mainCard = document.getElementById('main-card');
+            
+            if (isCorrect) {
+                document.getElementById('feedback-header').innerHTML = `<span class="text-emerald-400">🔥 SPOT ON! +1 POINT</span>`;
+                if (state.currentTurn === 1) {
+                    state.team1Score++;
+                    document.getElementById('team1-score').innerText = state.team1Score;
+                } else {
+                    state.team2Score++;
+                    document.getElementById('team2-score').innerText = state.team2Score;
+                }
+                mainCard.classList.add('correct-glow');
+                spawnConfetti();
+            } else {
+                document.getElementById('feedback-header').innerHTML = `<span class="text-red-400">❌ OUCH! MISSED IT</span>`;
+                mainCard.classList.add('shake');
+            }
+
+            document.getElementById('explanation-text').innerHTML = `<div class="mb-2 text-sm font-bold text-slate-500 tracking-widest uppercase">The Truth: ${currentData.type}</div>` + currentData.explanation;
+            
+            document.getElementById('choice-buttons').classList.add('hidden');
+            document.getElementById('explanation-container').classList.remove('hidden');
+            document.getElementById('next-button-container').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            state.currentIndex++;
+            state.currentTurn = state.currentTurn === 1 ? 2 : 1;
+            if (state.currentIndex < state.shuffledArgs.length) {
+                updateDisplay();
+            } else {
+                showEndScreen();
+            }
+        }
+
+        function showEndScreen() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('hidden');
+            document.getElementById('end-team1-name').innerText = state.team1Name;
+            document.getElementById('end-team2-name').innerText = state.team2Name;
+            document.getElementById('end-team1-score').innerText = state.team1Score;
+            document.getElementById('end-team2-score').innerText = state.team2Score;
+
+            let winnerMsg = "";
+            if (state.team1Score > state.team2Score) winnerMsg = `👑 ${state.team1Name} REIGNS SUPREME!`;
+            else if (state.team2Score > state.team1Score) winnerMsg = `👑 ${state.team2Name} REIGNS SUPREME!`;
+            else winnerMsg = "🤝 A LEGENDARY STALEMATE!";
+            document.getElementById('winner-text').innerText = winnerMsg;
+        }
+
+        window.onload = initBackground;
+    </script>
+</body>
+</html>
