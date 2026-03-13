@@ -14,6 +14,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
         {
+            fileName: 'fallacy1.html',
+            title: 'Fallacy Challenge 🤔'
+        }, 
+        
+        {
             fileName: 'oceancleaner.html',
             title: 'Clean the oceans 🐙'
         }, 
