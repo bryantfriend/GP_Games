@@ -18,27 +18,37 @@
 
     <div class="max-w-5xl mx-auto">
         <!-- Header -->
-        <header class="text-center mb-6">
+        <header class="text-center mb-6 relative">
             <h1 class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 mb-2">
                 Listening Challenge
             </h1>
-            <div class="flex justify-center gap-4 text-xs font-bold tracking-widest uppercase text-slate-500">
+            <div class="flex justify-center items-center gap-4 text-xs font-bold tracking-widest uppercase text-slate-500">
                 <span>2 Sentences</span>
                 <span>•</span>
                 <span>8 Questions</span>
                 <span>•</span>
-                <span>Competitive Mode</span>
+                <button onclick="toggleNameEditor()" class="text-cyan-500 hover:text-cyan-400 underline decoration-dotted underline-offset-4 transition">Edit Team Names</button>
+            </div>
+
+            <!-- Name Editor Overlay -->
+            <div id="nameEditor" class="hidden absolute top-full left-1/2 -translate-x-1/2 mt-4 z-50 bg-slate-800 border border-slate-700 p-6 rounded-3xl shadow-2xl w-full max-w-sm">
+                <h3 class="text-sm font-bold text-slate-300 mb-4 uppercase">Rename Your Teams</h3>
+                <div class="space-y-3 mb-4">
+                    <input type="text" id="inputNameA" placeholder="Team A Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-rose-500 transition">
+                    <input type="text" id="inputNameB" placeholder="Team B Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-sky-500 transition">
+                </div>
+                <button onclick="saveNames()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 rounded-xl text-sm transition">Save Changes</button>
             </div>
         </header>
 
         <!-- Scoreboard -->
         <div class="grid grid-cols-2 gap-4 mb-8">
             <div class="bg-rose-500/10 border-2 border-rose-500/50 rounded-3xl p-4 text-center">
-                <h2 class="text-sm font-black text-rose-500 mb-1">TEAM A</h2>
+                <h2 id="displayTeamA" class="text-sm font-black text-rose-500 mb-1 uppercase tracking-tighter">TEAM A</h2>
                 <div id="scoreA" class="text-6xl font-black">0</div>
             </div>
             <div class="bg-sky-500/10 border-2 border-sky-500/50 rounded-3xl p-4 text-center">
-                <h2 class="text-sm font-black text-sky-500 mb-1">TEAM B</h2>
+                <h2 id="displayTeamB" class="text-sm font-black text-sky-500 mb-1 uppercase tracking-tighter">TEAM B</h2>
                 <div id="scoreB" class="text-6xl font-black">0</div>
             </div>
         </div>
@@ -99,11 +109,11 @@
                 <h2 class="text-5xl font-black mb-4">Final Score!</h2>
                 <div class="flex justify-center gap-12 mb-10">
                     <div>
-                        <p class="text-rose-500 font-bold">TEAM A</p>
+                        <p id="victoryTeamA" class="text-rose-500 font-bold uppercase tracking-tighter">TEAM A</p>
                         <p id="finalA" class="text-5xl font-black">0</p>
                     </div>
                     <div>
-                        <p class="text-sky-500 font-bold">TEAM B</p>
+                        <p id="victoryTeamB" class="text-sky-500 font-bold uppercase tracking-tighter">TEAM B</p>
                         <p id="finalB" class="text-5xl font-black">0</p>
                     </div>
                 </div>
@@ -250,6 +260,42 @@
         let currentRound = 0;
         let scoreA = 0;
         let scoreB = 0;
+        let teamAName = "TEAM A";
+        let teamBName = "TEAM B";
+
+        function toggleNameEditor() {
+            const editor = document.getElementById('nameEditor');
+            editor.classList.toggle('hidden');
+            if (!editor.classList.contains('hidden')) {
+                document.getElementById('inputNameA').value = teamAName;
+                document.getElementById('inputNameB').value = teamBName;
+                document.getElementById('inputNameA').focus();
+            }
+        }
+
+        function saveNames() {
+            const newA = document.getElementById('inputNameA').value.trim();
+            const newB = document.getElementById('inputNameB').value.trim();
+            
+            if (newA) teamAName = newA;
+            if (newB) teamBName = newB;
+            
+            updateTeamDisplays();
+            toggleNameEditor();
+        }
+
+        function updateTeamDisplays() {
+            document.getElementById('displayTeamA').innerText = teamAName;
+            document.getElementById('displayTeamB').innerText = teamBName;
+            document.getElementById('victoryTeamA').innerText = teamAName;
+            document.getElementById('victoryTeamB').innerText = teamBName;
+            
+            // Update labels in the current question list if game is active
+            const btnsA = document.querySelectorAll('.label-team-a');
+            const btnsB = document.querySelectorAll('.label-team-b');
+            btnsA.forEach(b => b.innerText = teamAName.substring(0, 1));
+            btnsB.forEach(b => b.innerText = teamBName.substring(0, 1));
+        }
 
         function changeScore(team, val) {
             if (team === 'A') {
@@ -286,8 +332,8 @@
                     </div>
                     <div class="flex gap-2">
                         <button onclick="revealAns(${index})" class="bg-slate-700 hover:bg-slate-600 p-2 rounded-lg text-xs font-bold w-12" id="revBtn-${index}">ANS</button>
-                        <button onclick="award('A', ${index}, this)" class="bg-rose-500/20 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/50 p-2 rounded-lg text-[10px] font-black w-8 h-8 flex items-center justify-center checkmark-btn">A</button>
-                        <button onclick="award('B', ${index}, this)" class="bg-sky-500/20 hover:bg-sky-500 text-sky-500 hover:text-white border border-sky-500/50 p-2 rounded-lg text-[10px] font-black w-8 h-8 flex items-center justify-center checkmark-btn">B</button>
+                        <button onclick="award('A', ${index}, this)" class="bg-rose-500/20 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/50 p-2 rounded-lg text-[10px] font-black w-8 h-8 flex items-center justify-center checkmark-btn label-team-a">${teamAName.substring(0, 1)}</button>
+                        <button onclick="award('B', ${index}, this)" class="bg-sky-500/20 hover:bg-sky-500 text-sky-500 hover:text-white border border-sky-500/50 p-2 rounded-lg text-[10px] font-black w-8 h-8 flex items-center justify-center checkmark-btn label-team-b">${teamBName.substring(0, 1)}</button>
                         <button onclick="award('X', ${index}, this)" class="bg-slate-700/50 hover:bg-slate-600 p-2 rounded-lg text-slate-400 hover:text-white text-[10px] font-black w-8 h-8 flex items-center justify-center checkmark-btn">✕</button>
                     </div>
                 `;
@@ -301,14 +347,12 @@
         }
 
         function award(team, idx, btn) {
-            // Logic to prevent double-scoring same question
             const row = btn.parentElement;
             if (row.dataset.scored === "true") return;
             
             if (team === 'A') changeScore('A', 1);
             if (team === 'B') changeScore('B', 1);
             
-            // Visual feedback
             row.dataset.scored = "true";
             row.style.opacity = "0.4";
             revealAns(idx);
@@ -331,8 +375,8 @@
             document.getElementById('finalB').innerText = scoreB;
             
             let msg = "";
-            if (scoreA > scoreB) msg = "TEAM A WINS! 🎉";
-            else if (scoreB > scoreA) msg = "TEAM B WINS! 🏆";
+            if (scoreA > scoreB) msg = `${teamAName.toUpperCase()} WINS! 🎉`;
+            else if (scoreB > scoreA) msg = `${teamBName.toUpperCase()} WINS! 🏆`;
             else msg = "IT'S A DRAW! 🤝";
             
             document.getElementById('winnerMsg').innerText = msg;
