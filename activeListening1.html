@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch the Details: 24.kg Competition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .blur-text { filter: blur(10px); transition: filter 0.4s ease; }
+        .blur-text:hover { filter: blur(0px); }
+        .checkmark-btn { transition: all 0.2s; }
+        .checkmark-btn:active { transform: scale(0.9); }
+    </style>
+</head>
+<body class="bg-slate-950 min-h-screen p-4 md:p-8 text-slate-100">
+
+    <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-6">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 mb-2">
+                Listening Challenge
+            </h1>
+            <div class="flex justify-center gap-4 text-xs font-bold tracking-widest uppercase text-slate-500">
+                <span>2 Sentences</span>
+                <span>•</span>
+                <span>8 Questions</span>
+                <span>•</span>
+                <span>Competitive Mode</span>
+            </div>
+        </header>
+
+        <!-- Scoreboard -->
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="bg-rose-500/10 border-2 border-rose-500/50 rounded-3xl p-4 text-center">
+                <h2 class="text-sm font-black text-rose-500 mb-1">TEAM A</h2>
+                <div id="scoreA" class="text-6xl font-black">0</div>
+            </div>
+            <div class="bg-sky-500/10 border-2 border-sky-500/50 rounded-3xl p-4 text-center">
+                <h2 class="text-sm font-black text-sky-500 mb-1">TEAM B</h2>
+                <div id="scoreB" class="text-6xl font-black">0</div>
+            </div>
+        </div>
+
+        <!-- Main Game Area -->
+        <div class="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-6 md:p-10 shadow-2xl relative">
+            
+            <!-- Intro Screen -->
+            <div id="gameIntro" class="text-center py-10">
+                <div class="text-6xl mb-6">📢</div>
+                <h3 class="text-3xl font-bold mb-4">Activity 3: Catch the Details</h3>
+                <p class="text-slate-400 mb-8 max-w-lg mx-auto leading-relaxed">
+                    Teacher will read a short 2-sentence news story. <br>
+                    Students must listen for 8 specific details to win points.
+                </p>
+                <button onclick="startGame()" class="bg-white text-slate-900 px-12 py-4 rounded-2xl font-black text-xl hover:bg-cyan-400 transition-all transform hover:scale-105">
+                    START CHALLENGE
+                </button>
+            </div>
+
+            <!-- Gameplay Screen -->
+            <div id="gamePlay" class="hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <span class="bg-slate-800 border border-slate-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-cyan-400">
+                        Story <span id="currentIdx">1</span> / 10
+                    </span>
+                    <button onclick="resetGame()" class="text-slate-600 hover:text-rose-400 text-xs font-bold transition">RESET ALL</button>
+                </div>
+
+                <!-- Teacher Script Section -->
+                <div class="mb-10 group">
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="text-xs font-black text-cyan-500 uppercase tracking-tighter">Teacher Script (Hover to Read)</label>
+                        <span class="text-[10px] text-slate-500 italic">Read aloud slowly twice</span>
+                    </div>
+                    <div id="storyText" class="blur-text bg-slate-950 p-8 rounded-3xl border border-slate-800 text-2xl leading-snug text-slate-200 cursor-help font-medium italic text-center">
+                        <!-- Story goes here -->
+                    </div>
+                </div>
+
+                <!-- Interactive Question List -->
+                <div id="questionsArea" class="space-y-4">
+                    <h4 class="text-sm font-bold text-slate-500 uppercase mb-4 text-center">Questions & Scoring</h4>
+                    
+                    <div id="qGrid" class="grid grid-cols-1 gap-3">
+                        <!-- Questions dynamically generated here -->
+                    </div>
+
+                    <button id="finishRoundBtn" onclick="nextRound()" class="w-full mt-10 bg-slate-800 hover:bg-white hover:text-slate-900 text-white py-5 rounded-2xl font-black text-xl transition-all border border-slate-700">
+                        NEXT STORY →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Victory Screen -->
+            <div id="victoryScreen" class="hidden text-center py-16">
+                <div class="text-8xl mb-6">🏁</div>
+                <h2 class="text-5xl font-black mb-4">Final Score!</h2>
+                <div class="flex justify-center gap-12 mb-10">
+                    <div>
+                        <p class="text-rose-500 font-bold">TEAM A</p>
+                        <p id="finalA" class="text-5xl font-black">0</p>
+                    </div>
+                    <div>
+                        <p class="text-sky-500 font-bold">TEAM B</p>
+                        <p id="finalB" class="text-5xl font-black">0</p>
+                    </div>
+                </div>
+                <p id="winnerMsg" class="text-3xl text-cyan-400 font-black mb-10 animate-bounce"></p>
+                <button onclick="location.reload()" class="bg-white text-slate-900 px-10 py-4 rounded-2xl font-bold">RESTART GAME</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const newsStories = [
+            {
+                text: "On Tuesday at 10 AM, the National Bank of Kyrgyzstan announced that 5,000 new silver coins will be sold in Bishkek and Osh. These special coins show a snow leopard and cost 3,500 soms each to help protect local nature.",
+                questions: [
+                    { q: "What day?", a: "Tuesday" },
+                    { q: "What time?", a: "10 AM" },
+                    { q: "Who made the announcement?", a: "National Bank" },
+                    { q: "How many coins are there?", a: "5,000" },
+                    { q: "What are they made of?", a: "Silver" },
+                    { q: "Which two cities?", a: "Bishkek and Osh" },
+                    { q: "What animal is on the coin?", a: "Snow Leopard" },
+                    { q: "How much is one coin?", a: "3,500 soms" }
+                ]
+            },
+            {
+                text: "An Austrian company will build a new cable car in the Three Peaks ski resort starting this August. The project will cost 15 million dollars and will carry 2,000 tourists every hour up the high mountains.",
+                questions: [
+                    { q: "Where is the company from?", a: "Austria" },
+                    { q: "What are they building?", a: "Cable car" },
+                    { q: "Name of the resort?", a: "Three Peaks" },
+                    { q: "When does it start?", a: "August" },
+                    { q: "How much money?", a: "15 million dollars" },
+                    { q: "How many tourists?", a: "2,000" },
+                    { q: "How often (time)?", a: "Every hour" },
+                    { q: "Where are they going?", a: "Up the mountains" }
+                ]
+            },
+            {
+                text: "Farmers in the Alay region are exporting 40 tons of organic white honey to Japan for the first time. The honey was collected by 12 families who used 300 beehives in a valley near the border.",
+                questions: [
+                    { q: "Which region?", a: "Alay" },
+                    { q: "How much honey?", a: "40 tons" },
+                    { q: "What color is the honey?", a: "White" },
+                    { q: "Which country is buying it?", a: "Japan" },
+                    { q: "Is it the first or second time?", a: "First time" },
+                    { q: "How many families?", a: "12" },
+                    { q: "How many beehives?", a: "300" },
+                    { q: "Where is the valley?", a: "Near the border" }
+                ]
+            },
+            {
+                text: "Last Saturday, a 16-year-old girl named Aida won a gold medal at the Asian Chess Championship in Uzbekistan. She practiced for 8 hours every day and defeated 9 opponents to become the top player in Central Asia.",
+                questions: [
+                    { q: "What day was it?", a: "Saturday" },
+                    { q: "How old is Aida?", a: "16" },
+                    { q: "What is her name?", a: "Aida" },
+                    { q: "What color medal?", a: "Gold" },
+                    { q: "What sport/game?", a: "Chess" },
+                    { q: "In which country?", a: "Uzbekistan" },
+                    { q: "How many hours of practice?", a: "8 hours" },
+                    { q: "How many opponents?", a: "9" }
+                ]
+            },
+            {
+                text: "Bishkek City Hall bought 120 new orange buses from a factory in China to reduce air pollution. These buses use clean gas and have 25 comfortable seats plus 4 security cameras inside.",
+                questions: [
+                    { q: "Who bought them?", a: "City Hall" },
+                    { q: "How many buses?", a: "120" },
+                    { q: "What color?", a: "Orange" },
+                    { q: "Which country?", a: "China" },
+                    { q: "Why (the goal)?", a: "Reduce pollution" },
+                    { q: "What fuel do they use?", a: "Clean gas" },
+                    { q: "How many seats?", a: "25" },
+                    { q: "How many cameras?", a: "4" }
+                ]
+            },
+            {
+                text: "At 2 PM on Friday, the Dordoi market will close its green gates for 48 hours for a big spring cleaning. All 5,000 workers must wear yellow vests and help clean 10 different sections of the market.",
+                questions: [
+                    { q: "What time?", a: "2 PM" },
+                    { q: "What day?", a: "Friday" },
+                    { q: "What market?", a: "Dordoi" },
+                    { q: "What color gates?", a: "Green" },
+                    { q: "How many hours?", a: "48 hours" },
+                    { q: "How many workers?", a: "5,000" },
+                    { q: "What color vests?", a: "Yellow" },
+                    { q: "How many sections?", a: "10" }
+                ]
+            },
+            {
+                text: "Scientists found 50 ancient stone carvings near the Saimaluu-Tash site that are 3,000 years old. The carvings show hunters with long spears and 4 horses running toward a large river.",
+                questions: [
+                    { q: "What was found?", a: "Stone carvings" },
+                    { q: "How many?", a: "50" },
+                    { q: "Which site?", a: "Saimaluu-Tash" },
+                    { q: "How old are they?", a: "3,000 years" },
+                    { q: "Who is in the carvings?", a: "Hunters" },
+                    { q: "What weapon?", a: "Long spears" },
+                    { q: "How many horses?", a: "4" },
+                    { q: "Where are they running?", a: "To a river" }
+                ]
+            },
+            {
+                text: "A famous chef from Turkey opened a new restaurant in Karakol that serves 12 types of kebabs. He used 50 kilograms of fresh meat on Sunday to feed 200 hungry tourists.",
+                questions: [
+                    { q: "Where is the chef from?", a: "Turkey" },
+                    { q: "Which city?", a: "Karakol" },
+                    { q: "How many types of kebabs?", a: "12" },
+                    { q: "How much meat?", a: "50 kg" },
+                    { q: "What day?", a: "Sunday" },
+                    { q: "How many tourists?", a: "200" },
+                    { q: "Was the meat frozen?", a: "No (fresh)" },
+                    { q: "How were the tourists?", a: "Hungry" }
+                ]
+            },
+            {
+                text: "In September, 500 students in Naryn will receive free laptops from a charity group in London. Each laptop has a red sticker and comes with 3 English books to help them study.",
+                questions: [
+                    { q: "What month?", a: "September" },
+                    { q: "How many students?", a: "500" },
+                    { q: "Which city?", a: "Naryn" },
+                    { q: "What is the gift?", a: "Laptops" },
+                    { q: "Where is the charity from?", a: "London" },
+                    { q: "What color sticker?", a: "Red" },
+                    { q: "How many books?", a: "3" },
+                    { q: "What subject are the books?", a: "English" }
+                ]
+            },
+            {
+                text: "A small red plane landed at Manas Airport yesterday with 6 doctors from Russia to help local hospitals. They brought 20 boxes of medicine and will stay for 2 weeks in a hotel near the center.",
+                questions: [
+                    { q: "What color plane?", a: "Red" },
+                    { q: "Which airport?", a: "Manas" },
+                    { q: "How many doctors?", a: "6" },
+                    { q: "Where are they from?", a: "Russia" },
+                    { q: "How many boxes?", a: "20" },
+                    { q: "What was in the boxes?", a: "Medicine" },
+                    { q: "How long will they stay?", a: "2 weeks" },
+                    { q: "Where is the hotel?", a: "Near the center" }
+                ]
+            }
+        ];
+
+        let currentRound = 0;
+        let scoreA = 0;
+        let scoreB = 0;
+
+        function changeScore(team, val) {
+            if (team === 'A') {
+                scoreA = Math.max(0, scoreA + val);
+                document.getElementById('scoreA').innerText = scoreA;
+            } else {
+                scoreB = Math.max(0, scoreB + val);
+                document.getElementById('scoreB').innerText = scoreB;
+            }
+        }
+
+        function startGame() {
+            document.getElementById('gameIntro').classList.add('hidden');
+            document.getElementById('gamePlay').classList.remove('hidden');
+            updateRound();
+        }
+
+        function updateRound() {
+            const story = newsStories[currentRound];
+            document.getElementById('currentIdx').innerText = currentRound + 1;
+            document.getElementById('storyText').innerText = story.text;
+            
+            const qGrid = document.getElementById('qGrid');
+            qGrid.innerHTML = '';
+            
+            story.questions.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = "flex items-center gap-3 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50";
+                row.innerHTML = `
+                    <div class="flex-1">
+                        <p class="text-xs text-slate-500 font-bold uppercase">Q${index+1}</p>
+                        <p class="text-sm font-semibold">${item.q}</p>
+                        <p id="ans-${index}" class="text-emerald-400 font-bold text-sm hidden mt-1">✓ ${item.a}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="revealAns(${index})" class="bg-slate-700 hover:bg-slate-600 p-2 rounded-lg text-xs font-bold w-12" id="revBtn-${index}">ANS</button>
+                        <button onclick="award('A', ${index}, this)" class="bg-rose-500/20 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/50 p-2 rounded-lg text-[10px] font-black w-8 h-8 flex items-center justify-center checkmark-btn">A</button>
+                        <button onclick="award('B', ${index}, this)" class="bg-sky-500/20 hover:bg-sky-500 text-sky-500 hover:text-white border border-sky-500/50 p-2 rounded-lg text-[10px] font-black w-8 h-8 flex items-center justify-center checkmark-btn">B</button>
+                        <button onclick="award('X', ${index}, this)" class="bg-slate-700/50 hover:bg-slate-600 p-2 rounded-lg text-slate-400 hover:text-white text-[10px] font-black w-8 h-8 flex items-center justify-center checkmark-btn">✕</button>
+                    </div>
+                `;
+                qGrid.appendChild(row);
+            });
+        }
+
+        function revealAns(idx) {
+            document.getElementById(`ans-${idx}`).classList.remove('hidden');
+            document.getElementById(`revBtn-${idx}`).classList.add('opacity-30');
+        }
+
+        function award(team, idx, btn) {
+            // Logic to prevent double-scoring same question
+            const row = btn.parentElement;
+            if (row.dataset.scored === "true") return;
+            
+            if (team === 'A') changeScore('A', 1);
+            if (team === 'B') changeScore('B', 1);
+            
+            // Visual feedback
+            row.dataset.scored = "true";
+            row.style.opacity = "0.4";
+            revealAns(idx);
+        }
+
+        function nextRound() {
+            currentRound++;
+            if (currentRound < newsStories.length) {
+                updateRound();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                showVictory();
+            }
+        }
+
+        function showVictory() {
+            document.getElementById('gamePlay').classList.add('hidden');
+            document.getElementById('victoryScreen').classList.remove('hidden');
+            document.getElementById('finalA').innerText = scoreA;
+            document.getElementById('finalB').innerText = scoreB;
+            
+            let msg = "";
+            if (scoreA > scoreB) msg = "TEAM A WINS! 🎉";
+            else if (scoreB > scoreA) msg = "TEAM B WINS! 🏆";
+            else msg = "IT'S A DRAW! 🤝";
+            
+            document.getElementById('winnerMsg').innerText = msg;
+        }
+
+        function resetGame() {
+            if(confirm("Reset everything?")) {
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
