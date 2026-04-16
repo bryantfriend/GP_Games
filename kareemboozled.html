@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kareem-Boozled</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka+One&family=Open+Sans:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #581c87;
+            background-image: radial-gradient(circle at 20% 30%, #6b21a8 0%, #581c87 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .game-font { font-family: 'Bangers', cursive; letter-spacing: 2px; }
+        .ui-font { font-family: 'Fredoka One', cursive; }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            padding: 20px;
+        }
+
+        .game-card {
+            aspect-ratio: 1 / 1;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+            border-radius: 12px;
+        }
+
+        .game-card:hover .card-inner { transform: translateY(-5px) scale(1.02); }
+
+        .game-card.used .card-inner {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: scale(0.9);
+            filter: grayscale(1);
+        }
+
+        .card-front {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background: #fbbf24;
+            color: #451a03;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            border-radius: 12px;
+            border: 5px solid #f59e0b;
+        }
+
+        .modal-overlay {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .team-input {
+            background: transparent;
+            border: none;
+            color: white;
+            text-align: center;
+            width: 100%;
+            font-family: 'Bangers', cursive;
+            font-size: 2.2rem;
+            outline: none;
+        }
+
+        .team-input:focus { border-bottom: 2px dashed rgba(255,255,255,0.5); }
+
+        @keyframes pop-in {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-pop-in { animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        .power-up-bg { background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); }
+    </style>
+</head>
+<body class="p-4">
+
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+        <!-- Team 1 -->
+        <div id="team-area-1" class="w-full md:w-1/4 bg-rose-600 p-3 rounded-2xl shadow-xl border-4 border-rose-500 relative transition-all duration-300">
+            <input type="text" value="TEAM RED" class="team-input" spellcheck="false">
+            <div class="text-center">
+                <span id="score-1" class="text-5xl ui-font text-white">0</span>
+            </div>
+            <div class="absolute -top-3 -left-3 bg-white text-rose-600 px-3 py-0.5 rounded-full font-bold shadow-md text-xs">TEAM 1</div>
+        </div>
+
+        <div class="text-center">
+            <h1 class="text-5xl game-font text-yellow-400 drop-shadow-[0_4px_0_rgba(0,0,0,0.5)]">KAREEM-BOOZLED</h1>
+            <div id="active-team-display" class="ui-font text-white bg-white/10 px-4 py-1 rounded-full mt-1 inline-block text-xs uppercase tracking-widest">TEAM 1'S TURN</div>
+        </div>
+
+        <!-- Team 2 -->
+        <div id="team-area-2" class="w-full md:w-1/4 bg-blue-600 p-3 rounded-2xl shadow-xl border-4 border-blue-500 relative transition-all duration-300">
+            <input type="text" value="TEAM BLUE" class="team-input" spellcheck="false">
+            <div class="text-center">
+                <span id="score-2" class="text-5xl ui-font text-white">0</span>
+            </div>
+            <div class="absolute -top-3 -right-3 bg-white text-blue-600 px-3 py-0.5 rounded-full font-bold shadow-md text-xs">TEAM 2</div>
+        </div>
+    </div>
+
+    <!-- The 28-Card Grid -->
+    <div id="card-container" class="card-grid max-w-7xl mx-auto"></div>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
+        <div id="modal-content" class="bg-white text-slate-900 w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-pop-in flex flex-col">
+            <div id="modal-header" class="bg-yellow-400 p-4 text-center">
+                <h3 id="modal-category" class="ui-font text-lg text-amber-900 uppercase">CATEGORY</h3>
+            </div>
+            
+            <div class="p-8 text-center flex-grow">
+                <h2 id="modal-question" class="text-2xl md:text-3xl font-bold mb-4 text-slate-800 leading-tight">Question Title</h2>
+                <div id="question-details" class="text-lg text-slate-600 mb-6 italic">Details...</div>
+
+                <div id="answer-reveal" class="hidden">
+                    <div class="h-0.5 bg-slate-100 w-full my-4"></div>
+                    <p id="modal-answer" class="text-xl font-bold text-emerald-600"></p>
+                </div>
+            </div>
+
+            <div id="modal-footer" class="p-6 bg-slate-50 flex justify-center gap-4 border-t">
+                <button id="check-btn" onclick="revealAnswer()" class="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 rounded-xl text-lg ui-font shadow-lg w-full transform active:scale-95 transition-all">
+                    REVEAL
+                </button>
+                
+                <div id="score-controls" class="hidden flex gap-4 w-full">
+                    <button id="win-btn" onclick="closeModal(true)" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl text-lg ui-font shadow-lg flex-1 transform active:scale-95 transition-all">
+                        OKAY! (+15)
+                    </button>
+                    <button id="fail-btn" onclick="closeModal(false)" class="bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-xl text-lg ui-font shadow-lg flex-1 transform active:scale-95 transition-all">
+                        OOPS! (0)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cards = [
+            // Simplified Easy Questions
+            { type: "q", cat: "Listening", q: "Phone Manners", detail: "Is it polite to look at your phone while someone is talking to you?", ans: "NO. It shows you aren't paying attention." },
+            { type: "q", cat: "Body Language", q: "Smiling", detail: "If someone is smiling, are they usually happy or angry?", ans: "HAPPY! A smile is a universal sign of joy." },
+            { type: "q", cat: "Body Language", q: "The Shrug", detail: "If someone shrugs their shoulders, what are they trying to say?", ans: "'I don't know' or 'I don't care'." },
+            { type: "q", cat: "Listening", q: "Interrupting", detail: "Should you wait for a friend to finish talking before you start talking?", ans: "YES. Interrupting is rude and means you aren't listening." },
+            { type: "q", cat: "Listening", q: "Nodding", detail: "Does nodding your head up and down usually mean 'Yes' or 'No'?", ans: "YES. It shows you agree or understand." },
+            { type: "q", cat: "Body Language", q: "Yawning", detail: "If your friend is yawning while you tell a story, are they excited or bored?", ans: "BORED. (Or maybe just very sleepy!)" },
+            { type: "q", cat: "Listening", q: "Eye Contact", detail: "Should you look at the person who is talking to you?", ans: "YES. It shows you are focused on them." },
+            { type: "q", cat: "Speaking", q: "Shouting", detail: "Is shouting a good way to solve a problem with a friend?", ans: "NO. It usually makes people feel defensive or angry." },
+            { type: "q", cat: "Body Language", q: "The Wave", detail: "What does it mean when someone waves their hand at you?", ans: "Hello or Goodbye!" },
+            { type: "q", cat: "Speaking", q: "Magic Words", detail: "Are 'Please' and 'Thank You' part of good communication?", ans: "YES. They show respect." },
+            { type: "q", cat: "Body Language", q: "Thumbs Up", detail: "What does a 'Thumbs Up' sign usually mean?", ans: "Good job, OK, or I agree!" },
+            { type: "q", cat: "Listening", q: "Questioning", detail: "If you don't understand what someone said, should you ask a question?", ans: "YES. It helps clarify the message." },
+            { type: "q", cat: "Body Language", q: "Arms Crossed", detail: "Does crossing your arms tightly make you look 'Open' or 'Closed' to ideas?", ans: "CLOSED. It can look like you are being defensive." },
+            { type: "q", cat: "Speaking", q: "The 'I' Statement", detail: "Is it better to say 'You are mean' or 'I feel sad when you say that'?", ans: "'I feel sad...' is better because it shares your feelings without attacking." },
+            { type: "q", cat: "Body Language", q: "The Point", detail: "Is it usually polite or rude to point your finger at someone?", ans: "RUDE. It can feel aggressive." },
+            { type: "q", cat: "Listening", q: "Quiet Time", detail: "True or False: Listening is the same thing as just being quiet.", ans: "FALSE. You have to be quiet AND pay attention to what is being said." },
+            { type: "q", cat: "Body Language", q: "Tears", detail: "If someone has tears in their eyes, are they usually feeling happy or sad?", ans: "Usually SAD (though sometimes we cry when we are very happy!)." },
+            { type: "q", cat: "Speaking", q: "Whispering", detail: "Is whispering a sign of being loud or being quiet?", ans: "QUIET. It's used for secrets or being respectful in quiet places." },
+            { type: "q", cat: "Listening", q: "Waiting", detail: "If you are thinking about what to say next instead of listening, is that good?", ans: "NO. That is called 'rehearsing' and it means you missed what they just said!" },
+            { type: "q", cat: "Speaking", q: "Tone of Voice", detail: "Can your 'Tone' (how you say it) change the meaning of your words?", ans: "YES! Saying 'Thanks' nicely is different from saying 'Thanks' meanly." },
+
+            // Power Ups (8 total for 28 cards)
+            { type: "p", cat: "POWER UP", q: "SWAP POINTS!", detail: "Trade scores with the other team right now!", action: "swap" },
+            { type: "p", cat: "POWER UP", q: "STEAL 20!", detail: "Take 20 points from the other team!", action: "steal" },
+            { type: "p", cat: "POWER UP", q: "LOSE 20!", detail: "Oops! Your team loses 20 points.", action: "lose" },
+            { type: "p", cat: "POWER UP", q: "GAIN 50!", detail: "Mega Bonus! Add 50 points to your score.", action: "gain50" },
+            { type: "p", cat: "POWER UP", q: "SWAP POINTS!", detail: "Trade scores again! No one is safe!", action: "swap" },
+            { type: "p", cat: "POWER UP", q: "ENEMY LOSE 20!", detail: "The other team loses 20 points. Tough luck!", action: "enemyLose" },
+            { type: "p", cat: "POWER UP", q: "STEAL 20!", detail: "Grab 20 points from the opponents!", action: "steal" },
+            { type: "p", cat: "POWER UP", q: "GAIN 50!", detail: "You found the hidden treasure! +50 points.", action: "gain50" }
+        ];
+
+        // Shuffle cards
+        const shuffled = cards.sort(() => Math.random() - 0.5);
+
+        let scores = [0, 0];
+        let currentTeam = 0;
+        let activeIdx = -1;
+        let used = new Set();
+
+        function initGrid() {
+            const container = document.getElementById('card-container');
+            container.innerHTML = '';
+            shuffled.forEach((c, i) => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.id = `card-${i}`;
+                card.onclick = () => openCard(i);
+                card.innerHTML = `<div class="card-inner"><div class="card-front ui-font">${i + 1}</div></div>`;
+                container.appendChild(card);
+            });
+            updateTurn();
+        }
+
+        function openCard(i) {
+            if (used.has(i)) return;
+            activeIdx = i;
+            const c = shuffled[i];
+            
+            document.getElementById('modal-category').innerText = c.cat;
+            document.getElementById('modal-question').innerText = c.q;
+            document.getElementById('question-details').innerText = c.detail;
+            
+            const head = document.getElementById('modal-header');
+            const checkBtn = document.getElementById('check-btn');
+            const scoreControls = document.getElementById('score-controls');
+            const ansArea = document.getElementById('answer-reveal');
+
+            ansArea.classList.add('hidden');
+            scoreControls.classList.add('hidden');
+            checkBtn.classList.remove('hidden');
+            
+            if (c.type === 'p') {
+                head.className = "p-4 text-center power-up-bg text-white";
+                checkBtn.innerText = "ACTIVATE!";
+            } else {
+                head.className = "p-4 text-center bg-yellow-400 text-amber-900";
+                checkBtn.innerText = "CHECK ANSWER";
+                document.getElementById('modal-answer').innerText = c.ans;
+            }
+
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function revealAnswer() {
+            const c = shuffled[activeIdx];
+            if (c.type === 'p') {
+                applyPowerUp(c.action);
+                document.getElementById('check-btn').classList.add('hidden');
+                document.getElementById('score-controls').classList.remove('hidden');
+                document.getElementById('win-btn').innerText = "CONTINUE";
+                document.getElementById('fail-btn').classList.add('hidden');
+                document.getElementById('answer-reveal').classList.remove('hidden');
+                document.getElementById('modal-answer').innerText = "ACTION COMPLETE!";
+            } else {
+                document.getElementById('answer-reveal').classList.remove('hidden');
+                document.getElementById('check-btn').classList.add('hidden');
+                document.getElementById('score-controls').classList.remove('hidden');
+                document.getElementById('win-btn').innerText = "OKAY! (+15)";
+                document.getElementById('fail-btn').classList.remove('hidden');
+            }
+        }
+
+        function applyPowerUp(action) {
+            const other = currentTeam === 0 ? 1 : 0;
+            switch(action) {
+                case 'swap':
+                    let temp = scores[0];
+                    scores[0] = scores[1];
+                    scores[1] = temp;
+                    break;
+                case 'steal':
+                    let amt = Math.min(scores[other], 20);
+                    scores[currentTeam] += amt;
+                    scores[other] -= amt;
+                    break;
+                case 'lose':
+                    scores[currentTeam] = Math.max(0, scores[currentTeam] - 20);
+                    break;
+                case 'gain50':
+                    scores[currentTeam] += 50;
+                    break;
+                case 'enemyLose':
+                    scores[other] = Math.max(0, scores[other] - 20);
+                    break;
+            }
+            updateScores();
+        }
+
+        function closeModal(win) {
+            const c = shuffled[activeIdx];
+            if (c.type === 'q' && win) {
+                scores[currentTeam] += 15;
+            }
+            
+            updateScores();
+            used.add(activeIdx);
+            document.getElementById(`card-${activeIdx}`).classList.add('used');
+            currentTeam = (currentTeam === 0) ? 1 : 0;
+            updateTurn();
+            document.getElementById('modal').classList.add('hidden');
+            checkEnd();
+        }
+
+        function updateScores() {
+            document.getElementById('score-1').innerText = scores[0];
+            document.getElementById('score-2').innerText = scores[1];
+        }
+
+        function updateTurn() {
+            const names = document.querySelectorAll('.team-input');
+            const activeName = names[currentTeam].value;
+            document.getElementById('active-team-display').innerText = `${activeName.toUpperCase()}'S TURN`;
+            
+            document.getElementById('team-area-1').style.transform = currentTeam === 0 ? "scale(1.05)" : "scale(1)";
+            document.getElementById('team-area-1').style.opacity = currentTeam === 0 ? "1" : "0.7";
+            document.getElementById('team-area-2').style.transform = currentTeam === 1 ? "scale(1.05)" : "scale(1)";
+            document.getElementById('team-area-2').style.opacity = currentTeam === 1 ? "1" : "0.7";
+        }
+
+        function checkEnd() {
+            if (used.size === shuffled.length) {
+                const names = document.querySelectorAll('.team-input');
+                const winner = scores[0] > scores[1] ? names[0].value : (scores[1] > scores[0] ? names[1].value : "TIE");
+                
+                document.getElementById('modal-category').innerText = "GAME OVER";
+                document.getElementById('modal-question').innerText = "Final Results!";
+                document.getElementById('question-details').innerHTML = `<span class='text-4xl text-purple-700 font-bold'>WINNER: ${winner}</span>`;
+                document.getElementById('modal-footer').innerHTML = `<button onclick="location.reload()" class="bg-yellow-500 text-white p-4 rounded-xl w-full ui-font">PLAY AGAIN</button>`;
+                document.getElementById('modal').classList.remove('hidden');
+            }
+        }
+
+        initGrid();
+    </script>
+</body>
+</html>
