@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         {
             fileName: 'kareemboozled.html',
-            title: 'kareemboozled'
+            title: 'kareemboozled 🦁'
         }, 
         {
             fileName: 'activeListening1.html',
