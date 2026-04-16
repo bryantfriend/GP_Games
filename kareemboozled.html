@@ -86,17 +86,81 @@
 
         .team-input:focus { border-bottom: 2px dashed rgba(255,255,255,0.5); }
 
+        /* Animations */
         @keyframes pop-in {
             0% { transform: scale(0.5); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
-
         .animate-pop-in { animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-15px); }
+            40% { transform: translateX(15px); }
+            60% { transform: translateX(-15px); }
+            80% { transform: translateX(15px); }
+        }
+        .animate-shake { animation: shake 0.5s ease-in-out; }
+
+        @keyframes rotate-swap {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+        .animate-rotate-swap { animation: rotate-swap 0.8s ease-in-out; }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0px rgba(255, 255, 255, 0.7); }
+            100% { box-shadow: 0 0 0 30px rgba(255, 255, 255, 0); }
+        }
+        .animate-pulse-glow { animation: pulse-glow 0.6s ease-out; }
+
+        /* Emoji Flash Animation */
+        @keyframes emoji-flash {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+            80% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+        }
+        .emoji-feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 15rem;
+            z-index: 100;
+            pointer-events: none;
+            display: none;
+        }
+        .animate-emoji {
+            display: block;
+            animation: emoji-flash 2s ease-in-out forwards;
+        }
+
+        /* Racing Emoji Animation */
+        @keyframes emoji-race {
+            0% { transform: translateX(-100px); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateX(calc(100vw + 100px)); opacity: 0; }
+        }
+        .racing-emoji {
+            position: fixed;
+            font-size: 5rem;
+            z-index: 200;
+            pointer-events: none;
+            animation: emoji-race 1.5s linear forwards;
+            top: 0;
+            left: 0;
+        }
         
         .power-up-bg { background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); }
     </style>
 </head>
 <body class="p-4">
+
+    <!-- Emoji Feedback Overlay -->
+    <div id="emoji-display" class="emoji-feedback"></div>
 
     <!-- Header Section -->
     <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
@@ -162,6 +226,57 @@
     </div>
 
     <script>
+        // Audio Engine
+        const AudioEngine = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            play(type) {
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                switch(type) {
+                    case 'correct':
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(523.25, now); // C5
+                        osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3); // C6
+                        gain.gain.setValueAtTime(0.2, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                        osc.start(now);
+                        osc.stop(now + 0.4);
+                        break;
+                    case 'wrong':
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(150, now);
+                        osc.frequency.linearRampToValueAtTime(80, now + 0.5);
+                        gain.gain.setValueAtTime(0.1, now);
+                        gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+                        osc.start(now);
+                        osc.stop(now + 0.5);
+                        break;
+                    case 'powerup':
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(200, now);
+                        osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                        osc.frequency.exponentialRampToValueAtTime(400, now + 0.2);
+                        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.6);
+                        gain.gain.setValueAtTime(0.15, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+                        osc.start(now);
+                        osc.stop(now + 0.8);
+                        break;
+                }
+            }
+        };
+
         const cards = [
             // Simplified Easy Questions
             { type: "q", cat: "Listening", q: "Phone Manners", detail: "Is it polite to look at your phone while someone is talking to you?", ans: "NO. It shows you aren't paying attention." },
@@ -248,9 +363,25 @@
             document.getElementById('modal').classList.remove('hidden');
         }
 
+        function raceEmojis() {
+            const emojis = ['🚀', '⭐', '🔥', '🎉', '💎', '🎈', '🌈', '🦄', '⚡', '💥', '✨', '🏆', '🔥', '🎉'];
+            for (let i = 0; i < 10; i++) {
+                const span = document.createElement('span');
+                span.className = 'racing-emoji';
+                span.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+                span.style.top = Math.random() * 80 + 10 + 'vh';
+                span.style.animationDelay = Math.random() * 0.4 + 's';
+                span.style.animationDuration = (Math.random() * 0.5 + 1) + 's';
+                document.body.appendChild(span);
+                setTimeout(() => span.remove(), 2000);
+            }
+        }
+
         function revealAnswer() {
             const c = shuffled[activeIdx];
             if (c.type === 'p') {
+                AudioEngine.play('powerup');
+                raceEmojis();
                 applyPowerUp(c.action);
                 document.getElementById('check-btn').classList.add('hidden');
                 document.getElementById('score-controls').classList.remove('hidden');
@@ -269,43 +400,95 @@
 
         function applyPowerUp(action) {
             const other = currentTeam === 0 ? 1 : 0;
+            const teamArea = document.getElementById(`team-area-${currentTeam + 1}`);
+            const otherArea = document.getElementById(`team-area-${other + 1}`);
+
             switch(action) {
                 case 'swap':
-                    let temp = scores[0];
-                    scores[0] = scores[1];
-                    scores[1] = temp;
+                    teamArea.classList.add('animate-rotate-swap');
+                    otherArea.classList.add('animate-rotate-swap');
+                    setTimeout(() => {
+                        let temp = scores[0];
+                        scores[0] = scores[1];
+                        scores[1] = temp;
+                        updateScores();
+                        teamArea.classList.remove('animate-rotate-swap');
+                        otherArea.classList.remove('animate-rotate-swap');
+                    }, 800);
                     break;
                 case 'steal':
+                    otherArea.classList.add('animate-shake');
+                    teamArea.classList.add('animate-pulse-glow');
                     let amt = Math.min(scores[other], 20);
                     scores[currentTeam] += amt;
                     scores[other] -= amt;
+                    setTimeout(() => {
+                        otherArea.classList.remove('animate-shake');
+                        teamArea.classList.remove('animate-pulse-glow');
+                    }, 600);
                     break;
                 case 'lose':
+                    teamArea.classList.add('animate-shake');
                     scores[currentTeam] = Math.max(0, scores[currentTeam] - 20);
+                    setTimeout(() => teamArea.classList.remove('animate-shake'), 600);
                     break;
                 case 'gain50':
+                    teamArea.classList.add('animate-pulse-glow');
                     scores[currentTeam] += 50;
+                    setTimeout(() => teamArea.classList.remove('animate-pulse-glow'), 600);
                     break;
                 case 'enemyLose':
+                    otherArea.classList.add('animate-shake');
                     scores[other] = Math.max(0, scores[other] - 20);
+                    setTimeout(() => otherArea.classList.remove('animate-shake'), 600);
                     break;
             }
             updateScores();
         }
 
+        function flashEmoji(emoji) {
+            const display = document.getElementById('emoji-display');
+            display.innerText = emoji;
+            display.classList.remove('animate-emoji');
+            void display.offsetWidth; // trigger reflow
+            display.classList.add('animate-emoji');
+            
+            setTimeout(() => {
+                display.classList.remove('animate-emoji');
+            }, 2000);
+        }
+
         function closeModal(win) {
             const c = shuffled[activeIdx];
-            if (c.type === 'q' && win) {
-                scores[currentTeam] += 15;
+            
+            // Close modal first
+            document.getElementById('modal').classList.add('hidden');
+
+            if (c.type === 'q') {
+                if (win) {
+                    AudioEngine.play('correct');
+                    flashEmoji('🥶');
+                    scores[currentTeam] += 15;
+                    document.getElementById(`team-area-${currentTeam + 1}`).classList.add('animate-pulse-glow');
+                    setTimeout(() => document.getElementById(`team-area-${currentTeam + 1}`).classList.remove('animate-pulse-glow'), 600);
+                } else {
+                    AudioEngine.play('wrong');
+                    flashEmoji('💩');
+                }
             }
             
             updateScores();
             used.add(activeIdx);
-            document.getElementById(`card-${activeIdx}`).classList.add('used');
-            currentTeam = (currentTeam === 0) ? 1 : 0;
-            updateTurn();
-            document.getElementById('modal').classList.add('hidden');
-            checkEnd();
+            document.getElementById(`card-container`).style.pointerEvents = 'none'; // Lock grid during turn switch
+            
+            // Delay turn switch and unlock until after emoji flash
+            setTimeout(() => {
+                currentTeam = (currentTeam === 0) ? 1 : 0;
+                updateTurn();
+                document.getElementById(`card-${activeIdx}`).classList.add('used');
+                document.getElementById(`card-container`).style.pointerEvents = 'auto';
+                checkEnd();
+            }, 2000);
         }
 
         function updateScores() {
