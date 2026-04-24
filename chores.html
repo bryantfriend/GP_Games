@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chore Champions: Basic ESL Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, .team-name { font-family: 'Fredoka One', cursive; }
+
+        .card-bounce {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .card-bounce:hover { transform: scale(1.05) translateY(-5px); }
+
+        .active-team {
+            border: 6px solid #facc15;
+            box-shadow: 0 0 30px rgba(250, 204, 21, 0.8);
+            transform: scale(1.05);
+        }
+
+        .modal-enter { animation: modalScale 0.4s ease-out; }
+        @keyframes modalScale {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .dust-particle {
+            position: absolute;
+            pointer-events: none;
+            animation: float 3s ease-out forwards;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Capybara SVG sizing */
+        .capy-svg { width: 60px; height: 60px; display: inline-block; vertical-align: middle; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen" class="max-w-4xl mx-auto bg-white/90 backdrop-blur-md rounded-[3rem] p-8 shadow-2xl mt-10">
+        <h1 class="text-4xl text-center text-blue-800 mb-6 uppercase tracking-wide">🐾 Team Setup 🐾</h1>
+        
+        <div class="flex justify-center gap-4 mb-8">
+            <button id="btn-2-teams" onclick="setTeamCount(2)" class="bg-blue-600 text-white px-8 py-3 rounded-full font-bold text-xl shadow-lg transform transition active:scale-95">2 TEAMS</button>
+            <button id="btn-3-teams" onclick="setTeamCount(3)" class="bg-blue-100 text-blue-800 px-8 py-3 rounded-full font-bold text-xl shadow-lg transform transition active:scale-95">3 TEAMS</button>
+        </div>
+
+        <div id="team-setup-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 transition-all duration-300">
+            <!-- Team 1 -->
+            <div class="bg-pink-50 p-6 rounded-3xl border-4 border-pink-200 text-center">
+                <h3 class="text-pink-600 mb-4 uppercase">Team 1</h3>
+                <input type="text" id="t0-name" placeholder="Name..." class="w-full p-3 rounded-xl mb-4 border-2 border-pink-100" value="Sparkle">
+                <select id="t0-animal" class="w-full p-3 rounded-xl border-2 border-pink-100 animal-select text-2xl"></select>
+            </div>
+            <!-- Team 2 -->
+            <div class="bg-blue-50 p-6 rounded-3xl border-4 border-blue-200 text-center">
+                <h3 class="text-blue-600 mb-4 uppercase">Team 2</h3>
+                <input type="text" id="t1-name" placeholder="Name..." class="w-full p-3 rounded-xl mb-4 border-2 border-blue-100" value="Shine">
+                <select id="t1-animal" class="w-full p-3 rounded-xl border-2 border-blue-100 animal-select text-2xl"></select>
+            </div>
+            <!-- Team 3 -->
+            <div id="setup-team-3" class="bg-green-50 p-6 rounded-3xl border-4 border-green-200 text-center hidden">
+                <h3 class="text-green-600 mb-4 uppercase">Team 3</h3>
+                <input type="text" id="t2-name" placeholder="Name..." class="w-full p-3 rounded-xl mb-4 border-2 border-green-100" value="Power">
+                <select id="t2-animal" class="w-full p-3 rounded-xl border-2 border-green-100 animal-select text-2xl"></select>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <button onclick="startGame()" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-12 py-5 rounded-full text-3xl font-bold shadow-xl transition-all transform hover:scale-105 active:scale-95">
+                LET'S PLAY!
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="game-screen" class="max-w-7xl mx-auto hidden">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-6xl text-blue-800 mb-6 drop-shadow-md">🎁 MYSTERY BOXES! 🎁</h1>
+            
+            <div id="scoreboard" class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-6">
+                <div id="team0-card" class="bg-white rounded-[2rem] p-4 shadow-xl transition-all border-4 border-transparent">
+                    <div id="t0-icon" class="text-5xl mb-1 flex justify-center h-16 items-center"></div>
+                    <div id="t0-display-name" class="team-name text-pink-600 text-lg uppercase"></div>
+                    <div id="score0" class="text-4xl font-bold text-gray-800">0</div>
+                </div>
+                <div id="team1-card" class="bg-white rounded-[2rem] p-4 shadow-xl transition-all border-4 border-transparent">
+                    <div id="t1-icon" class="text-5xl mb-1 flex justify-center h-16 items-center"></div>
+                    <div id="t1-display-name" class="team-name text-blue-600 text-lg uppercase"></div>
+                    <div id="score1" class="text-4xl font-bold text-gray-800">0</div>
+                </div>
+                <div id="team2-card" class="bg-white rounded-[2rem] p-4 shadow-xl transition-all border-4 border-transparent hidden">
+                    <div id="t2-icon" class="text-5xl mb-1 flex justify-center h-16 items-center"></div>
+                    <div id="t2-display-name" class="team-name text-green-600 text-lg uppercase"></div>
+                    <div id="score2" class="text-4xl font-bold text-gray-800">0</div>
+                </div>
+            </div>
+            
+            <div id="turn-indicator" class="inline-block px-10 py-3 rounded-full font-bold text-2xl shadow-lg border-b-4">
+                Team's Turn!
+            </div>
+        </header>
+
+        <div id="game-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4"></div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div id="question-modal" class="bg-white rounded-[3rem] max-w-2xl w-full p-10 shadow-2xl modal-enter relative overflow-hidden text-center">
+            <div id="modal-accent" class="absolute top-0 left-0 w-full h-4"></div>
+            
+            <div id="modal-icon" class="text-8xl mb-6"></div>
+            <h2 id="scenario-text" class="text-2xl md:text-4xl text-gray-700 mb-8 leading-relaxed font-bold"></h2>
+            
+            <div id="options-grid" class="grid grid-cols-1 gap-4"></div>
+
+            <div id="thief-selection" class="hidden">
+                <p class="text-xl mb-6 font-bold text-gray-600 uppercase">Who do you steal from?</p>
+                <div id="thief-buttons" class="grid grid-cols-1 gap-4"></div>
+            </div>
+
+            <div id="special-action-container" class="hidden mt-8">
+                <button onclick="closeModal()" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-12 py-4 rounded-full text-2xl font-bold shadow-lg">OK!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 px-10 py-5 rounded-3xl text-white font-bold text-2xl shadow-2xl hidden transition-all duration-300 transform scale-0 z-[60]">
+        Result
+    </div>
+
+    <script>
+        const capySVG = `<svg class="capy-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20,60 Q20,35 50,35 L80,35 Q85,35 85,45 L85,60 Q85,75 50,75 Q20,75 20,60" fill="#8B5E3C"/>
+            <rect x="70" y="35" width="20" height="20" rx="5" fill="#8B5E3C"/>
+            <circle cx="82" cy="45" r="2" fill="black"/>
+            <path d="M78,52 Q82,55 85,52" fill="none" stroke="black" stroke-width="1"/>
+            <path d="M72,35 Q75,30 78,35" fill="#6B4E2C"/>
+            <path d="M30,75 L30,85 M70,75 L70,85" stroke="#8B5E3C" stroke-width="8" stroke-linecap="round"/>
+        </svg>`;
+
+        const animals = [
+            { name: "Capybara", icon: capySVG, isSVG: true },
+            { name: "Red Panda", icon: "🏮", isSVG: false },
+            { name: "Axolotl", icon: "🦎", isSVG: false },
+            { name: "Sloth", icon: "🦥", isSVG: false },
+            { name: "Penguin", icon: "🐧", isSVG: false },
+            { name: "Koala", icon: "🐨", isSVG: false },
+            { name: "Elephant", icon: "🐘", isSVG: false },
+            { name: "Fox", icon: "🦊", isSVG: false },
+            { name: "Lion", icon: "🦁", isSVG: false },
+            { name: "Monkey", icon: "🐒", isSVG: false }
+        ];
+
+        const choreData = [
+            { term: "He’s washing the dishes.", scenario: "Look! Dirty plates. What is he doing?", icon: "🍽️" },
+            { term: "He’s washing his car.", scenario: "Look! A dirty car. What is he doing?", icon: "🚗" },
+            { term: "She’s watering the plants.", scenario: "Look! Thirsty flowers. What is she doing?", icon: "🌻" },
+            { term: "He’s sweeping the floor.", scenario: "Look! A dirty floor. What is he doing?", icon: "🧹" },
+            { term: "He’s mopping the floor.", scenario: "Look! Water and a mop. What is he doing?", icon: "🧽" },
+            { term: "He’s taking out the garbage.", scenario: "Look! A full bin. What is he doing?", icon: "🗑️" },
+            { term: "She’s making her bed.", scenario: "Look! A messy bed. What is she doing?", icon: "🛏️" },
+            { term: "She’s walking the dog.", scenario: "Look! A happy dog. What is she doing?", icon: "🐕" },
+            { term: "She’s ironing clothes.", scenario: "Look! Messy shirts. What is she doing?", icon: "👔" },
+            { term: "She’s feeding the chickens.", scenario: "Look! Hungry chickens. What is she doing?", icon: "🐓" },
+            { term: "She’s picking vegetables.", scenario: "Look! A garden. What is she doing?", icon: "🧺" },
+            { term: "She’s doing laundry.", scenario: "Look! Dirty clothes. What is she doing?", icon: "👕" },
+            { term: "They’re folding clothes.", scenario: "Look! Clean clothes. What are they doing?", icon: "🧺" },
+            { term: "He’s cleaning the windows.", scenario: "Look! Dirty glass. What is he doing?", icon: "🪟" },
+            { term: "He’s cooking dinner.", scenario: "Look! A yummy smell. What is he doing?", icon: "🍳" },
+            { term: "She’s vacuuming the rug.", scenario: "Look! A loud machine. What is she doing?", icon: "🌀" },
+            { term: "He’s setting the table.", scenario: "Look! Forks and spoons. What is he doing?", icon: "🍴" },
+            { term: "She’s feeding the cat.", scenario: "Look! A hungry cat. What is she doing?", icon: "🐈" }
+        ];
+
+        const specialData = [
+            { type: 'bonus', scenario: "YOU FOUND DIAMONDS!\n+3 Points!", icon: "💎", points: 3 },
+            { type: 'bonus', scenario: "SUPER TREASURE!\n+3 Points!", icon: "💎", points: 3 },
+            { type: 'thief', scenario: "POINTS THIEF!\nSteal 2 points from a team!", icon: "🥷", points: 2 },
+            { type: 'thief', scenario: "HIDDEN THIEF!\nSteal 2 points from a team!", icon: "🥷", points: 2 },
+            { type: 'silly', scenario: "DANCE TIME!\nDo a chicken dance for 1 point!", icon: "🤪", points: 1 },
+            { type: 'silly', scenario: "ROAR TIME!\nRoar like a dinosaur for 1 point!", icon: "🦖", points: 1 }
+        ];
+
+        let state = {
+            numTeams: 2,
+            teams: [],
+            scores: [0, 0, 0],
+            currentTeam: 0,
+            masterList: [],
+            clearedIndices: new Set(),
+            selectedIdx: null,
+            isProcessing: false
+        };
+
+        const setupScreen = document.getElementById('setup-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const optionsGrid = document.getElementById('options-grid');
+        const thiefSelection = document.getElementById('thief-selection');
+        const thiefButtons = document.getElementById('thief-buttons');
+        const specialActionContainer = document.getElementById('special-action-container');
+        const scenarioText = document.getElementById('scenario-text');
+        const modalIcon = document.getElementById('modal-icon');
+        const toast = document.getElementById('toast');
+
+        function setTeamCount(count) {
+            state.numTeams = count;
+            const btn2 = document.getElementById('btn-2-teams');
+            const btn3 = document.getElementById('btn-3-teams');
+            const setup3 = document.getElementById('setup-team-3');
+            const setupContainer = document.getElementById('team-setup-container');
+
+            if (count === 2) {
+                btn2.className = "bg-blue-600 text-white px-8 py-3 rounded-full font-bold text-xl shadow-lg transform transition active:scale-95";
+                btn3.className = "bg-blue-100 text-blue-800 px-8 py-3 rounded-full font-bold text-xl shadow-lg transform transition active:scale-95";
+                setup3.classList.add('hidden');
+                setupContainer.className = "grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 transition-all duration-300";
+            } else {
+                btn3.className = "bg-blue-600 text-white px-8 py-3 rounded-full font-bold text-xl shadow-lg transform transition active:scale-95";
+                btn2.className = "bg-blue-100 text-blue-800 px-8 py-3 rounded-full font-bold text-xl shadow-lg transform transition active:scale-95";
+                setup3.classList.remove('hidden');
+                setupContainer.className = "grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 transition-all duration-300";
+            }
+        }
+
+        function populateSetup() {
+            const selects = document.querySelectorAll('.animal-select');
+            selects.forEach((sel, i) => {
+                animals.forEach((ani, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = idx;
+                    opt.innerText = (ani.isSVG ? "🐾 " : ani.icon + " ") + ani.name;
+                    if (i === 0 && ani.name === "Capybara") opt.selected = true;
+                    if (i === 1 && ani.name === "Fox") opt.selected = true;
+                    if (i === 2 && ani.name === "Lion") opt.selected = true;
+                    sel.appendChild(opt);
+                });
+            });
+        }
+
+        function startGame() {
+            state.teams = [];
+            for (let i = 0; i < state.numTeams; i++) {
+                const colors = ['pink', 'blue', 'green'];
+                const selectedAni = animals[document.getElementById(`t${i}-animal`).value];
+                state.teams.push({
+                    name: document.getElementById(`t${i}-name`).value || `Team ${i+1}`,
+                    icon: selectedAni.icon,
+                    isSVG: selectedAni.isSVG,
+                    color: colors[i]
+                });
+                const iconEl = document.getElementById(`t${i}-icon`);
+                iconEl.innerHTML = state.teams[i].icon;
+                document.getElementById(`t${i}-display-name`).innerText = state.teams[i].name;
+                document.getElementById(`team${i}-card`).classList.remove('hidden');
+            }
+
+            const scoreboard = document.getElementById('scoreboard');
+            if (state.numTeams === 3) {
+                scoreboard.classList.remove('md:grid-cols-2');
+                scoreboard.classList.add('md:grid-cols-3');
+            } else {
+                scoreboard.classList.add('md:grid-cols-2');
+                scoreboard.classList.remove('md:grid-cols-3');
+            }
+
+            state.masterList = [...choreData.map(c => ({...c, type: 'chore'})), ...specialData].sort(() => Math.random() - 0.5);
+            
+            setupScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            initGrid();
+            updateUI();
+        }
+
+        function initGrid() {
+            const grid = document.getElementById('game-grid');
+            grid.innerHTML = '';
+            state.masterList.forEach((item, idx) => {
+                const card = document.createElement('div');
+                card.id = `card-${idx}`;
+                card.className = "card-bounce bg-white rounded-[2rem] p-6 shadow-xl cursor-pointer flex flex-col items-center justify-center text-4xl sm:text-5xl hover:bg-yellow-50 border-b-8 border-gray-200 active:border-b-0 active:translate-y-2 transition-all";
+                card.innerHTML = `<span class="text-blue-500 font-bold">${idx + 1}</span>`;
+                card.onclick = () => openTile(idx);
+                grid.appendChild(card);
+            });
+        }
+
+        function openTile(idx) {
+            if (state.clearedIndices.has(idx) || state.isProcessing) return;
+            state.selectedIdx = idx;
+            const data = state.masterList[idx];
+            
+            modalIcon.innerHTML = data.icon;
+            scenarioText.innerText = data.scenario;
+            
+            optionsGrid.classList.add('hidden');
+            thiefSelection.classList.add('hidden');
+            specialActionContainer.classList.add('hidden');
+            
+            const accent = document.getElementById('modal-accent');
+
+            if (data.type === 'chore') {
+                accent.className = "absolute top-0 left-0 w-full h-4 bg-blue-400";
+                optionsGrid.classList.remove('hidden');
+                setupChoreOptions(data);
+            } else if (data.type === 'thief') {
+                accent.className = "absolute top-0 left-0 w-full h-4 bg-purple-500";
+                thiefSelection.classList.remove('hidden');
+                setupThiefSelection();
+            } else {
+                accent.className = "absolute top-0 left-0 w-full h-4 bg-yellow-400";
+                handleImmediateSpecial(data);
+            }
+
+            modalOverlay.classList.remove('hidden');
+            modalOverlay.classList.add('flex');
+        }
+
+        function setupChoreOptions(chore) {
+            let options = [chore.term];
+            const allTerms = choreData.map(c => c.term);
+            while(options.length < 4) {
+                let r = allTerms[Math.floor(Math.random()*allTerms.length)];
+                if(!options.includes(r)) options.push(r);
+            }
+            options.sort(() => Math.random() - 0.5);
+
+            optionsGrid.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-900 py-4 px-6 rounded-2xl text-xl font-bold transition-all border-b-4 border-blue-200 active:border-0";
+                btn.innerText = opt;
+                btn.onclick = () => handleAnswer(opt);
+                optionsGrid.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(selected) {
+            const correct = state.masterList[state.selectedIdx].term;
+            if (selected === correct) {
+                state.scores[state.currentTeam]++;
+                markCleared(state.selectedIdx);
+                showToast("✅ YES!", "bg-green-500");
+                createParticles(document.getElementById(`card-${state.selectedIdx}`));
+            } else {
+                showToast("❌ NO!", "bg-red-500");
+            }
+            closeModal();
+        }
+
+        function handleImmediateSpecial(data) {
+            if (data.type === 'bonus') {
+                state.scores[state.currentTeam] += data.points;
+                showToast(`💎 WOW! +${data.points}!`, "bg-yellow-500");
+            } else if (data.type === 'silly') {
+                state.scores[state.currentTeam] += data.points;
+                showToast(`🤪 FUN! +${data.points}!`, "bg-pink-500");
+            }
+            markCleared(state.selectedIdx);
+            specialActionContainer.classList.remove('hidden');
+        }
+
+        function setupThiefSelection() {
+            thiefButtons.innerHTML = '';
+            state.teams.forEach((team, idx) => {
+                if (idx === state.currentTeam) return;
+                const btn = document.createElement('button');
+                btn.className = "bg-purple-50 hover:bg-purple-600 hover:text-white py-4 px-6 rounded-2xl text-xl font-bold border-b-4 border-purple-200 active:border-0 flex items-center justify-center gap-2";
+                btn.innerHTML = `${team.icon} <span>${team.name}</span>`;
+                btn.onclick = () => executeSteal(idx);
+                thiefButtons.appendChild(btn);
+            });
+
+            if (state.numTeams === 2) {
+                thiefSelection.querySelector('p').innerText = "Steal from your opponent!";
+            } else {
+                thiefSelection.querySelector('p').innerText = "Who do you steal from?";
+            }
+        }
+
+        function executeSteal(targetIdx) {
+            const stealAmount = Math.min(state.scores[targetIdx], 2);
+            state.scores[targetIdx] -= stealAmount;
+            state.scores[state.currentTeam] += stealAmount;
+            
+            document.getElementById(`team${targetIdx}-card`).classList.add('shake');
+            setTimeout(() => document.getElementById(`team${targetIdx}-card`).classList.remove('shake'), 500);
+            
+            showToast(`🥷 OOPS! -2 points!`, "bg-purple-600");
+            markCleared(state.selectedIdx);
+            closeModal();
+        }
+
+        function markCleared(idx) {
+            state.clearedIndices.add(idx);
+            const card = document.getElementById(`card-${idx}`);
+            card.innerHTML = `<span class="opacity-40 text-4xl">${state.masterList[idx].icon}</span>`;
+            card.className = "bg-gray-100 rounded-[2rem] p-6 shadow-inner flex items-center justify-center cursor-default opacity-60";
+            card.onclick = null;
+        }
+
+        function closeModal() {
+            modalOverlay.classList.add('hidden');
+            modalOverlay.classList.remove('flex');
+            state.currentTeam = (state.currentTeam + 1) % state.numTeams;
+            updateUI();
+            checkGameOver();
+        }
+
+        function updateUI() {
+            for (let i = 0; i < state.numTeams; i++) {
+                document.getElementById(`score${i}`).innerText = state.scores[i];
+                document.getElementById(`team${i}-card`).classList.toggle('active-team', state.currentTeam === i);
+            }
+
+            const current = state.teams[state.currentTeam];
+            const turnEl = document.getElementById('turn-indicator');
+            turnEl.innerHTML = `<span class="flex items-center gap-2 justify-center">${current.icon} ${current.name}'s Turn!</span>`;
+            
+            const colors = { pink: 'bg-pink-400 text-pink-900 border-pink-600', blue: 'bg-blue-400 text-blue-900 border-blue-600', green: 'bg-green-400 text-green-900 border-green-600' };
+            turnEl.className = `inline-block px-10 py-3 rounded-full font-bold text-2xl shadow-lg border-b-4 ${colors[current.color]}`;
+        }
+
+        function showToast(msg, color) {
+            toast.innerText = msg;
+            toast.className = `fixed bottom-10 left-1/2 -translate-x-1/2 px-10 py-5 rounded-3xl text-white font-bold text-2xl shadow-2xl transition-all duration-300 transform z-[60] ${color}`;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('scale-100'), 10);
+            setTimeout(() => {
+                toast.classList.remove('scale-100');
+                toast.classList.add('scale-0');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 2000);
+        }
+
+        function createParticles(el) {
+            const r = el.getBoundingClientRect();
+            for (let i = 0; i < 15; i++) {
+                const p = document.createElement('div');
+                p.className = 'dust-particle text-3xl';
+                p.innerHTML = '✨';
+                p.style.left = (r.left + r.width/2) + 'px';
+                p.style.top = (r.top + r.height/2) + 'px';
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 2500);
+            }
+        }
+
+        function checkGameOver() {
+            if (state.clearedIndices.size === state.masterList.length) {
+                const max = Math.max(...state.scores.slice(0, state.numTeams));
+                const winner = state.teams[state.scores.indexOf(max)];
+                
+                setTimeout(() => {
+                    document.body.innerHTML += `
+                        <div class="fixed inset-0 bg-blue-900/95 flex items-center justify-center z-[100] text-white p-8 text-center">
+                            <div>
+                                <h1 class="text-7xl mb-6 font-bold text-yellow-400 uppercase">Winner!</h1>
+                                <p class="text-5xl mb-12 flex items-center justify-center gap-4">${winner.icon} ${winner.name}</p>
+                                <button onclick="location.reload()" class="bg-white text-blue-900 px-12 py-6 rounded-full text-3xl font-bold shadow-2xl hover:scale-110 transition-transform uppercase">Play Again</button>
+                            </div>
+                        </div>
+                    `;
+                }, 1000);
+            }
+        }
+
+        populateSetup();
+    </script>
+</body>
+</html>
