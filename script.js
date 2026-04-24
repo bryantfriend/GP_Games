@@ -14,7 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const games = [
                
-
+        {
+            fileName: 'chores.html',
+            title: 'chores 🧹'
+        }, 
         {
             fileName: 'kareemboozled.html',
             title: 'kareemboozled 🦁'
