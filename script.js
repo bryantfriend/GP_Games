@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const games = [
                
         {
+            fileName: 'globalorlocal.html',
+            title: 'Global 🌏 or Local? 🏘️'
+        },
+        {
             fileName: 'tugofwar.html',
             title: 'Tug of War - Verbs vs. Adjectives '
         }, 
