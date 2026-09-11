@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const games = [
                
         {
+            fileName: 'tugofwar.html',
+            title: 'Tug of War - Verbs vs. Adjectives '
+        }, 
+        {
             fileName: 'chores.html',
             title: 'chores 🧹'
         }, 
