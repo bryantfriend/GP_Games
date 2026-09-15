@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our First-Day Emoji Universe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        },
+                        hope: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles to handle specific layout needs and hide scrollbars for clean look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            /* Prevent bounce scrolling on touch devices */
+            overscroll-behavior-y: none;
+        }
+
+        /* Hide scrollbar for the selection panel but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        /* Entrance animation for the selected emoji button */
+        @keyframes popIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Custom responsive grid to ensure fit on landscape smartboards */
+        .emoji-grid-responsive {
+            display: grid;
+            gap: 0.5rem;
+            /* Default for small screens */
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        @media (min-width: 768px) {
+            .emoji-grid-responsive {
+                /* More columns for wider panels, keeping items smaller to fit */
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 0.75rem;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .emoji-grid-responsive {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans h-screen w-screen overflow-hidden flex flex-col selection:bg-brand-100">
+
+    <header class="bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center z-30 shrink-0 shadow-sm">
+        <div class="flex items-center gap-2 lg:gap-4">
+            <h1 class="text-xl lg:text-2xl font-bold text-slate-800 hidden md:block mr-4 tracking-tight">🎭 Emoji Universe</h1>
+            
+            <!-- View Switchers -->
+            <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                <button id="btnViewToday" class="px-4 py-2 rounded-md text-sm lg:text-base font-semibold bg-white shadow-sm text-brand-700 transition-all">Today</button>
+                <button id="btnViewHopes" class="px-4 py-2 rounded-md text-sm lg:text-base font-medium text-slate-600 hover:text-slate-900 transition-all">Year Ahead</button>
+                <button id="btnViewJourney" class="px-4 py-2 rounded-md text-sm lg:text-base font-medium text-slate-600 hover:text-slate-900 transition-all">Class Journey</button>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 lg:gap-3">
+            <button id="btnUndo" class="px-4 py-2 rounded-lg text-sm lg:text-base font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50 flex items-center gap-2" title="Undo last addition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"><path d="M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,194.52a8,8,0,0,1,11.08-11.56,79.52,79.52,0,0,0,54.89,24.93v0c53,0,96-43,96-96s-43-96-96-96a79.52,79.52,0,0,0-54.89,24.93A8,8,0,0,1,62.1,29.35,95.38,95.38,0,0,1,128,16h1.29A96,96,0,0,1,224,128ZM74.34,133.66a8,8,0,0,0,11.32-11.32L59.31,96l26.35-26.34a8,8,0,0,0-11.32-11.32l-32,32a8,8,0,0,0,0,11.32Z"></path></svg>
+                <span class="hidden sm:inline">Undo</span>
+            </button>
+            <button id="btnPause" class="px-4 py-2 rounded-lg text-sm lg:text-base font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors flex items-center gap-2">
+                <svg id="iconPause" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"><path d="M216,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V48a16,16,0,0,1,16-16h40A16,16,0,0,1,216,48ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Z"></path></svg>
+                <svg id="iconPlay" class="hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"><path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3L232.4,114.49A15.74,15.74,0,0,1,240,128Z"></path></svg>
+                <span id="textPause" class="hidden sm:inline">Pause</span>
+            </button>
+            <button id="btnFullscreen" class="p-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors" title="Fullscreen">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M224,48V104a8,8,0,0,1-16,0V56H160a8,8,0,0,1,0-16h48A16,16,0,0,1,224,48ZM104,200H56V152a8,8,0,0,0-16,0v48a16,16,0,0,0,16,16h48a8,8,0,0,0,0-16Zm104-56a8,8,0,0,0-8,8v48H152a8,8,0,0,0,0,16h48a16,16,0,0,0,16-16V152A8,8,0,0,0,208,144ZM56,104a8,8,0,0,0,8-8V48h48a8,8,0,0,0,0-16H56A16,16,0,0,0,40,48v48A8,8,0,0,0,56,104Z"></path></svg>
+            </button>
+            <div class="w-px h-6 bg-slate-300 mx-1"></div>
+            <button id="btnReset" class="px-3 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+                New Class
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col md:flex-row w-full h-full overflow-hidden relative">
+        
+        <!-- Left Panel: Selection -->
+        <aside id="panelSelection" class="w-full md:w-[400px] lg:w-[500px] bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 shadow-lg md:shadow-none h-[45%] md:h-full">
+            <div class="p-4 lg:p-6 pb-2 flex-shrink-0">
+                <h2 id="viewTitle" class="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Our first day</h2>
+                <div class="bg-brand-50 border border-brand-100 rounded-xl p-3 lg:p-4 mt-2 shadow-sm">
+                    <p id="viewPrompt" class="text-base lg:text-lg font-medium text-brand-900 leading-snug">
+                        Today I felt <span class="border-b-2 border-brand-300 inline-block w-12 border-dashed"></span> because...
+                    </p>
+                </div>
+            </div>
+
+            <!-- Emoji Grid Container (No longer strictly relies on scrolling) -->
+            <div class="flex-1 overflow-y-auto no-scrollbar px-4 lg:px-6 py-2 flex flex-col justify-center">
+                <div id="emojiGrid" class="emoji-grid-responsive pb-2">
+                    <!-- Buttons injected via JS -->
+                </div>
+            </div>
+
+            <!-- Action Area (Fixed at bottom of panel) -->
+            <div class="p-4 lg:p-6 pt-3 border-t border-slate-100 bg-white shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] flex-shrink-0">
+                <button id="btnAddEmoji" disabled class="w-full py-4 lg:py-5 rounded-2xl text-xl lg:text-2xl font-bold bg-brand-600 text-white shadow-xl shadow-brand-200 hover:bg-brand-500 hover:-translate-y-1 active:translate-y-0 active:shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-brand-600 disabled:hover:translate-y-0 disabled:shadow-none flex flex-col items-center justify-center gap-1">
+                    <span>Add my emoji</span>
+                    <span id="selectedEmojiPreview" class="text-3xl hidden"></span>
+                </button>
+                <p class="text-center text-sm font-medium text-slate-400 mt-4 uppercase tracking-wider">You can pass</p>
+            </div>
+        </aside>
+
+        <!-- Right Panel: Canvas Area / Stage -->
+        <section id="stageArea" class="flex-1 bg-slate-100 p-4 lg:p-6 flex flex-col relative h-[55%] md:h-full">
+            
+            <!-- Container for "Today" Canvas -->
+            <div id="containerToday" class="flex-1 relative bg-white rounded-3xl shadow-md border border-slate-200 overflow-hidden flex flex-col transition-all duration-500">
+                <div class="absolute top-4 lg:top-6 left-0 w-full flex justify-between px-6 z-10 pointer-events-none">
+                    <div class="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm font-semibold text-slate-700 border border-slate-100 pointer-events-auto">
+                        <span id="countToday" class="text-brand-600 text-lg">0</span> emojis added
+                    </div>
+                    <h3 class="text-xl lg:text-2xl font-bold text-slate-300 drop-shadow-sm uppercase tracking-widest hidden md:block">First Day</h3>
+                </div>
+                <canvas id="canvasToday" class="w-full h-full block touch-none"></canvas>
+            </div>
+
+            <!-- Container for "Hopes" Canvas (Hidden by default) -->
+            <div id="containerHopes" class="hidden flex-1 relative bg-white rounded-3xl shadow-md border border-slate-200 overflow-hidden flex-col transition-all duration-500 mt-4 md:mt-0">
+                <div class="absolute top-4 lg:top-6 left-0 w-full flex justify-between px-6 z-10 pointer-events-none">
+                    <div class="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm font-semibold text-slate-700 border border-slate-100 pointer-events-auto">
+                        <span id="countHopes" class="text-hope-600 text-lg">0</span> emojis added
+                    </div>
+                    <h3 class="text-xl lg:text-2xl font-bold text-slate-300 drop-shadow-sm uppercase tracking-widest hidden md:block">Year Ahead</h3>
+                </div>
+                <canvas id="canvasHopes" class="w-full h-full block touch-none"></canvas>
+            </div>
+
+        </section>
+    </main>
+
+    <div id="journeyFooter" class="hidden bg-slate-900 text-white p-6 lg:p-8 text-center shrink-0 z-30 shadow-[0_-10px_30px_rgba(0,0,0,0.2)]">
+        <h2 class="text-2xl lg:text-4xl font-bold tracking-tight">
+            <span class="text-brand-400">Different feelings.</span> 
+            <span class="mx-2 text-slate-400">•</span> 
+            <span class="text-slate-100">One class.</span> 
+            <span class="mx-2 text-slate-400">•</span> 
+            <span class="text-hope-400">A year of possibilities.</span>
+        </h2>
+    </div>
+
+    <script>
+        // --- Data Definitions ---
+        const todayData = [
+            { char: '😊', label: 'Happy' },
+            { char: '🤩', label: 'Excited' },
+            { char: '😬', label: 'Nervous' },
+            { char: '🤔', label: 'Curious' },
+            { char: '😴', label: 'Tired' },
+            { char: '😕', label: 'Confused' },
+            { char: '😎', label: 'Proud' },
+            { char: '😌', label: 'Calm' },
+            { char: '🥹', label: 'Hopeful' },
+            { char: '😵‍💫', label: 'Overwhelmed' },
+            { char: '😐', label: 'Unsure' },
+            { char: '🙃', label: 'Mixed feelings' }
+        ];
+
+        const hopesData = [
+            { char: '💪', label: 'Confident' },
+            { char: '😎', label: 'Proud' },
+            { char: '🤝', label: 'Connected' },
+            { char: '🤔', label: 'Curious' },
+            { char: '🦁', label: 'Brave' },
+            { char: '😊', label: 'Happy' },
+            { char: '😌', label: 'Calm' },
+            { char: '🎨', label: 'Creative' },
+            { char: '🫶', label: 'Included' },
+            { char: '🚀', label: 'Ready' }
+        ];
+
+        // --- Application State ---
+        const state = {
+            view: 'today', // 'today', 'hopes', 'journey'
+            selectedEmojiObj: null,
+            isPaused: false,
+            todayEmojis: [], // Array of physics objects
+            hopesEmojis: [],
+            lastTime: 0,
+            animationReq: null
+        };
+
+        // --- DOM Elements ---
+        const els = {
+            btnViewToday: document.getElementById('btnViewToday'),
+            btnViewHopes: document.getElementById('btnViewHopes'),
+            btnViewJourney: document.getElementById('btnViewJourney'),
+            btnUndo: document.getElementById('btnUndo'),
+            btnPause: document.getElementById('btnPause'),
+            iconPause: document.getElementById('iconPause'),
+            iconPlay: document.getElementById('iconPlay'),
+            textPause: document.getElementById('textPause'),
+            btnFullscreen: document.getElementById('btnFullscreen'),
+            btnReset: document.getElementById('btnReset'),
+            
+            panelSelection: document.getElementById('panelSelection'),
+            viewTitle: document.getElementById('viewTitle'),
+            viewPrompt: document.getElementById('viewPrompt'),
+            emojiGrid: document.getElementById('emojiGrid'),
+            btnAddEmoji: document.getElementById('btnAddEmoji'),
+            selectedEmojiPreview: document.getElementById('selectedEmojiPreview'),
+            
+            stageArea: document.getElementById('stageArea'),
+            containerToday: document.getElementById('containerToday'),
+            containerHopes: document.getElementById('containerHopes'),
+            canvasToday: document.getElementById('canvasToday'),
+            canvasHopes: document.getElementById('canvasHopes'),
+            countToday: document.getElementById('countToday'),
+            countHopes: document.getElementById('countHopes'),
+            
+            journeyFooter: document.getElementById('journeyFooter')
+        };
+
+        const ctxToday = els.canvasToday.getContext('2d');
+        const ctxHopes = els.canvasHopes.getContext('2d');
+
+        
+        // Settings
+        const EMOJI_SIZE = 72; // Base px size
+        const BASE_SPEED = 0.04; // px per ms
+        const SPEED_VARIANCE = 0.04;
+        const ENTRANCE_DURATION = 600; // ms
+
+        function createEmojiPhysics(char, canvasWidth, canvasHeight) {
+            // Spawn near center
+            const startX = canvasWidth / 2 + (Math.random() * 60 - 30);
+            const startY = canvasHeight / 2 + (Math.random() * 60 - 30);
+            
+            // Random angle and speed
+            const angle = Math.random() * Math.PI * 2;
+            const speed = BASE_SPEED + Math.random() * SPEED_VARIANCE;
+
+            return {
+                id: Date.now() + Math.random().toString(36).substr(2, 9),
+                char: char,
+                x: startX,
+                y: startY,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.0015, // Gentle rotation
+                size: EMOJI_SIZE + (Math.random() * 10 - 5), // Slight size variation
+                scale: 0, // Starts at 0 for entrance animation
+                timeAlive: 0
+            };
+        }
+
+        // Ease out quadratic function for smooth pop-in
+        function easeOutQuad(t) {
+            return t * (2 - t);
+        }
+
+        function updateEmojiPhysics(e, dt, width, height) {
+            e.timeAlive += dt;
+            
+            // Handle Entrance Scaling
+            if (e.scale < 1) {
+                const progress = Math.min(e.timeAlive / ENTRANCE_DURATION, 1);
+                e.scale = easeOutQuad(progress);
+            }
+
+            // Move
+            e.x += e.vx * dt;
+            e.y += e.vy * dt;
+            e.rotation += e.rotationSpeed * dt;
+
+            // Bouncing (with Radius)
+            const r = (e.size * e.scale) / 2;
+            
+            if (e.x - r < 0) {
+                e.x = r;
+                e.vx *= -1;
+            } else if (e.x + r > width) {
+                e.x = width - r;
+                e.vx *= -1;
+            }
+
+            if (e.y - r < 0) {
+                e.y = r;
+                e.vy *= -1;
+            } else if (e.y + r > height) {
+                e.y = height - r;
+                e.vy *= -1;
+            }
+        }
+
+        function drawEmoji(ctx, e) {
+            // Don't draw if invisible
+            if (e.scale <= 0.01) return;
+
+            ctx.save();
+            ctx.translate(e.x, e.y);
+            ctx.rotate(e.rotation);
+            ctx.scale(e.scale, e.scale);
+            
+            ctx.font = `${e.size}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Optional: Soft shadow (can cause lag if many items, but okay for ~40)
+            ctx.shadowColor = 'rgba(0,0,0,0.15)';
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 4;
+            
+            ctx.fillText(e.char, 0, 0);
+            ctx.restore();
+        }
+
+        function renderLoop(timestamp) {
+            if (!state.lastTime) state.lastTime = timestamp;
+            const dt = timestamp - state.lastTime;
+            state.lastTime = timestamp;
+
+            // Clear Canvases
+            if (els.canvasToday._logicalWidth) {
+                ctxToday.clearRect(0, 0, els.canvasToday._logicalWidth, els.canvasToday._logicalHeight);
+            }
+            if (els.canvasHopes._logicalWidth) {
+                ctxHopes.clearRect(0, 0, els.canvasHopes._logicalWidth, els.canvasHopes._logicalHeight);
+            }
+
+            // Update & Draw Today (if container is not hidden)
+            if (!els.containerToday.classList.contains('hidden') && els.canvasToday._logicalWidth) {
+                state.todayEmojis.forEach(e => {
+                    if (!state.isPaused) updateEmojiPhysics(e, dt, els.canvasToday._logicalWidth, els.canvasToday._logicalHeight);
+                    drawEmoji(ctxToday, e);
+                });
+            }
+
+            // Update & Draw Hopes (if container is not hidden)
+            if (!els.containerHopes.classList.contains('hidden') && els.canvasHopes._logicalWidth) {
+                state.hopesEmojis.forEach(e => {
+                    if (!state.isPaused) updateEmojiPhysics(e, dt, els.canvasHopes._logicalWidth, els.canvasHopes._logicalHeight);
+                    drawEmoji(ctxHopes, e);
+                });
+            }
+
+            state.animationReq = requestAnimationFrame(renderLoop);
+        }
+
+
+        function renderSelectionGrid() {
+            els.emojiGrid.innerHTML = '';
+            const data = state.view === 'today' ? todayData : hopesData;
+            const themeColor = state.view === 'today' ? 'brand' : 'hope';
+
+            data.forEach((item, index) => {
+                const btn = document.createElement('button');
+                // Reduced padding to fit more on screen
+                btn.className = `flex flex-col items-center justify-center p-2 lg:p-3 rounded-xl border-2 border-slate-100 bg-white shadow-sm hover:border-${themeColor}-300 hover:bg-${themeColor}-50 transition-all group`;
+                btn.onclick = () => selectEmoji(item, btn, themeColor);
+                
+                const spanEmoji = document.createElement('span');
+                // Scaled down text slightly
+                spanEmoji.className = 'text-3xl lg:text-4xl mb-1 group-hover:scale-110 transition-transform duration-200';
+                spanEmoji.textContent = item.char;
+                
+                const spanLabel = document.createElement('span');
+                // Smaller label text
+                spanLabel.className = 'text-xs lg:text-sm font-bold text-slate-600 text-center leading-tight';
+                spanLabel.textContent = item.label;
+
+                btn.appendChild(spanEmoji);
+                btn.appendChild(spanLabel);
+                els.emojiGrid.appendChild(btn);
+            });
+        }
+
+        function selectEmoji(item, btnElement, themeColor) {
+            state.selectedEmojiObj = item;
+            
+            // Reset all buttons
+            Array.from(els.emojiGrid.children).forEach(child => {
+                child.className = `flex flex-col items-center justify-center p-2 lg:p-3 rounded-xl border-2 border-slate-100 bg-white shadow-sm hover:border-${themeColor}-300 hover:bg-${themeColor}-50 transition-all group`;
+            });
+
+            // Highlight selected
+            btnElement.className = `flex flex-col items-center justify-center p-2 lg:p-3 rounded-xl border-4 border-${themeColor}-500 bg-${themeColor}-50 shadow-md transform scale-[1.02] transition-all group animate-pop`;
+            
+            // Enable Add Button
+            els.btnAddEmoji.disabled = false;
+            
+            // Adjust Add button color based on theme
+            if(state.view === 'today') {
+                els.btnAddEmoji.className = "w-full py-4 lg:py-5 rounded-2xl text-xl lg:text-2xl font-bold bg-brand-600 text-white shadow-xl shadow-brand-200 hover:bg-brand-500 hover:-translate-y-1 active:translate-y-0 active:shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-brand-600 disabled:hover:translate-y-0 disabled:shadow-none flex flex-col items-center justify-center gap-1";
+            } else {
+                els.btnAddEmoji.className = "w-full py-4 lg:py-5 rounded-2xl text-xl lg:text-2xl font-bold bg-hope-600 text-white shadow-xl shadow-hope-200 hover:bg-hope-500 hover:-translate-y-1 active:translate-y-0 active:shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-hope-600 disabled:hover:translate-y-0 disabled:shadow-none flex flex-col items-center justify-center gap-1";
+            }
+        }
+
+        function handleAddEmoji() {
+            if (!state.selectedEmojiObj) return;
+
+            const char = state.selectedEmojiObj.char;
+            const canvas = state.view === 'today' ? els.canvasToday : els.canvasHopes;
+            const activeArray = state.view === 'today' ? state.todayEmojis : state.hopesEmojis;
+            const countEl = state.view === 'today' ? els.countToday : els.countHopes;
+
+            if (canvas._logicalWidth) {
+                const newEmoji = createEmojiPhysics(char, canvas._logicalWidth, canvas._logicalHeight);
+                activeArray.push(newEmoji);
+                countEl.textContent = activeArray.length;
+            }
+
+            // Reset UI for next student
+            state.selectedEmojiObj = null;
+            els.btnAddEmoji.disabled = true;
+            renderSelectionGrid(); // Re-render to clear highlights
+        }
+
+        function handleUndo() {
+            if (state.view === 'journey') return; // Cannot undo in journey view
+
+            const activeArray = state.view === 'today' ? state.todayEmojis : state.hopesEmojis;
+            const countEl = state.view === 'today' ? els.countToday : els.countHopes;
+
+            if (activeArray.length > 0) {
+                activeArray.pop();
+                countEl.textContent = activeArray.length;
+            }
+        }
+
+        function togglePause() {
+            state.isPaused = !state.isPaused;
+            if (state.isPaused) {
+                els.iconPause.classList.add('hidden');
+                els.iconPlay.classList.remove('hidden');
+                els.textPause.textContent = 'Resume';
+                els.btnPause.classList.replace('bg-amber-100', 'bg-emerald-100');
+                els.btnPause.classList.replace('text-amber-800', 'text-emerald-800');
+            } else {
+                els.iconPlay.classList.add('hidden');
+                els.iconPause.classList.remove('hidden');
+                els.textPause.textContent = 'Pause';
+                els.btnPause.classList.replace('bg-emerald-100', 'bg-amber-100');
+                els.btnPause.classList.replace('text-emerald-800', 'text-amber-800');
+            }
+        }
+
+        function resetApp() {
+            if (confirm("Are you sure you want to clear all emojis and start a new class?")) {
+                state.todayEmojis = [];
+                state.hopesEmojis = [];
+                els.countToday.textContent = '0';
+                els.countHopes.textContent = '0';
+                switchView('today');
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+
+        function switchView(newView) {
+            state.view = newView;
+            state.selectedEmojiObj = null;
+            els.btnAddEmoji.disabled = true;
+
+            // Update Header Buttons
+            const activeBtnClass = "px-4 py-2 rounded-md text-sm lg:text-base font-semibold bg-white shadow-sm transition-all".split(' ');
+            const inactiveBtnClass = "px-4 py-2 rounded-md text-sm lg:text-base font-medium text-slate-600 hover:text-slate-900 transition-all".split(' ');
+            
+            [els.btnViewToday, els.btnViewHopes, els.btnViewJourney].forEach(btn => {
+                btn.className = inactiveBtnClass.join(' ');
+            });
+
+            if (newView === 'today') {
+                els.btnViewToday.className = [...activeBtnClass, 'text-brand-700'].join(' ');
+                
+                // Layout
+                els.panelSelection.classList.remove('hidden');
+                els.stageArea.classList.remove('md:flex-row');
+                els.stageArea.classList.add('flex-col');
+                
+                els.containerToday.classList.remove('hidden');
+                els.containerHopes.classList.add('hidden');
+                els.journeyFooter.classList.add('hidden');
+                els.btnUndo.disabled = false;
+
+                // Content
+                els.viewTitle.textContent = "Our first day";
+                els.viewTitle.className = "text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-2";
+                els.viewPrompt.innerHTML = 'Today I felt <span class="border-b-2 border-brand-300 inline-block w-12 border-dashed"></span> because...';
+                els.viewPrompt.parentElement.className = "bg-brand-50 border border-brand-100 rounded-xl p-4 mt-4 shadow-sm";
+                els.viewPrompt.className = "text-lg lg:text-xl font-medium text-brand-900 leading-snug";
+                
+                renderSelectionGrid();
+
+            } else if (newView === 'hopes') {
+                els.btnViewHopes.className = [...activeBtnClass, 'text-hope-700'].join(' ');
+                
+                // Layout
+                els.panelSelection.classList.remove('hidden');
+                els.stageArea.classList.remove('md:flex-row');
+                els.stageArea.classList.add('flex-col');
+
+                els.containerToday.classList.add('hidden');
+                els.containerHopes.classList.remove('hidden');
+                els.containerHopes.classList.add('flex'); // Ensure flex is applied
+                els.journeyFooter.classList.add('hidden');
+                els.btnUndo.disabled = false;
+
+                // Content
+                els.viewTitle.textContent = "How we hope to feel";
+                els.viewTitle.className = "text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-2";
+                els.viewPrompt.innerHTML = 'By the end of Grade 7, I hope to feel <span class="border-b-2 border-hope-300 inline-block w-12 border-dashed"></span>.';
+                els.viewPrompt.parentElement.className = "bg-hope-50 border border-hope-100 rounded-xl p-4 mt-4 shadow-sm";
+                els.viewPrompt.className = "text-lg lg:text-xl font-medium text-hope-900 leading-snug";
+
+                renderSelectionGrid();
+
+            } else if (newView === 'journey') {
+                els.btnViewJourney.className = [...activeBtnClass, 'text-slate-800'].join(' ');
+                
+                // Layout
+                els.panelSelection.classList.add('hidden');
+                els.stageArea.classList.remove('flex-col');
+                els.stageArea.classList.add('md:flex-row', 'flex-col', 'gap-4', 'lg:gap-6');
+                
+                els.containerToday.classList.remove('hidden');
+                els.containerHopes.classList.remove('hidden');
+                els.containerHopes.classList.add('flex');
+                
+                els.journeyFooter.classList.remove('hidden');
+                els.btnUndo.disabled = true; // Disable undo in combined view
+            }
+
+            // Need to resize canvases after layout changes
+            setTimeout(handleResize, 50);
+        }
+
+        function resizeCanvas(canvas, container) {
+            // Only resize if container is visible
+            if (container.offsetWidth === 0) return;
+
+            const rect = container.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            
+            // Store logical dimensions for physics calculations
+            canvas._logicalWidth = rect.width;
+            canvas._logicalHeight = rect.height;
+        }
+
+        function constrainEmojis(emojis, width, height) {
+            emojis.forEach(e => {
+                const r = e.size / 2;
+                if (e.x > width - r) e.x = Math.max(r, width - r);
+                if (e.y > height - r) e.y = Math.max(r, height - r);
+            });
+        }
+
+        function handleResize() {
+            resizeCanvas(els.canvasToday, els.containerToday);
+            resizeCanvas(els.canvasHopes, els.containerHopes);
+            
+            if (els.canvasToday._logicalWidth) constrainEmojis(state.todayEmojis, els.canvasToday._logicalWidth, els.canvasToday._logicalHeight);
+            if (els.canvasHopes._logicalWidth) constrainEmojis(state.hopesEmojis, els.canvasHopes._logicalWidth, els.canvasHopes._logicalHeight);
+        }
+
+
+        function initialize() {
+            // Check reduced motion preference
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (prefersReducedMotion) {
+                togglePause(); // Start paused
+            }
+
+            // Event Listeners
+            els.btnAddEmoji.addEventListener('click', handleAddEmoji);
+            els.btnUndo.addEventListener('click', handleUndo);
+            els.btnPause.addEventListener('click', togglePause);
+            els.btnReset.addEventListener('click', resetApp);
+            els.btnFullscreen.addEventListener('click', toggleFullscreen);
+
+            els.btnViewToday.addEventListener('click', () => switchView('today'));
+            els.btnViewHopes.addEventListener('click', () => switchView('hopes'));
+            els.btnViewJourney.addEventListener('click', () => switchView('journey'));
+
+            window.addEventListener('resize', () => {
+                // Debounce resize slightly for better performance
+                clearTimeout(window.resizeTimer);
+                window.resizeTimer = setTimeout(handleResize, 100);
+            });
+
+            // Initial Setup
+            switchView('today');
+            handleResize();
+            
+            // Start Loop
+            state.animationReq = requestAnimationFrame(renderLoop);
+        }
+
+        // Boot
+        window.onload = initialize;
+
+    </script>
+</body>
+</html>
