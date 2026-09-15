@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const games = [
                
         {
+            fileName: 'endofday.html',
+            title: 'How was your day? 🤔'
+        },
+        {
             fileName: 'globalorlocal.html',
             title: 'Global 🌏 or Local? 🏘️'
         },
