@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const games = [
                
         {
+            fileName: 'physics1.html',
+            title: 'Projectiles 💫'
+        },
+        {
             fileName: 'endofday.html',
             title: 'How was your day? 🤔'
         },
