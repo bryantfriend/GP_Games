@@ -766,6 +766,10 @@
                     <!-- The Mountain Barrier -->
                     <polygon id="mountain-polygon" points="350,450 500,200 650,450" fill="#475569" stroke="#334155" stroke-width="5"/>
 
+                    <!-- Platforms for varying elevations -->
+                    <rect id="p1-platform" x="60" y="420" width="80" height="30" fill="#64748b" stroke="#334155" stroke-width="3" />
+                    <rect id="p2-platform" x="860" y="420" width="80" height="30" fill="#64748b" stroke="#334155" stroke-width="3" />
+
                     <!-- Projectile Trajectory Previews -->
                     <path id="p1-preview" d="" fill="none" stroke="rgba(59, 130, 246, 0.4)" stroke-width="4" stroke-dasharray="10,10" />
                     <path id="p2-preview" d="" fill="none" stroke="rgba(239, 68, 68, 0.4)" stroke-width="4" stroke-dasharray="10,10" />
@@ -968,12 +972,27 @@
             // Randomize Cannon Positions
             let p1NewX = Math.floor(Math.random() * 200) + 50; // 50 to 250
             let p2NewX = 1000 - (Math.floor(Math.random() * 200) + 50); // 750 to 950
+            
+            // Randomize Elevations (between 250 and 420, floor is at 450)
+            let p1NewY = Math.floor(Math.random() * 170) + 250;
+            let p2NewY = Math.floor(Math.random() * 170) + 250;
 
             p1Hitbox.x = p1NewX;
+            p1Hitbox.y = p1NewY;
             p2Hitbox.x = p2NewX;
+            p2Hitbox.y = p2NewY;
 
-            document.getElementById('p1-cannon-group').setAttribute('transform', `translate(${p1NewX}, 420)`);
-            document.getElementById('p2-cannon-group').setAttribute('transform', `translate(${p2NewX}, 420)`);
+            document.getElementById('p1-cannon-group').setAttribute('transform', `translate(${p1NewX}, ${p1NewY})`);
+            document.getElementById('p2-cannon-group').setAttribute('transform', `translate(${p2NewX}, ${p2NewY})`);
+
+            // Update Support Platforms
+            document.getElementById('p1-platform').setAttribute('x', p1NewX - 40);
+            document.getElementById('p1-platform').setAttribute('y', p1NewY);
+            document.getElementById('p1-platform').setAttribute('height', 450 - p1NewY);
+
+            document.getElementById('p2-platform').setAttribute('x', p2NewX - 40);
+            document.getElementById('p2-platform').setAttribute('y', p2NewY);
+            document.getElementById('p2-platform').setAttribute('height', 450 - p2NewY);
 
             // Randomize Mountain Obstacle
             let peakX = Math.floor(Math.random() * 200) + 400; // 400 to 600
@@ -1023,8 +1042,8 @@
             p2Barrel.setAttribute('transform', `rotate(${p2AngleIn.value})`);
 
             // Generate Previews based on exact cannon positions
-            drawPreviewLine('p1-preview', p1Hitbox.x, 420, parseInt(p1AngleIn.value), parseInt(p1PowerIn.value), 1);
-            drawPreviewLine('p2-preview', p2Hitbox.x, 420, parseInt(p2AngleIn.value), parseInt(p2PowerIn.value), -1);
+            drawPreviewLine('p1-preview', p1Hitbox.x, p1Hitbox.y, parseInt(p1AngleIn.value), parseInt(p1PowerIn.value), 1);
+            drawPreviewLine('p2-preview', p2Hitbox.x, p2Hitbox.y, parseInt(p2AngleIn.value), parseInt(p2PowerIn.value), -1);
         }
 
         function drawPreviewLine(elementId, startX, startY, angleDeg, power, direction) {
@@ -1087,13 +1106,13 @@
             let startX, startY, angle, power, direction, color;
             
             if(playerNum === 1) {
-                startX = p1Hitbox.x; startY = 420;
+                startX = p1Hitbox.x; startY = p1Hitbox.y;
                 angle = parseInt(p1AngleIn.value);
                 power = parseInt(p1PowerIn.value);
                 direction = 1;
                 color = "#3b82f6"; // blue
             } else {
-                startX = p2Hitbox.x; startY = 420;
+                startX = p2Hitbox.x; startY = p2Hitbox.y;
                 angle = parseInt(p2AngleIn.value);
                 power = parseInt(p2PowerIn.value);
                 direction = -1;
