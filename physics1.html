@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8th Grade Physics: Projectile Motion (2-Player)</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --p1-color: #3b82f6;
+            --p2-color: #ef4444;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --board-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none; /* Prevent accidental text selection on smartboards */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Smartboard Container - Forces 16:9 Aspect Ratio */
+        #smartboard {
+            width: 100vw;
+            height: 56.25vw;
+            max-height: 100vh;
+            max-width: 177.78vh;
+            background-color: var(--board-bg);
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #fullscreen-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #fullscreen-btn:hover { background: rgba(0,0,0,0.9); }
+
+        .view {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            padding: 40px;
+        }
+        .view.active { display: flex; }
+
+        /* --- Lesson View Styles --- */
+        #slide-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: row;
+            gap: 40px;
+            align-items: center;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .slide.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-text {
+            flex: 1;
+            font-size: 1.8rem;
+            line-height: 1.6;
+            background: #f1f5f9;
+            padding: 40px;
+            border-radius: 20px;
+            border-left: 10px solid var(--primary);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .slide-text h2 {
+            font-size: 3.5rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        .slide-text ul { margin-left: 40px; margin-top: 20px; }
+        .slide-text li { margin-bottom: 15px; }
+
+        .slide-graphic {
+            flex: 1;
+            height: 100%;
+            background: #e0f2fe;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .lesson-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 0 20px;
+        }
+        
+        .nav-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 2.2rem;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 6px 0 var(--primary-hover);
+        }
+        .nav-btn:active {
+            transform: translateY(6px);
+            box-shadow: none;
+        }
+        .nav-btn:disabled {
+            background-color: #cbd5e1;
+            box-shadow: 0 6px 0 #94a3b8;
+            cursor: not-allowed;
+        }
+
+        #slide-indicator {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #64748b;
+        }
+
+        /* --- Game View Styles --- */
+        #game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 40px;
+        }
+        
+        .score-box {
+            font-size: 3rem;
+            font-weight: bold;
+            padding: 10px 40px;
+            border-radius: 15px;
+            color: white;
+        }
+        .p1-score-box { background: var(--p1-color); }
+        .p2-score-box { background: var(--p2-color); }
+
+        #game-area {
+            flex: 1;
+            background: linear-gradient(to bottom, #87CEEB 50%, #87CEEB 100%);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            border: 4px solid #cbd5e1;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.1);
+        }
+
+        .dual-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 20px;
+        }
+
+        .player-panel {
+            flex: 1;
+            background: #f1f5f9;
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border: 4px solid;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.1);
+        }
+        .p1-panel { border-color: var(--p1-color); }
+        .p2-panel { border-color: var(--p2-color); }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* Chunky Smartboard controls */
+        .adj-btn {
+            width: 50px;
+            height: 50px;
+            font-size: 2rem;
+            border-radius: 10px;
+            border: none;
+            background: #e2e8f0;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .adj-btn:active { background: #cbd5e1; transform: scale(0.95); }
+        
+        input[type=range] {
+            flex: 1;
+            margin: 0 20px;
+            height: 25px;
+            cursor: pointer;
+            accent-color: #475569;
+        }
+
+        .fire-btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .p1-fire { background: var(--p1-color); box-shadow: 0 6px 0 #1e3a8a; }
+        .p2-fire { background: var(--p2-color); box-shadow: 0 6px 0 #7f1d1d; }
+        .fire-btn:active { transform: translateY(6px); box-shadow: none; }
+        .fire-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #message-overlay {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            text-shadow: 3px 3px 15px rgba(0,0,0,0.6);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 50;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="smartboard">
+        <button id="fullscreen-btn" onclick="toggleFullScreen()">⛶ Fullscreen</button>
+
+        <!-- ================= LESSON VIEW ================= -->
+        <div id="lesson-view" class="view active">
+            
+            <div id="slide-container">
+                
+                <!-- Slide 1 -->
+                <div class="slide active" id="slide-1">
+                    <div class="slide-text">
+                        <h2>1. Introduction to Projectiles</h2>
+                        <p>Welcome! Today we are studying how objects fly through the air.</p>
+                        <p>A <strong>projectile</strong> is any object thrown, shot, or launched that is subject <em>only</em> to the force of gravity.</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>Look around the room or think about your morning. Can you name 3 examples of projectiles you have seen today?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <path d="M 50 350 Q 250 -100 450 350" fill="transparent" stroke="#3b82f6" stroke-width="6" stroke-dasharray="15,15" />
+                            <circle cx="50" cy="350" r="20" fill="#ef4444">
+                                <animateMotion path="M 0 0 Q 200 -450 400 0" dur="2.5s" repeatCount="indefinite" />
+                            </circle>
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 2 -->
+                <div class="slide" id="slide-2">
+                    <div class="slide-text">
+                        <h2>2. The Launch Push</h2>
+                        <p>To become a projectile, an object needs an initial push. This gives it its <strong>Initial Velocity</strong>.</p>
+                        <p>Once it leaves the cannon or your hand, you can no longer push it. It coasts forward purely on its own momentum!</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>If you push a shopping cart really hard and let go, what happens? How is this similar to a cannonball leaving a cannon?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <rect x="50" y="250" width="100" height="40" fill="#334155" transform="rotate(-30 70 270)" rx="10"/>
+                            <circle cx="70" cy="270" r="30" fill="#1e293b" />
+                            <path d="M 170 190 L 220 160 M 180 210 L 230 190 M 160 170 L 200 140" stroke="#f59e0b" stroke-width="5" stroke-linecap="round">
+                                <animate attributeName="opacity" values="0;1;0" dur="1s" repeatCount="indefinite" />
+                            </path>
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 3 -->
+                <div class="slide" id="slide-3">
+                    <div class="slide-text">
+                        <h2>3. Gravity's Constant Pull</h2>
+                        <p>While the initial force pushes the object forward, <strong>Gravity</strong> is constantly pulling it straight down.</p>
+                        <p>On Earth, gravity accelerates objects downward at $9.8 \text{ m/s}^2$. This means every second it falls, it falls <em>faster</em>.</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>If I drop a heavy bowling ball and a light tennis ball from the same height, which one hits the ground first? Why?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <line x1="250" y1="50" x2="350" y2="50" stroke="#3b82f6" stroke-width="8" marker-end="url(#arrow)" />
+                            <line x1="250" y1="50" x2="250" y2="100" stroke="#ef4444" stroke-width="4" />
+                            <line x1="300" y1="100" x2="300" y2="180" stroke="#ef4444" stroke-width="6" />
+                            <line x1="350" y1="180" x2="350" y2="300" stroke="#ef4444" stroke-width="10" />
+                            <circle id="grav-ball" cx="150" cy="50" r="15" fill="#1e293b" />
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 4 -->
+                <div class="slide" id="slide-4">
+                    <div class="slide-text">
+                        <h2>4. Two Motions in One</h2>
+                        <p>The coolest part of physics: <strong>Horizontal (forward) and Vertical (downward) motions are independent!</strong></p>
+                        <p>The forward speed doesn't care about gravity, and gravity doesn't care about the forward speed.</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>If you drop a bullet from your hand, and fire a bullet perfectly horizontally from a gun at the exact same time, which one hits the ground first?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <circle cx="100" cy="50" r="12" fill="#ef4444">
+                                <animate attributeName="cy" values="50;338;50" dur="2.5s" repeatCount="indefinite" />
+                            </circle>
+                            <circle cx="100" cy="50" r="12" fill="#3b82f6">
+                                <animate attributeName="cy" values="50;338;50" dur="2.5s" repeatCount="indefinite" />
+                                <animate attributeName="cx" values="100;450;100" dur="2.5s" repeatCount="indefinite" />
+                            </circle>
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                            <text x="50" y="30" font-size="20" fill="#64748b">Dropped vs Launched</text>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 5 -->
+                <div class="slide" id="slide-5">
+                    <div class="slide-text">
+                        <h2>5. The Parabolic Arc</h2>
+                        <p>When you combine constant forward motion with accelerating downward motion, you get a special geometric curve.</p>
+                        <p>This shape is called a <strong>Parabola</strong>. It is perfectly symmetrical in a vacuum.</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>Where else in the real world have you seen this exact U-shaped curve?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                                <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+                            </pattern>
+                            <rect width="500" height="400" fill="url(#grid)" />
+                            <path d="M 50 350 Q 250 -150 450 350" fill="none" stroke="#8b5cf6" stroke-width="8" stroke-linecap="round" />
+                            <line x1="250" y1="0" x2="250" y2="400" stroke="#475569" stroke-dasharray="5,5" stroke-width="3"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 6 -->
+                <div class="slide" id="slide-6">
+                    <div class="slide-text">
+                        <h2>6. Launch Angle Basics</h2>
+                        <p>The angle you point your cannon changes the shape of the parabola entirely.</p>
+                        <ul>
+                            <li><strong>High Angles (e.g., 75°):</strong> High hang time, short distance.</li>
+                            <li><strong>Low Angles (e.g., 15°):</strong> Fast and flat, hits the ground quickly.</li>
+                        </ul>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>Who usually throws at a higher angle: A pitcher throwing a strike, or an outfielder throwing to home plate?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <path d="M 50 350 Q 150 50 250 350" fill="none" stroke="#ef4444" stroke-width="6" stroke-dasharray="10,5"/>
+                            <path d="M 50 350 Q 250 250 450 350" fill="none" stroke="#3b82f6" stroke-width="6" stroke-dasharray="10,5"/>
+                            <text x="130" y="100" font-size="20" font-weight="bold" fill="#ef4444">High Angle</text>
+                            <text x="320" y="290" font-size="20" font-weight="bold" fill="#3b82f6">Low Angle</text>
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 7 -->
+                <div class="slide" id="slide-7">
+                    <div class="slide-text">
+                        <h2>7. The 45° Rule</h2>
+                        <p>In physics (ignoring air), <strong>45 Degrees</strong> gives you the maximum horizontal distance (range).</p>
+                        <p>It is the perfect 50/50 split between staying in the air long enough, and moving forward fast enough.</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>If you want to win a long-jump competition, at what angle should you push off the ground?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <path d="M 50 350 Q 150 150 250 350" fill="none" stroke="#94a3b8" stroke-width="4"/> 
+                            <path d="M 50 350 Q 250 -50 450 350" fill="none" stroke="#22c55e" stroke-width="8"/> 
+                            <path d="M 50 350 Q 150 250 250 350" fill="none" stroke="#94a3b8" stroke-width="4"/> 
+                            <text x="310" y="150" font-size="24" font-weight="bold" fill="#16a34a">45° = Max Range!</text>
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 8 -->
+                <div class="slide" id="slide-8">
+                    <div class="slide-text">
+                        <h2>8. Complementary Angles</h2>
+                        <p>Here is a neat trick: Angles that add up to 90° (complementary angles) will land in the exact same spot!</p>
+                        <ul>
+                            <li><strong>30° and 60°</strong> hit the same target.</li>
+                            <li><strong>20° and 70°</strong> hit the same target.</li>
+                        </ul>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>If a 30° and a 60° shot land in the exact same place, what is the difference between the two shots?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <path d="M 50 350 Q 200 50 350 350" fill="none" stroke="#eab308" stroke-width="6"/> 
+                            <path d="M 50 350 Q 200 200 350 350" fill="none" stroke="#ec4899" stroke-width="6"/> 
+                            <circle cx="350" cy="350" r="10" fill="#ef4444" />
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 9 -->
+                <div class="slide" id="slide-9">
+                    <div class="slide-text">
+                        <h2>9. Real World Air Resistance</h2>
+                        <p>Everything we just learned is true in a vacuum. But on Earth, we have air.</p>
+                        <p><strong>Air Resistance (Drag)</strong> pushes back against the projectile, slowing it down. Real parabolas aren't perfectly symmetrical.</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>How does throwing a crumpled piece of paper compare to throwing a flat sheet of paper? Why?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <path d="M 50 350 Q 250 -50 450 350" fill="none" stroke="#94a3b8" stroke-width="4" stroke-dasharray="10,10"/> 
+                            <path d="M 50 350 C 150 -50, 300 100, 320 350" fill="none" stroke="#ef4444" stroke-width="8"/>
+                            <text x="350" y="200" font-size="18" font-weight="bold" fill="#94a3b8">Vacuum</text>
+                            <text x="120" y="180" font-size="18" font-weight="bold" fill="#ef4444">Real World</text>
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 10 -->
+                <div class="slide" id="slide-10">
+                    <div class="slide-text">
+                        <h2>10. Peak Height (The Apex)</h2>
+                        <p>The highest point of a projectile's flight is called the Apex.</p>
+                        <p>At the exact moment the projectile hits the apex, it stops moving up and is about to start falling down.</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>What is the object's <em>vertical</em> speed at the very top of its arc?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <path d="M 50 350 Q 250 -50 450 350" fill="none" stroke="#3b82f6" stroke-width="6"/> 
+                            <circle cx="250" cy="50" r="15" fill="#ef4444" />
+                            <text x="275" y="55" font-size="24" font-weight="bold" fill="#ef4444">Vy = 0 m/s</text>
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 11 -->
+                <div class="slide" id="slide-11">
+                    <div class="slide-text">
+                        <h2>11. Hang Time</h2>
+                        <p><strong>Hang Time</strong> is the total amount of time a projectile stays in the air.</p>
+                        <p>The only thing that controls how long something stays in the air is how high it goes!</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>In a football game, does the punter want maximum distance, maximum hang time, or a balance of both? Why?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <circle cx="250" cy="350" r="15" fill="#eab308">
+                                <animate attributeName="cy" values="350;20;350" dur="4s" repeatCount="indefinite" />
+                            </circle>
+                            <text x="180" y="200" font-size="30" font-weight="bold" fill="#64748b">⏱️ 4.0 Sec</text>
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 12 -->
+                <div class="slide" id="slide-12">
+                    <div class="slide-text">
+                        <h2>12. Does Mass Matter?</h2>
+                        <p>In a perfect vacuum, mass does not affect the path of a projectile. A feather and a hammer fall at the exact same rate!</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>If we fire a 10 lb cannonball and a 100 lb cannonball using the exact same power and angle, will they land in the same spot? (Assume no air!)</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <path d="M 50 350 Q 250 -50 450 350" fill="none" stroke="#cbd5e1" stroke-width="8"/>
+                            <circle cx="250" cy="50" r="10" fill="#3b82f6" />
+                            <circle cx="350" cy="180" r="30" fill="#ef4444" />
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 13 -->
+                <div class="slide" id="slide-13">
+                    <div class="slide-text">
+                        <h2>13. Designing for Drag</h2>
+                        <p>Because air resistance is real, engineers design things to be <strong>aerodynamic</strong> so they slice through the air and maintain their velocity.</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>How would deploying a parachute change the shape of our parabola midway through the flight?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <!-- Parachute shape -->
+                            <path d="M 200 150 Q 250 50 300 150 Z" fill="#ef4444" />
+                            <line x1="200" y1="150" x2="250" y2="220" stroke="#1e293b" />
+                            <line x1="300" y1="150" x2="250" y2="220" stroke="#1e293b" />
+                            <circle cx="250" cy="230" r="15" fill="#3b82f6" />
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 14 -->
+                <div class="slide" id="slide-14">
+                    <div class="slide-text">
+                        <h2>14. Projectiles in Sports</h2>
+                        <p>Every time a ball is in the air during a game, it's a projectile obeying the exact rules we are learning today.</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>Think about a basketball free throw. Why do coaches tell players to put more "arc" (a higher angle) on their shot?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic" style="background: #fb923c;">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <path d="M 50 350 Q 200 -50 400 150" fill="none" stroke="white" stroke-width="4" stroke-dasharray="10,10"/>
+                            <circle cx="400" cy="150" r="20" fill="none" stroke="white" stroke-width="5" />
+                            <circle cx="50" cy="350" r="15" fill="#78350f" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 15 -->
+                <div class="slide" id="slide-15">
+                    <div class="slide-text">
+                        <h2>15. The Effect of Wind</h2>
+                        <p>Wind adds an external force in the horizontal direction. It can speed a projectile up (tailwind) or slow it down (headwind).</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>If you are playing our cannon game, and a strong wind is blowing toward you, how should you adjust your next shot?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <line x1="450" y1="100" x2="250" y2="100" stroke="#94a3b8" stroke-width="8" stroke-dasharray="20,10">
+                                <animate attributeName="x2" values="450;150" dur="1s" repeatCount="indefinite" />
+                            </line>
+                            <line x1="450" y1="150" x2="250" y2="150" stroke="#94a3b8" stroke-width="8" stroke-dasharray="20,10">
+                                <animate attributeName="x2" values="450;150" dur="1.2s" repeatCount="indefinite" />
+                            </line>
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 16 -->
+                <div class="slide" id="slide-16">
+                    <div class="slide-text">
+                        <h2>16. Firing from an Elevation</h2>
+                        <p>If you shoot a cannon off a high cliff, the parabola is cut off at the start, but extended at the end as it falls below the launch height.</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>If you are standing on a tall building, is 45° still the best angle for maximum distance, or should it be lower/higher?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <rect x="0" y="150" width="100" height="250" fill="#475569" />
+                            <path d="M 100 150 Q 250 0 450 350" fill="none" stroke="#eab308" stroke-width="6" />
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 17 -->
+                <div class="slide" id="slide-17">
+                    <div class="slide-text">
+                        <h2>17. Escape Velocity</h2>
+                        <p>If you shoot a projectile fast enough, the Earth curves away beneath it at the exact same rate it falls. This is an <strong>orbit</strong>!</p>
+                        <p>If you shoot it even faster, it completely breaks free of gravity. This is <strong>Escape Velocity</strong>.</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>How fast do you think a rocket has to travel to escape Earth's gravity entirely?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic" style="background:#0f172a">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <circle cx="250" cy="600" r="400" fill="#3b82f6" />
+                            <path d="M 250 180 Q 450 150 550 -50" fill="none" stroke="#ef4444" stroke-width="4" stroke-dasharray="10,10" />
+                            <circle cx="450" cy="150" r="10" fill="#f8fafc" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 18 -->
+                <div class="slide" id="slide-18">
+                    <div class="slide-text">
+                        <h2>18. Reviewing the Rules</h2>
+                        <p>Let's recap what we learned before we go to the game:</p>
+                        <ul>
+                            <li>X and Y motions are totally independent.</li>
+                            <li>Gravity accelerates objects downwards steadily.</li>
+                            <li>A 45° angle generally provides the furthest distance.</li>
+                            <li>Complementary angles hit the same target (high vs flat).</li>
+                        </ul>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>Are there any questions about how projectiles work before we move on?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <text x="250" y="200" font-size="60" text-anchor="middle" fill="#2563eb">📚 🧠 🚀</text>
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 19 -->
+                <div class="slide" id="slide-19">
+                    <div class="slide-text">
+                        <h2>19. Adjusting on the Fly</h2>
+                        <p>In our game, the landscape will change every time someone scores.</p>
+                        <p>You will have to constantly adjust your <strong>Angle</strong> and <strong>Power</strong> to adapt to the new mountain barrier.</p>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>If the mountain suddenly becomes very tall and narrow, should you use a 30° shot or a 60° shot?</p>
+                        </div>
+                    </div>
+                    <div class="slide-graphic">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <polygon points="150,350 250,50 350,350" fill="#475569" />
+                            <path d="M 50 350 Q 250 -150 450 350" fill="none" stroke="#eab308" stroke-width="4" stroke-dasharray="10,5"/>
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Slide 20: Game Time -->
+                <div class="slide" id="slide-20">
+                    <div class="slide-text">
+                        <h2>20. Mountain Artillery Battle!</h2>
+                        <p>It's time to put your physics knowledge to the test.</p>
+                        <ul>
+                            <li><strong>2 Players:</strong> Blue Team vs Red Team on the Smartboard.</li>
+                            <li><strong>Goal:</strong> Hit the other player's cannon over the mountain.</li>
+                            <li><strong>Rule:</strong> You must wait 5 seconds to reload between shots!</li>
+                            <li><strong>Rule:</strong> The landscape changes after every score!</li>
+                        </ul>
+                        <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #eab308;">
+                            <h3 style="color: #ca8a04; margin-bottom: 5px;">💬 Class Discussion:</h3>
+                            <p>Who is ready to play? Decide your teams!</p>
+                        </div>
+                        <button class="nav-btn" style="margin-top: 20px; background: #22c55e; box-shadow: 0 6px 0 #16a34a;" onclick="switchView('game-view')">START BATTLE ⚔️</button>
+                    </div>
+                    <div class="slide-graphic" style="background: #1e293b; color: white;">
+                        <svg viewBox="0 0 500 400" width="100%" height="100%">
+                            <polygon points="150,350 250,150 350,350" fill="#475569" />
+                            <circle cx="50" cy="330" r="20" fill="#3b82f6" />
+                            <circle cx="450" cy="330" r="20" fill="#ef4444" />
+                            <path d="M 50 330 Q 250 -50 450 330" fill="none" stroke="#eab308" stroke-width="4" stroke-dasharray="10,10"/>
+                            <rect y="350" width="500" height="50" fill="#22c55e" />
+                        </svg>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Smartboard Navigation Bar -->
+            <div class="lesson-nav">
+                <button class="nav-btn" id="prev-btn" onclick="changeSlide(-1)">◀ Previous</button>
+                <div id="slide-indicator">Slide 1 of 10</div>
+                <button class="nav-btn" id="next-btn" onclick="changeSlide(1)">Next ▶</button>
+            </div>
+        </div>
+
+        <!-- ================= GAME VIEW ================= -->
+        <div id="game-view" class="view">
+            <div id="game-header">
+                <div class="score-box p1-score-box">Blue: <span id="p1-score">0</span></div>
+                <button class="nav-btn" onclick="switchView('lesson-view')" style="font-size: 1.5rem; padding: 10px 20px;">🔙 Back to Lesson</button>
+                <div class="score-box p2-score-box">Red: <span id="p2-score">0</span></div>
+            </div>
+
+            <!-- Main Battle Area -->
+            <div id="game-area">
+                <svg id="game-svg" viewBox="0 0 1000 500" width="100%" height="100%" preserveAspectRatio="none">
+                    
+                    <!-- Ground -->
+                    <rect x="0" y="450" width="1000" height="50" fill="#22c55e" />
+                    
+                    <!-- The Mountain Barrier -->
+                    <polygon id="mountain-polygon" points="350,450 500,200 650,450" fill="#475569" stroke="#334155" stroke-width="5"/>
+
+                    <!-- Projectile Trajectory Previews -->
+                    <path id="p1-preview" d="" fill="none" stroke="rgba(59, 130, 246, 0.4)" stroke-width="4" stroke-dasharray="10,10" />
+                    <path id="p2-preview" d="" fill="none" stroke="rgba(239, 68, 68, 0.4)" stroke-width="4" stroke-dasharray="10,10" />
+
+                    <!-- Player 1 Cannon (Blue) -->
+                    <g id="p1-cannon-group" transform="translate(100, 420)">
+                        <!-- Health/Hitbox -->
+                        <rect x="-30" y="-30" width="60" height="60" fill="transparent" />
+                        <!-- Barrel -->
+                        <rect id="p1-barrel" x="0" y="-12" width="70" height="24" fill="#1e3a8a" rx="5" />
+                        <!-- Base -->
+                        <path d="M -30 30 L 30 30 L 20 -10 L -20 -10 Z" fill="#3b82f6" />
+                        <circle cx="0" cy="10" r="20" fill="#0f172a" />
+                        <circle cx="0" cy="10" r="8" fill="#94a3b8" />
+                    </g>
+
+                    <!-- Player 2 Cannon (Red) -->
+                    <g id="p2-cannon-group" transform="translate(900, 420)">
+                        <!-- Barrel (Rotates from right side) -->
+                        <rect id="p2-barrel" x="-70" y="-12" width="70" height="24" fill="#7f1d1d" rx="5" />
+                        <!-- Base -->
+                        <path d="M -30 30 L 30 30 L 20 -10 L -20 -10 Z" fill="#ef4444" />
+                        <circle cx="0" cy="10" r="20" fill="#0f172a" />
+                        <circle cx="0" cy="10" r="8" fill="#94a3b8" />
+                    </g>
+
+                    <!-- Group for active projectiles -->
+                    <g id="projectile-layer"></g>
+
+                </svg>
+                
+                <div id="message-overlay">Direct Hit!</div>
+            </div>
+
+            <!-- Dual Controls Area -->
+            <div class="dual-controls">
+                
+                <!-- Player 1 Controls -->
+                <div class="player-panel p1-panel">
+                    <div class="control-row">
+                        <label>Angle: <span id="p1-angle-val">45</span>°</label>
+                        <button class="adj-btn" onclick="adjustInput('p1-angle', -1)">-</button>
+                        <input type="range" id="p1-angle" min="0" max="90" value="45" oninput="updatePreviews()">
+                        <button class="adj-btn" onclick="adjustInput('p1-angle', 1)">+</button>
+                    </div>
+                    <div class="control-row">
+                        <label>Power: <span id="p1-power-val">60</span></label>
+                        <button class="adj-btn" onclick="adjustInput('p1-power', -2)">-</button>
+                        <input type="range" id="p1-power" min="20" max="100" value="60" oninput="updatePreviews()">
+                        <button class="adj-btn" onclick="adjustInput('p1-power', 2)">+</button>
+                    </div>
+                    <button class="fire-btn p1-fire" id="p1-fire-btn" onclick="fireCannon(1)">FIRE BLUE 💥</button>
+                </div>
+
+                <!-- Player 2 Controls -->
+                <div class="player-panel p2-panel">
+                    <div class="control-row">
+                        <label>Angle: <span id="p2-angle-val">45</span>°</label>
+                        <button class="adj-btn" onclick="adjustInput('p2-angle', -1)">-</button>
+                        <input type="range" id="p2-angle" min="0" max="90" value="45" oninput="updatePreviews()">
+                        <button class="adj-btn" onclick="adjustInput('p2-angle', 1)">+</button>
+                    </div>
+                    <div class="control-row">
+                        <label>Power: <span id="p2-power-val">60</span></label>
+                        <button class="adj-btn" onclick="adjustInput('p2-power', -2)">-</button>
+                        <input type="range" id="p2-power" min="20" max="100" value="60" oninput="updatePreviews()">
+                        <button class="adj-btn" onclick="adjustInput('p2-power', 2)">+</button>
+                    </div>
+                    <button class="fire-btn p2-fire" id="p2-fire-btn" onclick="fireCannon(2)">FIRE RED 💥</button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Fullscreen API ---
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // --- View Switching ---
+        function switchView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            if(viewId === 'game-view') {
+                updatePreviews();
+                if (!gameLoopActive) {
+                    gameLoopActive = true;
+                    requestAnimationFrame(gameLoop);
+                }
+            } else {
+                gameLoopActive = false; // pause game loop when not active
+            }
+        }
+
+        // --- Lesson Slide Navigation ---
+        let currentSlideIndex = 1;
+        const totalSlides = 20;
+
+        function updateSlideUI() {
+            // Hide all, show current
+            document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+            document.getElementById(`slide-${currentSlideIndex}`).classList.add('active');
+            
+            // Update text
+            document.getElementById('slide-indicator').innerText = `Slide ${currentSlideIndex} of ${totalSlides}`;
+            
+            // Update button states
+            document.getElementById('prev-btn').disabled = (currentSlideIndex === 1);
+            
+            // If on last slide, next button goes to game
+            const nextBtn = document.getElementById('next-btn');
+            if (currentSlideIndex === totalSlides) {
+                nextBtn.innerText = "Play Game ▶";
+                nextBtn.onclick = () => switchView('game-view');
+                nextBtn.style.background = "#22c55e";
+                nextBtn.style.boxShadow = "0 6px 0 #16a34a";
+            } else {
+                nextBtn.innerText = "Next ▶";
+                nextBtn.onclick = () => changeSlide(1);
+                nextBtn.style.background = "var(--primary)";
+                nextBtn.style.boxShadow = "0 6px 0 var(--primary-hover)";
+            }
+        }
+
+        function changeSlide(direction) {
+            currentSlideIndex += direction;
+            if(currentSlideIndex < 1) currentSlideIndex = 1;
+            if(currentSlideIndex > totalSlides) currentSlideIndex = totalSlides;
+            updateSlideUI();
+        }
+
+        // Helper for animated slide element (Slide 3 Gravity Demo)
+        let slideTime = 0;
+        function animateLessonElements() {
+            if(document.getElementById('slide-3').classList.contains('active')) {
+                slideTime += 0.05;
+                if(slideTime > 3) slideTime = 0; // reset loop
+                
+                const gravBall = document.getElementById('grav-ball');
+                if(gravBall) {
+                    // simulate downward acceleration: y = 1/2 a t^2
+                    let y = 50 + (0.5 * 30 * (slideTime * slideTime)); 
+                    if(y > 330) y = 330; // hit ground
+                    gravBall.setAttribute('cy', y);
+                    gravBall.setAttribute('cx', 150 + (slideTime * 80)); // constant x velocity
+                }
+            }
+            requestAnimationFrame(animateLessonElements);
+        }
+        animateLessonElements();
+
+
+        // --- Game Logic ---
+        
+        // DOM Elements
+        const p1AngleIn = document.getElementById('p1-angle');
+        const p1PowerIn = document.getElementById('p1-power');
+        const p2AngleIn = document.getElementById('p2-angle');
+        const p2PowerIn = document.getElementById('p2-power');
+        
+        const p1Barrel = document.getElementById('p1-barrel');
+        const p2Barrel = document.getElementById('p2-barrel');
+        
+        const projLayer = document.getElementById('projectile-layer');
+        const msgOverlay = document.getElementById('message-overlay');
+
+        // State Variables
+        let p1Score = 0;
+        let p2Score = 0;
+        let activeProjectiles = [];
+        let gameLoopActive = false;
+
+        // SLOWER GRAVITY for visible arcs
+        const GRAVITY = 0.15; 
+        
+        // Collision Bounds
+        const floorY = 450;
+        // Mountain hit polygon (x, y coords) - updated dynamically
+        let mountainBounds = [
+            {x: 350, y: 450}, {x: 500, y: 200}, {x: 650, y: 450}
+        ];
+        
+        let p1Hitbox = { x: 100, y: 420, r: 40 }; 
+        let p2Hitbox = { x: 900, y: 420, r: 40 };
+
+        // --- Dynamic Level Generation ---
+        function generateNewLevel() {
+            // Randomize Cannon Positions
+            let p1NewX = Math.floor(Math.random() * 200) + 50; // 50 to 250
+            let p2NewX = 1000 - (Math.floor(Math.random() * 200) + 50); // 750 to 950
+
+            p1Hitbox.x = p1NewX;
+            p2Hitbox.x = p2NewX;
+
+            document.getElementById('p1-cannon-group').setAttribute('transform', `translate(${p1NewX}, 420)`);
+            document.getElementById('p2-cannon-group').setAttribute('transform', `translate(${p2NewX}, 420)`);
+
+            // Randomize Mountain Obstacle
+            let peakX = Math.floor(Math.random() * 200) + 400; // 400 to 600
+            let peakY = Math.floor(Math.random() * 200) + 100; // 100 to 300
+            let baseWidth = Math.floor(Math.random() * 200) + 100; // 100 to 300
+
+            mountainBounds = [
+                {x: peakX - baseWidth/2, y: 450},
+                {x: peakX, y: peakY},
+                {x: peakX + baseWidth/2, y: 450}
+            ];
+
+            let mountainEl = document.getElementById('mountain-polygon');
+            mountainEl.setAttribute('points', `${mountainBounds[0].x},${mountainBounds[0].y} ${mountainBounds[1].x},${mountainBounds[1].y} ${mountainBounds[2].x},${mountainBounds[2].y}`);
+
+            updatePreviews();
+        }
+
+        // --- Helper for Smartboard +/- buttons ---
+        function adjustInput(inputId, amount) {
+            const input = document.getElementById(inputId);
+            let val = parseInt(input.value) + amount;
+            
+            // clamp
+            if(val < parseInt(input.min)) val = parseInt(input.min);
+            if(val > parseInt(input.max)) val = parseInt(input.max);
+            
+            input.value = val;
+            updatePreviews();
+        }
+
+        function updatePreviews() {
+            // Update Text values
+            document.getElementById('p1-angle-val').innerText = p1AngleIn.value;
+            document.getElementById('p1-power-val').innerText = p1PowerIn.value;
+            document.getElementById('p2-angle-val').innerText = p2AngleIn.value;
+            document.getElementById('p2-power-val').innerText = p2PowerIn.value;
+
+            // Rotate Barrels
+            // P1 rotates normally (0 is right, negative is up in SVG space)
+            p1Barrel.setAttribute('transform', `rotate(${-p1AngleIn.value})`);
+            
+            // P2 rotates from the right side. 
+            // In our SVG, barrel is drawn to the left (-70 to 0).
+            // A rotation of 0 means pointing straight left.
+            // Rotating +angle aims it UP.
+            p2Barrel.setAttribute('transform', `rotate(${p2AngleIn.value})`);
+
+            // Generate Previews based on exact cannon positions
+            drawPreviewLine('p1-preview', p1Hitbox.x, 420, parseInt(p1AngleIn.value), parseInt(p1PowerIn.value), 1);
+            drawPreviewLine('p2-preview', p2Hitbox.x, 420, parseInt(p2AngleIn.value), parseInt(p2PowerIn.value), -1);
+        }
+
+        function drawPreviewLine(elementId, startX, startY, angleDeg, power, direction) {
+            let pathD = `M ${startX} ${startY}`;
+            let rad = angleDeg * (Math.PI / 180);
+            
+            // Scaled down velocity components for slower, observable flight
+            let vx = (power * 0.12) * Math.cos(rad) * direction;
+            let vy = -(power * 0.12) * Math.sin(rad); 
+            
+            let px = startX;
+            let py = startY;
+
+            // Draw just enough to guide
+            for(let i=0; i<15; i++) {
+                px += vx * 2;
+                vy += GRAVITY * 2;
+                py += vy * 2;
+                pathD += ` L ${px} ${py}`;
+            }
+            document.getElementById(elementId).setAttribute('d', pathD);
+        }
+
+        function showMessage(text, color) {
+            msgOverlay.innerText = text;
+            msgOverlay.style.color = color;
+            
+            // Add text stroke for visibility
+            msgOverlay.style.webkitTextStroke = "2px black";
+            
+            msgOverlay.style.opacity = 1;
+            msgOverlay.style.transform = "translate(-50%, -50%) scale(1.2)";
+            
+            setTimeout(() => {
+                msgOverlay.style.opacity = 0;
+                msgOverlay.style.transform = "translate(-50%, -50%) scale(1)";
+            }, 2500);
+        }
+
+        function fireCannon(playerNum) {
+            const btn = document.getElementById(`p${playerNum}-fire-btn`);
+            const originalText = playerNum === 1 ? "FIRE BLUE 💥" : "FIRE RED 💥";
+            
+            // 5 Second Cooldown (Anti-Spam)
+            btn.disabled = true;
+            let timeLeft = 5;
+            btn.innerText = `RELOADING... ${timeLeft}`;
+            
+            let timer = setInterval(() => {
+                timeLeft--;
+                if(timeLeft > 0) {
+                    btn.innerText = `RELOADING... ${timeLeft}`;
+                } else {
+                    clearInterval(timer);
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+            }, 1000);
+            
+            let startX, startY, angle, power, direction, color;
+            
+            if(playerNum === 1) {
+                startX = p1Hitbox.x; startY = 420;
+                angle = parseInt(p1AngleIn.value);
+                power = parseInt(p1PowerIn.value);
+                direction = 1;
+                color = "#3b82f6"; // blue
+            } else {
+                startX = p2Hitbox.x; startY = 420;
+                angle = parseInt(p2AngleIn.value);
+                power = parseInt(p2PowerIn.value);
+                direction = -1;
+                color = "#ef4444"; // red
+            }
+
+            const rad = angle * (Math.PI / 180);
+            
+            // Spawn point at end of barrel
+            const spawnX = startX + (60 * Math.cos(rad) * direction);
+            const spawnY = startY - (60 * Math.sin(rad));
+
+            // Create SVG Circle
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', spawnX);
+            circle.setAttribute('cy', spawnY);
+            circle.setAttribute('r', '10');
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#0f172a');
+            circle.setAttribute('stroke-width', '2');
+            projLayer.appendChild(circle);
+
+            // Add to physics array
+            activeProjectiles.push({
+                el: circle,
+                x: spawnX,
+                y: spawnY,
+                vx: (power * 0.12) * Math.cos(rad) * direction,
+                vy: -(power * 0.12) * Math.sin(rad),
+                owner: playerNum,
+                active: true
+            });
+        }
+
+        // Helper function: Point in Polygon (for mountain collision)
+        function isPointInMountain(px, py) {
+            // Bounding box quick check first based on dynamic bounds
+            let minX = Math.min(mountainBounds[0].x, mountainBounds[2].x);
+            let maxX = Math.max(mountainBounds[0].x, mountainBounds[2].x);
+            let minY = mountainBounds[1].y;
+            
+            if(px < minX || px > maxX || py > 450 || py < minY) return false;
+
+            // Barycentric coordinates for triangle collision
+            const p0 = mountainBounds[0], p1 = mountainBounds[1], p2 = mountainBounds[2];
+            const area = 0.5 *(-p1.y*p2.x + p0.y*(-p1.x + p2.x) + p0.x*(p1.y - p2.y) + p1.x*p2.y);
+            const s = 1/(2*area)*(p0.y*p2.x - p0.x*p2.y + (p2.y - p0.y)*px + (p0.x - p2.x)*py);
+            const t = 1/(2*area)*(p0.x*p1.y - p0.y*p1.x + (p0.y - p1.y)*px + (p1.x - p0.x)*py);
+            
+            return s > 0 && t > 0 && (1-s-t) > 0;
+        }
+
+        // Main animation loop
+        function gameLoop() {
+            if(!gameLoopActive) return;
+
+            // Loop backwards so we can splice removed projectiles safely
+            for(let i = activeProjectiles.length - 1; i >= 0; i--) {
+                let p = activeProjectiles[i];
+                if(!p.active) continue;
+
+                // Physics step
+                p.x += p.vx;
+                p.vy += GRAVITY;
+                p.y += p.vy;
+
+                p.el.setAttribute('cx', p.x);
+                p.el.setAttribute('cy', p.y);
+
+                let destroyed = false;
+
+                // 1. Check Floor Bounds
+                if (p.y > floorY || p.x < -100 || p.x > 1100) {
+                    destroyed = true;
+                }
+
+                // 2. Check Mountain Collision
+                if (!destroyed && isPointInMountain(p.x, p.y)) {
+                    destroyed = true;
+                    // Optional: Spawn explosion particles here
+                }
+
+                // 3. Check Hitbox P1 (Blue)
+                if (!destroyed && p.owner === 2) {
+                    const dist = Math.hypot(p.x - p1Hitbox.x, p.y - p1Hitbox.y);
+                    if(dist < p1Hitbox.r) {
+                        p2Score += 1;
+                        document.getElementById('p2-score').innerText = p2Score;
+                        showMessage("Red Team Scores! 🔥", "#ef4444");
+                        destroyed = true;
+                        setTimeout(generateNewLevel, 2000); // Change map after score
+                    }
+                }
+
+                // 4. Check Hitbox P2 (Red)
+                if (!destroyed && p.owner === 1) {
+                    const dist = Math.hypot(p.x - p2Hitbox.x, p.y - p2Hitbox.y);
+                    if(dist < p2Hitbox.r) {
+                        p1Score += 1;
+                        document.getElementById('p1-score').innerText = p1Score;
+                        showMessage("Blue Team Scores! 💥", "#3b82f6");
+                        destroyed = true;
+                        setTimeout(generateNewLevel, 2000); // Change map after score
+                    }
+                }
+
+                if (destroyed) {
+                    p.el.remove(); // remove from SVG DOM
+                    activeProjectiles.splice(i, 1); // remove from array
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize UI
+        updateSlideUI();
+        updatePreviews();
+
+    </script>
+</body>
+</html>
