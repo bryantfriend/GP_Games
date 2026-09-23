@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solubility: The Dissolving Mystery!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0fdf4; /* Light green tint */
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            color: #1e293b;
+        }
+        h1, h2, h3, h4, .fredoka {
+            font-family: 'Fredoka', sans-serif;
+        }
+        
+        #app-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #slide-container, #game-container, #menu-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        .slide {
+            display: none;
+            width: 90%;
+            max-width: 1000px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 2rem;
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+            position: relative;
+            min-height: 500px;
+        }
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        @keyframes dissolve {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.2) translateY(50px); opacity: 0; }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .nav-btn {
+            background-color: #3b82f6;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 9999px;
+            font-size: 1.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+            transition: all 0.2s;
+            font-family: 'Fredoka', sans-serif;
+        }
+        .nav-btn:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+        }
+        .nav-btn:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .nav-btn.game-btn {
+            background-color: #10b981;
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+        }
+        .nav-btn.game-btn:hover {
+            background-color: #059669;
+        }
+
+        /* SVG Specific Styles */
+        .beaker-glass { fill: #e2e8f0; fill-opacity: 0.4; stroke: #94a3b8; stroke-width: 4; }
+        .water-level { fill: #60a5fa; fill-opacity: 0.6; transition: all 1s ease; }
+        .hot-water { fill: #f87171; fill-opacity: 0.6; transition: all 1s ease; }
+        .solute-particle { fill: #a855f7; }
+        .undissolved-particle { fill: #a855f7; stroke: #7e22ce; stroke-width: 2;}
+        .sugar-cube { fill: white; stroke: #cbd5e1; stroke-width: 2; }
+        
+        /* Animation classes to trigger via JS */
+        .anim-float { animation: float 3s ease-in-out infinite; }
+        .anim-dissolving { animation: dissolve 2s forwards; }
+
+        .quiz-container { margin-top: 1rem; }
+        .quiz-btn {
+            background: #f8fafc;
+            border: 2px solid #cbd5e1;
+            padding: 0.75rem 1.5rem;
+            margin: 0.5rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 80%;
+            max-width: 400px;
+        }
+        .quiz-btn:hover { border-color: #3b82f6; background: #eff6ff; }
+        .quiz-btn.correct { background: #dcfce3; border-color: #22c55e; color: #166534; }
+        .quiz-btn.wrong { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+        
+        #game-board {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: linear-gradient(135deg, #1e1b4b, #312e81);
+            color: white;
+        }
+        .player-zone {
+            position: absolute;
+            width: 50%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+        #player1-zone { left: 0; border-right: 4px dashed rgba(255,255,255,0.2); }
+        #player2-zone { right: 0; }
+        
+        /* Rotate Player 2 for head-to-head smartboard play */
+        
+        .score-board {
+            font-size: 3rem;
+            font-weight: bold;
+            font-family: 'Fredoka', sans-serif;
+            text-shadow: 2px 2px 0 #000;
+        }
+        #p1-score { color: #60a5fa; }
+        #p2-score { color: #f472b6; }
+        
+        .game-question {
+            font-size: 2rem;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            padding: 1rem;
+            border-radius: 16px;
+            margin: 1rem 0;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .game-answers {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        .game-btn-ans {
+            padding: 1.5rem;
+            font-size: 1.5rem;
+            border-radius: 16px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Fredoka', sans-serif;
+            transition: transform 0.1s;
+        }
+        .game-btn-ans:active { transform: scale(0.95); }
+        #p1-zone .game-btn-ans { background: #3b82f6; color: white; border-bottom: 6px solid #1d4ed8; }
+        #p2-zone .game-btn-ans { background: #ec4899; color: white; border-bottom: 6px solid #be185d; }
+        
+        .center-timer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            font-weight: bold;
+            color: #1e293b;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-15px); }
+            40% { transform: translateX(15px); }
+            60% { transform: translateX(-10px); }
+            80% { transform: translateX(10px); }
+        }
+        .anim-shake { animation: shake 0.4s ease-in-out; }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .anim-pop { animation: pop 0.3s ease-out; }
+
+        .score-beaker-fill {
+            transition: height 0.5s ease-out, y 0.5s ease-out;
+        }
+
+        .action-btn {
+            border: none;
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 1.5rem;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+            transition: transform 0.1s, box-shadow 0.1s;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .action-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.2);
+        }
+        .btn-heat { background-color: #ef4444; border-bottom: 4px solid #b91c1c; } /* Red */
+        .btn-add { background-color: #a855f7; border-bottom: 4px solid #7e22ce; } /* Purple */
+        .btn-mix { background-color: #10b981; border-bottom: 4px solid #047857; font-size: 2rem; padding: 1.5rem; } /* Green */
+        .btn-clear { background-color: #64748b; border-bottom: 4px solid #334155; font-size: 1.2rem; } /* Slate */
+
+        @keyframes dropCube {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 0; }
+            100% { transform: translateY(0) rotate(15deg); opacity: 1; }
+        }
+        .solute-cube { animation: dropCube 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        .glow-success { animation: glowGreen 1s ease-out; }
+        @keyframes glowGreen {
+            0%, 100% { box-shadow: none; background: transparent; }
+            50% { box-shadow: 0 0 30px #4ade80 inset; background: rgba(74, 222, 128, 0.2); }
+        }
+
+        .shake-error { animation: shakeRed 0.5s ease-in-out; }
+        @keyframes shakeRed {
+            0%, 100% { transform: translateX(0); box-shadow: none; background: transparent; }
+            20% { transform: translateX(-15px); box-shadow: 0 0 30px #ef4444 inset; background: rgba(239, 68, 68, 0.2); }
+            40% { transform: translateX(15px); }
+            60% { transform: translateX(-10px); }
+            80% { transform: translateX(10px); }
+        }
+
+        .graph-grid { stroke: #ffffff; stroke-opacity: 0.2; stroke-dasharray: 4; }
+        .graph-text-game { fill: #ffffff; font-size: 12px; font-family: 'Nunito', sans-serif; font-weight: bold; }
+        .graph-line-game { fill: none; stroke: #fbbf24; stroke-width: 5; filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.8)); }
+
+        /* SVG Graph Styles */
+        .graph-line { fill: none; stroke-width: 4; }
+        .graph-axis { stroke: #475569; stroke-width: 2; }
+        .graph-text { fill: #475569; font-size: 14px; font-family: 'Nunito', sans-serif; }
+        .graph-point { fill: #ef4444; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    
+    <!-- Main Menu -->
+    <div id="menu-container">
+        <h1 class="text-6xl text-blue-600 mb-4 fredoka font-bold text-center">Solubility Science!</h1>
+        <p class="text-2xl text-slate-600 mb-8 text-center max-w-2xl">Learn how things dissolve in water, and how temperature changes everything.</p>
+        
+        <svg width="200" height="200" viewBox="0 0 200 200" class="anim-float mb-8">
+            <!-- Simple beaker SVG -->
+            <path d="M60,20 L60,150 A20,20 0 0,0 80,170 L120,170 A20,20 0 0,0 140,150 L140,20" class="beaker-glass"/>
+            <path d="M50,20 L150,20" stroke="#94a3b8" stroke-width="6" stroke-linecap="round"/>
+            <path d="M62,100 L138,100 L138,150 A18,18 0 0,1 120,168 L80,168 A18,18 0 0,1 62,150 Z" class="water-level"/>
+            <circle cx="80" cy="140" r="5" fill="white" opacity="0.8"/>
+            <circle cx="110" cy="120" r="4" fill="white" opacity="0.6"/>
+            <circle cx="95" cy="155" r="6" fill="white" opacity="0.7"/>
+        </svg>
+
+        <div class="flex gap-4">
+            <button class="nav-btn" onclick="startLesson()">Start Lesson (15 Slides)</button>
+            <button class="nav-btn game-btn" onclick="startSetupGame()">Play 2-Player Game</button>
+        </div>
+    </div>
+
+    <!-- Lesson Container -->
+    <div id="slide-container" style="display: none;">
+        
+        <!-- Slide 1: Title & Intro -->
+        <div class="slide" id="slide-1">
+            <h2 class="text-4xl text-blue-600 mb-4">1. What is Solubility?</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <p class="text-2xl mb-6">Have you ever mixed sugar into tea or water?</p>
+                <div class="relative w-64 h-64 mb-4">
+                    <svg viewBox="0 0 200 200" class="w-full h-full">
+                        <path d="M60,40 L60,160 A10,10 0 0,0 70,170 L130,170 A10,10 0 0,0 140,160 L140,40" class="beaker-glass"/>
+                        <path d="M62,90 L138,90 L138,160 A8,8 0 0,1 130,168 L70,168 A8,8 0 0,1 62,160 Z" class="water-level"/>
+                        <!-- Sugar cube dropping in -->
+                        <g id="s1-cube" class="anim-dissolving">
+                            <rect x="90" y="20" width="20" height="20" class="sugar-cube"/>
+                        </g>
+                    </svg>
+                </div>
+                <p class="text-xl"><b>Solubility</b> is a measure of <i>how much</i> of a substance can dissolve in a liquid.</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: Vocabulary -->
+        <div class="slide" id="slide-2">
+            <h2 class="text-4xl text-purple-600 mb-4">2. Important Words</h2>
+            <div class="flex-grow flex flex-row items-center justify-center gap-8 text-left">
+                <div class="bg-purple-50 p-6 rounded-xl w-1/2 border-2 border-purple-200">
+                    <h3 class="text-3xl text-purple-700 mb-2">Solute</h3>
+                    <p class="text-xl">The stuff that gets dissolved (like sugar or salt).</p>
+                    <svg width="100" height="100" viewBox="0 0 100 100" class="mx-auto mt-4">
+                        <circle cx="50" cy="50" r="30" class="solute-particle"/>
+                        <text x="50" y="55" text-anchor="middle" fill="white" font-weight="bold">Salt</text>
+                    </svg>
+                </div>
+                <div class="text-4xl text-slate-400 font-bold">+</div>
+                <div class="bg-blue-50 p-6 rounded-xl w-1/2 border-2 border-blue-200">
+                    <h3 class="text-3xl text-blue-700 mb-2">Solvent</h3>
+                    <p class="text-xl">The liquid that does the dissolving (like water).</p>
+                    <svg width="100" height="100" viewBox="0 0 100 100" class="mx-auto mt-4">
+                         <path d="M20,80 Q50,90 80,80 L80,20 Q50,30 20,20 Z" class="water-level"/>
+                         <text x="50" y="55" text-anchor="middle" fill="white" font-weight="bold">Water</text>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 text-2xl font-bold bg-green-100 p-4 rounded-xl text-green-800 border-2 border-green-300">
+                Solute + Solvent = Solution
+            </div>
+        </div>
+
+        <!-- Slide 3: Quiz 1 -->
+        <div class="slide" id="slide-3">
+            <h2 class="text-4xl text-blue-600 mb-4">3. Quick Check!</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <p class="text-3xl mb-8">If you mix salt into water to make salty water, what is the <b>water</b> called?</p>
+                <div class="quiz-container w-full flex flex-col items-center">
+                    <button class="quiz-btn" onclick="checkAnswer(this, false)">A. The Solute</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this, true)">B. The Solvent</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this, false)">C. The Solution</button>
+                </div>
+                <p id="feedback-3" class="text-2xl mt-4 h-8 font-bold"></p>
+            </div>
+        </div>
+
+        <!-- Slide 4: The Limit -->
+        <div class="slide" id="slide-4">
+            <h2 class="text-4xl text-red-600 mb-4">4. Can you dissolve unlimited amounts?</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <p class="text-2xl mb-4">What happens if you keep adding more and more salt to a glass of water?</p>
+                <div class="flex gap-4 mb-4">
+                     <svg width="150" height="150" viewBox="0 0 150 150">
+                        <path d="M40,20 L40,130 A10,10 0 0,0 50,140 L100,140 A10,10 0 0,0 110,130 L110,20" class="beaker-glass"/>
+                        <path d="M42,70 L108,70 L108,130 A8,8 0 0,1 100,138 L50,138 A8,8 0 0,1 42,130 Z" class="water-level"/>
+                        <!-- Dissolved particles -->
+                        <circle cx="60" cy="110" r="4" fill="#a855f7"/><circle cx="90" cy="120" r="4" fill="#a855f7"/><circle cx="75" cy="90" r="4" fill="#a855f7"/>
+                    </svg>
+                    <div class="flex flex-col justify-center"><b class="text-3xl">&rarr; Add MORE &rarr;</b></div>
+                     <svg width="150" height="150" viewBox="0 0 150 150">
+                        <path d="M40,20 L40,130 A10,10 0 0,0 50,140 L100,140 A10,10 0 0,0 110,130 L110,20" class="beaker-glass"/>
+                        <path d="M42,70 L108,70 L108,130 A8,8 0 0,1 100,138 L50,138 A8,8 0 0,1 42,130 Z" class="water-level"/>
+                        <!-- Lots of dissolved particles -->
+                        <circle cx="50" cy="110" r="4" fill="#a855f7"/><circle cx="90" cy="120" r="4" fill="#a855f7"/><circle cx="75" cy="90" r="4" fill="#a855f7"/>
+                        <circle cx="60" cy="80" r="4" fill="#a855f7"/><circle cx="100" cy="100" r="4" fill="#a855f7"/><circle cx="55" cy="125" r="4" fill="#a855f7"/>
+                        <!-- Undissolved pile at bottom -->
+                        <path d="M45,138 Q75,115 105,138 Z" class="undissolved-particle"/>
+                    </svg>
+                </div>
+                <p class="text-xl">Eventually, the salt stops dissolving! It just piles up at the bottom. The water is "full".</p>
+            </div>
+        </div>
+
+        <!-- Slide 5: Saturated Solution -->
+        <div class="slide" id="slide-5">
+            <h2 class="text-4xl text-orange-500 mb-4">5. Saturated Solutions</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <div class="bg-orange-50 p-6 rounded-xl border-2 border-orange-200 mb-6">
+                    <h3 class="text-3xl text-orange-700 mb-2">Saturated Solution</h3>
+                    <p class="text-2xl">A solution that contains the <b>MAXIMUM</b> amount of solute that can dissolve.</p>
+                </div>
+                <p class="text-xl mb-4">It cannot hold any more! If you add more, it will not dissolve.</p>
+                <div class="bg-gray-100 p-4 rounded-lg flex items-center gap-4">
+                    <svg width="50" height="50" viewBox="0 0 50 50">
+                        <circle cx="25" cy="25" r="20" fill="#fcd34d" stroke="#f59e0b" stroke-width="3"/>
+                        <text x="25" y="32" text-anchor="middle" font-size="20">!</text>
+                    </svg>
+                    <p class="text-left">An <b>Unsaturated Solution</b> is one that <i>can</i> still dissolve more stuff.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Quiz 2 -->
+        <div class="slide" id="slide-6">
+            <h2 class="text-4xl text-blue-600 mb-4">6. Knowledge Check!</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <p class="text-3xl mb-8">You are stirring sugar into iced tea. Suddenly, the sugar stops disappearing and falls to the bottom of the glass. Your tea is now:</p>
+                <div class="quiz-container w-full flex flex-col items-center">
+                    <button class="quiz-btn" onclick="checkAnswer(this, true)">A. Saturated</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this, false)">B. Unsaturated</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this, false)">C. Empty</button>
+                </div>
+                <p id="feedback-6" class="text-2xl mt-4 h-8 font-bold"></p>
+            </div>
+        </div>
+
+        <!-- Slide 7: Temperature changes everything -->
+        <div class="slide" id="slide-7">
+            <h2 class="text-4xl text-red-500 mb-4">7. The Power of Heat</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <p class="text-2xl mb-6">How does <b>Temperature</b> change solubility?</p>
+                <div class="flex gap-8 items-end justify-center mb-6">
+                    <!-- Cold Water -->
+                    <div class="text-center">
+                        <h4 class="text-blue-500 font-bold text-xl mb-2">Cold Water (20&deg;C)</h4>
+                        <svg width="120" height="150" viewBox="0 0 120 150">
+                            <path d="M30,20 L30,130 A10,10 0 0,0 40,140 L80,140 A10,10 0 0,0 90,130 L90,20" class="beaker-glass"/>
+                            <path d="M32,70 L88,70 L88,130 A8,8 0 0,1 80,138 L40,138 A8,8 0 0,1 32,130 Z" class="water-level"/>
+                            <path d="M40,138 Q60,120 80,138 Z" class="undissolved-particle"/> <!-- Lots undissolved -->
+                        </svg>
+                        <p class="mt-2 text-sm">Dissolves a little sugar</p>
+                    </div>
+                    
+                    <div class="text-4xl text-slate-400 font-bold mb-10">&rarr;</div>
+                    
+                    <!-- Hot Water -->
+                    <div class="text-center">
+                        <h4 class="text-red-500 font-bold text-xl mb-2">Hot Water (80&deg;C)</h4>
+                        <svg width="120" height="150" viewBox="0 0 120 150">
+                            <!-- Steam -->
+                            <path d="M45,10 Q50,0 45,-10" stroke="#94a3b8" stroke-width="2" fill="none" class="anim-float"/>
+                            <path d="M75,15 Q70,5 75,-5" stroke="#94a3b8" stroke-width="2" fill="none" class="anim-float" style="animation-delay: 0.5s"/>
+                            
+                            <path d="M30,20 L30,130 A10,10 0 0,0 40,140 L80,140 A10,10 0 0,0 90,130 L90,20" class="beaker-glass"/>
+                            <path d="M32,70 L88,70 L88,130 A8,8 0 0,1 80,138 L40,138 A8,8 0 0,1 32,130 Z" class="hot-water"/>
+                            <!-- No undissolved, fully dissolved -->
+                            <circle cx="45" cy="110" r="3" fill="white" opacity="0.8"/>
+                            <circle cx="70" cy="90" r="3" fill="white" opacity="0.8"/>
+                            <circle cx="60" cy="120" r="3" fill="white" opacity="0.8"/>
+                            <circle cx="50" cy="80" r="3" fill="white" opacity="0.8"/>
+                            <circle cx="80" cy="100" r="3" fill="white" opacity="0.8"/>
+                        </svg>
+                         <p class="mt-2 text-sm">Dissolves A LOT of sugar</p>
+                    </div>
+                </div>
+                <p class="text-xl font-bold bg-yellow-100 p-3 rounded-lg w-full">For most solids (like sugar or salt), increasing the temperature INCREASES solubility.</p>
+            </div>
+        </div>
+
+        <!-- Slide 8: Why Heat Works -->
+        <div class="slide" id="slide-8">
+            <h2 class="text-4xl text-orange-500 mb-4">8. Why does Hot Water dissolve more?</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <p class="text-2xl mb-4">Hot water molecules have more <b>energy</b> and move <b>faster</b>.</p>
+                <div class="bg-white border-2 border-gray-200 p-4 rounded-xl shadow-inner mb-4 w-full max-w-lg relative h-48 overflow-hidden">
+                    <!-- Animation of fast moving particles -->
+                    <svg width="100%" height="100%" viewBox="0 0 400 200">
+                        <!-- Water particles -->
+                        <circle cx="100" cy="100" r="10" fill="#f87171" class="anim-float" style="animation-duration: 0.5s"/>
+                        <circle cx="200" cy="50" r="10" fill="#f87171" class="anim-float" style="animation-duration: 0.6s"/>
+                        <circle cx="300" cy="150" r="10" fill="#f87171" class="anim-float" style="animation-duration: 0.4s"/>
+                        <circle cx="150" cy="160" r="10" fill="#f87171" class="anim-float" style="animation-duration: 0.7s"/>
+                        <circle cx="250" cy="90" r="10" fill="#f87171" class="anim-float" style="animation-duration: 0.5s"/>
+                        <circle cx="50" cy="50" r="10" fill="#f87171" class="anim-float" style="animation-duration: 0.8s"/>
+                        <circle cx="350" cy="80" r="10" fill="#f87171" class="anim-float" style="animation-duration: 0.5s"/>
+                        
+                        <!-- Motion lines -->
+                        <path d="M90,100 L70,100" stroke="#cbd5e1" stroke-width="2"/>
+                        <path d="M210,50 L230,50" stroke="#cbd5e1" stroke-width="2"/>
+                        <path d="M300,140 L300,120" stroke="#cbd5e1" stroke-width="2"/>
+                    </svg>
+                </div>
+                <p class="text-xl">They crash into the solid faster and break it apart easier. More space opens up in the liquid for the solute to hide!</p>
+            </div>
+        </div>
+
+        <!-- Slide 9: Quiz 3 -->
+        <div class="slide" id="slide-9">
+            <h2 class="text-4xl text-blue-600 mb-4">9. Think about it!</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <p class="text-3xl mb-8">If you want to dissolve a huge amount of sugar to make syrup, you should use:</p>
+                <div class="quiz-container w-full flex flex-col items-center">
+                    <button class="quiz-btn" onclick="checkAnswer(this, false)">A. Ice Cold Water</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this, false)">B. Room Temperature Water</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this, true)">C. Boiling Hot Water</button>
+                </div>
+                <p id="feedback-9" class="text-2xl mt-4 h-8 font-bold"></p>
+            </div>
+        </div>
+
+        <!-- Slide 10: Introducing the Graph -->
+        <div class="slide" id="slide-10">
+            <h2 class="text-4xl text-green-600 mb-4">10. The Solubility Curve</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <p class="text-xl mb-4">Scientists use a graph to show exactly how much solute dissolves at different temperatures. It is called a <b>Solubility Curve</b>.</p>
+                
+                <svg width="400" height="300" viewBox="0 0 400 300" class="bg-gray-50 rounded p-2 border">
+                    <!-- Axes -->
+                    <line x1="50" y1="250" x2="380" y2="250" class="graph-axis"/>
+                    <line x1="50" y1="250" x2="50" y2="20" class="graph-axis"/>
+                    <!-- Labels -->
+                    <text x="200" y="290" text-anchor="middle" class="graph-text font-bold">Temperature (°C) &rarr;</text>
+                    <text x="20" y="150" transform="rotate(-90 20,150)" text-anchor="middle" class="graph-text font-bold">Solubility (g / 100g water) &uarr;</text>
+                    
+                    <!-- A simple curve -->
+                    <path d="M50,230 Q 200,200 350,50" class="graph-line" stroke="#3b82f6"/>
+                    <text x="360" y="50" fill="#3b82f6" font-weight="bold">Sugar</text>
+                    
+                    <!-- Arrow indicating increase -->
+                    <path d="M220,150 L270,100 M270,100 L250,100 M270,100 L270,120" stroke="#ef4444" stroke-width="3" fill="none"/>
+                </svg>
+                <p class="text-lg mt-4">Notice how the line goes <b>UP</b> as the temperature goes <b>RIGHT</b> (gets hotter).</p>
+            </div>
+        </div>
+
+        <!-- Slide 11: Reading the Graph -->
+        <div class="slide" id="slide-11">
+            <h2 class="text-4xl text-green-600 mb-4">11. How to Read the Curve</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <svg width="450" height="300" viewBox="0 0 450 300" class="bg-white rounded p-2 border shadow mb-4">
+                    <!-- Grid -->
+                    <line x1="50" y1="200" x2="400" y2="200" stroke="#e2e8f0"/>
+                    <line x1="50" y1="150" x2="400" y2="150" stroke="#e2e8f0"/>
+                    <line x1="50" y1="100" x2="400" y2="100" stroke="#e2e8f0"/>
+                    <line x1="150" y1="250" x2="150" y2="50" stroke="#e2e8f0"/>
+                    <line x1="250" y1="250" x2="250" y2="50" stroke="#e2e8f0"/>
+                    
+                    <!-- Axes -->
+                    <line x1="50" y1="250" x2="400" y2="250" class="graph-axis"/>
+                    <line x1="50" y1="250" x2="50" y2="50" class="graph-axis"/>
+                    
+                    <!-- Axis Values -->
+                    <text x="50" y="270" text-anchor="middle" class="graph-text">0°C</text>
+                    <text x="150" y="270" text-anchor="middle" class="graph-text">50°C</text>
+                    <text x="250" y="270" text-anchor="middle" class="graph-text">100°C</text>
+                    
+                    <text x="40" y="250" text-anchor="end" alignment-baseline="middle" class="graph-text">0g</text>
+                    <text x="40" y="150" text-anchor="end" alignment-baseline="middle" class="graph-text">50g</text>
+                    <text x="40" y="50" text-anchor="end" alignment-baseline="middle" class="graph-text">100g</text>
+
+                    <!-- The Line (Chemical X) -->
+                    <path d="M50,200 L 150,150 L 250,50" class="graph-line" stroke="#10b981"/>
+                    <text x="260" y="50" fill="#10b981" font-weight="bold">Chemical X</text>
+                    
+                    <!-- Tracing lines for an example -->
+                    <line x1="150" y1="250" x2="150" y2="150" stroke="#ef4444" stroke-width="2" stroke-dasharray="5,5"/>
+                    <line x1="150" y1="150" x2="50" y2="150" stroke="#ef4444" stroke-width="2" stroke-dasharray="5,5"/>
+                    <circle cx="150" cy="150" r="6" class="graph-point"/>
+                </svg>
+                <div class="text-left bg-blue-50 p-4 rounded-xl w-full">
+                    <p class="text-lg"><b>Example:</b> Look at 50°C on the bottom.</p>
+                    <p class="text-lg">Follow the red dotted line <b>UP</b> to the green curve.</p>
+                    <p class="text-lg">Look <b>LEFT</b> to the side. It says 50g.</p>
+                    <p class="text-lg font-bold text-blue-700">So, at 50°C, you can dissolve 50g of Chemical X in 100g of water.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Quiz 4 (Graph Reading) -->
+        <div class="slide" id="slide-12">
+            <h2 class="text-4xl text-blue-600 mb-2">12. Read the Graph!</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <svg width="400" height="250" viewBox="0 0 400 250" class="bg-white rounded p-1 border mb-4">
+                    <!-- Simple Grid -->
+                    <line x1="50" y1="200" x2="350" y2="200" class="graph-axis"/>
+                    <line x1="50" y1="200" x2="50" y2="20" class="graph-axis"/>
+                    
+                    <!-- X Axis (Temp) -->
+                    <text x="150" y="220" text-anchor="middle" class="graph-text">20°C</text>
+                    <text x="250" y="220" text-anchor="middle" class="graph-text">60°C</text>
+                    
+                    <!-- Y Axis (Grams) -->
+                    <text x="40" y="150" text-anchor="end" alignment-baseline="middle" class="graph-text">30g</text>
+                    <text x="40" y="70" text-anchor="end" alignment-baseline="middle" class="graph-text">80g</text>
+
+                    <!-- The Line -->
+                    <path d="M50,180 L 150,150 L 250,70" class="graph-line" stroke="#8b5cf6"/>
+                    <text x="260" y="70" fill="#8b5cf6" font-weight="bold">Salt A</text>
+                </svg>
+                <p class="text-2xl mb-4">How many grams of "Salt A" can dissolve at <b>60°C</b>?</p>
+                <div class="quiz-container w-full flex flex-col items-center mt-0">
+                    <button class="quiz-btn" onclick="checkAnswer(this, false)">A. 30g</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this, true)">B. 80g</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this, false)">C. 20g</button>
+                </div>
+                <p id="feedback-12" class="text-xl mt-2 h-6 font-bold"></p>
+            </div>
+        </div>
+
+        <!-- Slide 13: Comparing Substances -->
+        <div class="slide" id="slide-13">
+            <h2 class="text-4xl text-green-600 mb-2">13. Comparing Substances</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                 <p class="text-lg mb-2">Different chemicals have different curves. We can compare them!</p>
+                 <svg width="450" height="280" viewBox="0 0 450 280" class="bg-white rounded p-1 border shadow mb-4">
+                    <line x1="50" y1="230" x2="400" y2="230" class="graph-axis"/>
+                    <line x1="50" y1="230" x2="50" y2="30" class="graph-axis"/>
+                    
+                    <text x="200" y="260" text-anchor="middle" class="graph-text">Temperature &rarr;</text>
+                    <text x="20" y="130" transform="rotate(-90 20,130)" text-anchor="middle" class="graph-text">Solubility &uarr;</text>
+
+                    <!-- Curve A (Sugar - steep) -->
+                    <path d="M50,200 Q 200,180 300,40" class="graph-line" stroke="#3b82f6"/>
+                    <text x="310" y="40" fill="#3b82f6" font-weight="bold">Substance A</text>
+                    
+                    <!-- Curve B (Table Salt - flat) -->
+                    <path d="M50,150 L 380,140" class="graph-line" stroke="#f59e0b"/>
+                    <text x="390" y="140" fill="#f59e0b" font-weight="bold" alignment-baseline="middle">Substance B</text>
+
+                    <!-- Vertical line for comparison -->
+                    <line x1="250" y1="230" x2="250" y2="30" stroke="#94a3b8" stroke-dasharray="4,4"/>
+                    <text x="250" y="245" text-anchor="middle" font-size="12">Hot (80°C)</text>
+                </svg>
+                <div class="text-left w-full max-w-md">
+                    <ul class="list-disc ml-6 text-lg">
+                        <li><b>Substance A:</b> Solubility changes A LOT when heated. (Steep line)</li>
+                        <li><b>Substance B:</b> Solubility hardly changes at all. (Flat line)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Saturated vs Unsaturated on a Graph -->
+        <div class="slide" id="slide-14">
+            <h2 class="text-4xl text-purple-600 mb-2">14. Is it Saturated?</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <p class="text-lg mb-2">The line on the graph represents the <b>MAXIMUM</b> (Saturated).</p>
+                <svg width="400" height="250" viewBox="0 0 400 250" class="bg-white rounded p-1 border mb-4">
+                    <line x1="50" y1="200" x2="350" y2="200" class="graph-axis"/>
+                    <line x1="50" y1="200" x2="50" y2="20" class="graph-axis"/>
+                    
+                    <!-- The Saturated Line -->
+                    <path d="M50,180 L 300,50" class="graph-line" stroke="#10b981"/>
+                    <text x="180" y="110" fill="#10b981" font-weight="bold" transform="rotate(-23 180,110)">SATURATED LINE</text>
+
+                    <!-- Point ON line -->
+                    <circle cx="200" cy="98" r="6" fill="#3b82f6"/>
+                    <text x="210" y="90" fill="#3b82f6" font-size="12">Full (Saturated)</text>
+
+                    <!-- Point BELOW line -->
+                    <circle cx="200" cy="150" r="6" fill="#f59e0b"/>
+                    <text x="210" y="160" fill="#f59e0b" font-size="12">Can add more! (Unsaturated)</text>
+                </svg>
+                <p class="text-lg bg-gray-100 p-3 rounded">Any point <b>BELOW</b> the line is an <b>Unsaturated</b> solution. It has room for more solute!</p>
+            </div>
+        </div>
+
+        <!-- Slide 15: Summary & Game Prep -->
+        <div class="slide" id="slide-15">
+            <h2 class="text-5xl text-blue-600 mb-6 fredoka">15. You did it!</h2>
+            <div class="flex-grow flex flex-col items-center justify-center">
+                <h3 class="text-2xl font-bold mb-4 border-b-2 border-blue-200 pb-2">Lesson Summary:</h3>
+                <ul class="text-xl text-left space-y-4 max-w-lg bg-blue-50 p-6 rounded-2xl shadow-sm">
+                    <li>💧 <b>Solubility</b> = How much solute can dissolve.</li>
+                    <li>🛑 <b>Saturated</b> = Full! No more can dissolve.</li>
+                    <li>🔥 <b>Hot Temperature</b> = Usually dissolves MORE solid.</li>
+                    <li>📈 <b>Solubility Curve</b> = A graph showing how temperature changes solubility.</li>
+                </ul>
+                
+                <p class="text-2xl mt-8 mb-4 font-bold text-pink-600 animate-pulse">Ready for The Great Dissolve Dash?</p>
+                <button class="nav-btn game-btn text-2xl px-8 py-4" onclick="startSetupGame()">Play 2-Player Dash!</button>
+            </div>
+        </div>
+
+        <!-- Slide Navigation Controls -->
+        <div class="w-full max-w-[1000px] flex justify-between items-center mt-6 px-4">
+            <button id="prevBtn" class="nav-btn" onclick="changeSlide(-1)">&#8592; Previous</button>
+            <span id="slideCounter" class="text-xl font-bold text-slate-500">Slide 1 of 15</span>
+            <button id="nextBtn" class="nav-btn" onclick="changeSlide(1)">Next &#8594;</button>
+        </div>
+    </div>
+
+    <!-- Smartboard Game Container -->
+    <div id="game-board">
+        <!-- Header Row (15% height) -->
+        <div class="h-[15%] w-full flex items-center justify-between px-8 bg-black/30 border-b-4 border-white/10">
+            <div class="flex items-center gap-4">
+                <div class="text-3xl text-white font-bold">TIME:</div>
+                <div id="game-timer" class="text-5xl font-bold text-yellow-400 font-fredoka bg-black/50 px-6 py-2 rounded-xl border-2 border-yellow-400">60</div>
+            </div>
+            
+            <div id="game-challenge" class="text-4xl text-white font-bold bg-indigo-600 px-8 py-3 rounded-2xl shadow-lg border-4 border-indigo-400 text-center flex-grow mx-8 font-fredoka">
+                Get Ready!
+            </div>
+            
+            <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold" onclick="backToMenu()">Exit</button>
+        </div>
+
+        <!-- Main Play Area (85% height) -->
+        <div class="h-[85%] w-full flex">
+            
+            <!-- Player 1 Zone (Left) -->
+            <div id="player1-zone" class="w-1/3 flex flex-col p-4 border-r-4 border-dashed border-white/20 relative items-center justify-between">
+                <div class="text-4xl font-bold text-blue-300 font-fredoka w-full text-center mb-2">Player 1</div>
+                
+                <!-- Score & Status -->
+                <div class="flex w-full justify-between items-end px-4 mb-2">
+                    <div class="relative w-16 h-24">
+                        <svg viewBox="0 0 100 120" class="w-full h-full drop-shadow-lg">
+                            <path d="M20,10 L20,100 A10,10 0 0,0 30,110 L70,110 A10,10 0 0,0 80,100 L80,10" fill="none" stroke="#60a5fa" stroke-width="6"/>
+                            <rect id="p1-beaker-fill" x="23" y="107" width="54" height="0" fill="#3b82f6" class="score-beaker-fill" rx="2"/>
+                        </svg>
+                    </div>
+                    <div class="text-6xl font-bold text-blue-400" id="p1-score">0</div>
+                </div>
+
+                <!-- Interactive Beaker -->
+                <div class="w-full h-64 relative bg-black/20 rounded-2xl p-2 border-2 border-white/10" id="p1-lab-area">
+                    <svg viewBox="0 0 300 250" class="w-full h-full">
+                        <!-- Thermometer Background -->
+                        <rect x="20" y="20" width="24" height="200" rx="12" fill="#334155" stroke="#94a3b8" stroke-width="3"/>
+                        <circle cx="32" cy="220" r="20" fill="#334155" stroke="#94a3b8" stroke-width="3"/>
+                        <!-- Thermometer Fill (Dynamic) -->
+                        <rect id="p1-thermo-fill" x="24" y="210" width="16" height="0" rx="8" fill="#ef4444" style="transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform: rotate(180deg); transform-origin: center;"/>
+                        <circle cx="32" cy="220" r="14" fill="#ef4444"/>
+                        <!-- Temp Text -->
+                        <text id="p1-temp-txt" x="70" y="215" fill="#fca5a5" font-size="20" font-weight="bold">0°C</text>
+                        
+                        <!-- Beaker -->
+                        <path d="M120,40 L120,220 A10,10 0 0,0 130,230 L270,230 A10,10 0 0,0 280,220 L280,40" fill="none" stroke="#cbd5e1" stroke-width="6" stroke-linecap="round"/>
+                        <path id="p1-water" d="M123,100 L277,100 L277,220 A7,7 0 0,1 270,227 L130,227 A7,7 0 0,1 123,220 Z" fill="#3b82f6" opacity="0.4" style="transition: fill 0.3s"/>
+                        
+                        <!-- Solute Container Group -->
+                        <g id="p1-solute-group"></g>
+                        <!-- Solute Text -->
+                        <text id="p1-solute-txt" x="200" y="90" fill="#d8b4fe" font-size="20" font-weight="bold" text-anchor="middle">0g</text>
+                    </svg>
+                </div>
+
+                <!-- Controls -->
+                <div class="w-full grid grid-cols-2 gap-3 mt-4">
+                    <button class="action-btn btn-heat" onclick="addHeat(1)">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v2m0 4v.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        +20°C
+                    </button>
+                    <button class="action-btn btn-add" onclick="addSolute(1)">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6m0-4V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2M4 8h16M12 12v6"/></svg>
+                        +20g
+                    </button>
+                    <button class="action-btn btn-clear" onclick="resetBeaker(1)">Empty Beaker</button>
+                    <button class="action-btn btn-mix" onclick="mixAndCheck(1)">MIX IT!</button>
+                </div>
+            </div>
+
+            <!-- Central Graph Area (Middle 1/3) -->
+            <div class="w-1/3 h-full flex flex-col justify-center items-center p-4 bg-slate-900 shadow-inner">
+                <div class="text-2xl text-yellow-300 font-bold mb-4 font-fredoka text-center border-b-2 border-yellow-300/30 pb-2">
+                    Chemical X Solubility
+                </div>
+                
+                <svg viewBox="-20 -20 340 340" class="w-full max-w-md bg-slate-800 rounded-xl p-4 shadow-xl border border-slate-700">
+                    <!-- Background Grid -->
+                    <line x1="50" y1="250" x2="300" y2="250" class="graph-grid" />
+                    <line x1="50" y1="200" x2="300" y2="200" class="graph-grid" />
+                    <line x1="50" y1="150" x2="300" y2="150" class="graph-grid" />
+                    <line x1="50" y1="100" x2="300" y2="100" class="graph-grid" />
+                    <line x1="50" y1="50" x2="300" y2="50" class="graph-grid" />
+                    
+                    <line x1="100" y1="250" x2="100" y2="50" class="graph-grid" />
+                    <line x1="150" y1="250" x2="150" y2="50" class="graph-grid" />
+                    <line x1="200" y1="250" x2="200" y2="50" class="graph-grid" />
+                    <line x1="250" y1="250" x2="250" y2="50" class="graph-grid" />
+                    <line x1="300" y1="250" x2="300" y2="50" class="graph-grid" />
+
+                    <!-- Axes -->
+                    <line x1="50" y1="250" x2="310" y2="250" stroke="white" stroke-width="4"/>
+                    <line x1="50" y1="250" x2="50" y2="30" stroke="white" stroke-width="4"/>
+                    
+                    <!-- X Labels (Temp) -->
+                    <text x="50" y="270" text-anchor="middle" class="graph-text-game">0°C</text>
+                    <text x="100" y="270" text-anchor="middle" class="graph-text-game">20</text>
+                    <text x="150" y="270" text-anchor="middle" class="graph-text-game">40</text>
+                    <text x="200" y="270" text-anchor="middle" class="graph-text-game">60</text>
+                    <text x="250" y="270" text-anchor="middle" class="graph-text-game">80</text>
+                    <text x="300" y="270" text-anchor="middle" class="graph-text-game">100</text>
+                    <text x="175" y="295" text-anchor="middle" class="graph-text-game text-yellow-200">Temperature (°C) &rarr;</text>
+
+                    <!-- Y Labels (Solute) -->
+                    <text x="40" y="255" text-anchor="end" class="graph-text-game">0g</text>
+                    <text x="40" y="205" text-anchor="end" class="graph-text-game">20g</text>
+                    <text x="40" y="155" text-anchor="end" class="graph-text-game">40g</text>
+                    <text x="40" y="105" text-anchor="end" class="graph-text-game">60g</text>
+                    <text x="40" y="55" text-anchor="end" class="graph-text-game">80g</text>
+                    <text x="15" y="150" transform="rotate(-90 15,150)" text-anchor="middle" class="graph-text-game text-yellow-200">Solubility (grams) &uarr;</text>
+
+                    <!-- The 1:1 Curve -->
+                    <path d="M50,250 L 250,50" class="graph-line-game"/>
+                    
+                    <!-- Saturated Label -->
+                    <text x="180" y="90" fill="#fbbf24" font-weight="bold" transform="rotate(-45 180,90)" font-size="14">SATURATED LINE</text>
+                </svg>
+                
+                <div class="mt-8 text-center text-white bg-white/10 p-4 rounded-xl border border-white/20 w-full max-w-sm">
+                    <p class="font-bold text-xl mb-2">How to Play:</p>
+                    <ol class="text-left text-sm space-y-1 list-decimal ml-4">
+                        <li>Read the Challenge at the top.</li>
+                        <li>Look at the Graph to find the perfect mix.</li>
+                        <li>Tap <b class="text-red-400">+20°C</b> and <b class="text-purple-400">+20g</b> to build it.</li>
+                        <li>First to press <b class="text-green-400">MIX IT</b> correctly wins the round!</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Player 2 Zone (Right) -->
+            <div id="player2-zone" class="w-1/3 flex flex-col p-4 border-l-4 border-dashed border-white/20 relative items-center justify-between">
+                <div class="text-4xl font-bold text-pink-300 font-fredoka w-full text-center mb-2">Player 2</div>
+                
+                <!-- Score & Status -->
+                <div class="flex w-full justify-between items-end px-4 mb-2 flex-row-reverse">
+                    <div class="relative w-16 h-24">
+                        <svg viewBox="0 0 100 120" class="w-full h-full drop-shadow-lg">
+                            <path d="M20,10 L20,100 A10,10 0 0,0 30,110 L70,110 A10,10 0 0,0 80,100 L80,10" fill="none" stroke="#f472b6" stroke-width="6"/>
+                            <rect id="p2-beaker-fill" x="23" y="107" width="54" height="0" fill="#ec4899" class="score-beaker-fill" rx="2"/>
+                        </svg>
+                    </div>
+                    <div class="text-6xl font-bold text-pink-400" id="p2-score">0</div>
+                </div>
+
+                <!-- Interactive Beaker -->
+                <div class="w-full h-64 relative bg-black/20 rounded-2xl p-2 border-2 border-white/10" id="p2-lab-area">
+                    <svg viewBox="0 0 300 250" class="w-full h-full">
+                        <!-- Thermometer Background -->
+                        <rect x="20" y="20" width="24" height="200" rx="12" fill="#334155" stroke="#94a3b8" stroke-width="3"/>
+                        <circle cx="32" cy="220" r="20" fill="#334155" stroke="#94a3b8" stroke-width="3"/>
+                        <!-- Thermometer Fill -->
+                        <rect id="p2-thermo-fill" x="24" y="210" width="16" height="0" rx="8" fill="#ef4444" style="transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform: rotate(180deg); transform-origin: center;"/>
+                        <circle cx="32" cy="220" r="14" fill="#ef4444"/>
+                        <!-- Temp Text -->
+                        <text id="p2-temp-txt" x="70" y="215" fill="#fca5a5" font-size="20" font-weight="bold">0°C</text>
+                        
+                        <!-- Beaker -->
+                        <path d="M120,40 L120,220 A10,10 0 0,0 130,230 L270,230 A10,10 0 0,0 280,220 L280,40" fill="none" stroke="#cbd5e1" stroke-width="6" stroke-linecap="round"/>
+                        <path id="p2-water" d="M123,100 L277,100 L277,220 A7,7 0 0,1 270,227 L130,227 A7,7 0 0,1 123,220 Z" fill="#3b82f6" opacity="0.4" style="transition: fill 0.3s"/>
+                        
+                        <!-- Solute Container -->
+                        <g id="p2-solute-group"></g>
+                        <!-- Solute Text -->
+                        <text id="p2-solute-txt" x="200" y="90" fill="#d8b4fe" font-size="20" font-weight="bold" text-anchor="middle">0g</text>
+                    </svg>
+                </div>
+
+                <!-- Controls -->
+                <div class="w-full grid grid-cols-2 gap-3 mt-4">
+                    <button class="action-btn btn-heat" onclick="addHeat(2)">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v2m0 4v.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        +20°C
+                    </button>
+                    <button class="action-btn btn-add" onclick="addSolute(2)">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6m0-4V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2M4 8h16M12 12v6"/></svg>
+                        +20g
+                    </button>
+                    <button class="action-btn btn-clear" onclick="resetBeaker(2)">Empty Beaker</button>
+                    <button class="action-btn btn-mix" onclick="mixAndCheck(2)">MIX IT!</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div id="game-over-screen" class="absolute inset-0 bg-black/95 z-30 hidden flex-col justify-center items-center text-white">
+            <h2 class="text-7xl fredoka mb-4 text-yellow-400 drop-shadow-lg">Time's Up!</h2>
+            <div class="text-6xl mb-8 font-bold" id="game-winner-text">Player 1 Wins!</div>
+            <div class="text-3xl mb-12 text-slate-300" id="game-final-scores">Score: 5 - 3</div>
+            <div class="flex gap-6">
+                <button class="nav-btn game-btn text-2xl px-10 py-4" onclick="startGame()">Play Again</button>
+                <button class="nav-btn text-2xl px-10 py-4" onclick="backToMenu()">Main Menu</button>
+            </div>
+        </div>
+
+        <!-- Start Screen Overlay -->
+        <div id="game-start-screen" class="absolute inset-0 bg-indigo-900/95 z-30 flex flex-col justify-center items-center text-white p-8 text-center">
+            <h2 class="text-7xl fredoka text-yellow-400 mb-6 drop-shadow-lg">The Great Dissolve Dash!</h2>
+            <p class="text-3xl mb-8 max-w-4xl leading-relaxed">
+                1. Read the Goal at the top.<br>
+                2. Check the Graph in the middle.<br>
+                3. Build the perfect solution by adding Heat and Solute.<br>
+                4. Press <b class="text-green-400">MIX IT!</b> before your opponent!<br>
+                <i>You have 60 seconds to score as many points as possible!</i>
+            </p>
+            <button class="nav-btn game-btn text-4xl px-16 py-6 font-bold uppercase shadow-2xl animate-pulse" onclick="startGame()">Start Race!</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Slide Logic ---
+    let currentSlide = 1;
+    const totalSlides = 15;
+
+    function startLesson() {
+        document.getElementById('menu-container').style.display = 'none';
+        document.getElementById('game-board').style.display = 'none';
+        document.getElementById('slide-container').style.display = 'flex';
+        showSlide(1);
+    }
+
+    function showSlide(n) {
+        // Hide all slides
+        let slides = document.getElementsByClassName("slide");
+        for (let i = 0; i < slides.length; i++) {
+            slides[i].classList.remove("active");
+        }
+        
+        // Ensure bounds
+        if (n > totalSlides) currentSlide = totalSlides;
+        if (n < 1) currentSlide = 1;
+        
+        // Show current
+        document.getElementById(`slide-${currentSlide}`).classList.add("active");
+        
+        // Update counter and buttons
+        document.getElementById('slideCounter').innerText = `Slide ${currentSlide} of ${totalSlides}`;
+        document.getElementById('prevBtn').disabled = currentSlide === 1;
+        
+        // Special button on last slide
+        if(currentSlide === totalSlides) {
+            document.getElementById('nextBtn').style.display = 'none';
+        } else {
+            document.getElementById('nextBtn').style.display = 'block';
+        }
+
+        // Trigger animations if they exist on the slide
+        triggerSlideAnimations(currentSlide);
+    }
+
+    function changeSlide(n) {
+        currentSlide += n;
+        showSlide(currentSlide);
+    }
+
+    function triggerSlideAnimations(slideNum) {
+        // Re-trigger CSS animations by removing and re-adding elements or classes
+        if(slideNum === 1) {
+            let cube = document.getElementById('s1-cube');
+            cube.classList.remove('anim-dissolving');
+            void cube.offsetWidth; // trigger reflow
+            cube.classList.add('anim-dissolving');
+        }
+    }
+
+    function checkAnswer(btn, isCorrect) {
+        // Find parent container to disable other buttons
+        let container = btn.parentElement;
+        let buttons = container.getElementsByTagName('button');
+        for(let b of buttons) b.disabled = true;
+
+        // Find feedback p tag
+        let slide = btn.closest('.slide');
+        let feedbackId = slide.id.replace('slide-', 'feedback-');
+        let feedback = document.getElementById(feedbackId);
+
+        if(isCorrect) {
+            btn.classList.add('correct');
+            if(feedback) {
+                feedback.innerText = "Correct! 🎉";
+                feedback.style.color = "#16a34a"; // green
+            }
+        } else {
+            btn.classList.add('wrong');
+            if(feedback) {
+                feedback.innerText = "Not quite! Try to remember the lesson.";
+                feedback.style.color = "#dc2626"; // red
+                
+                // Highlight correct answer
+                for(let b of buttons) {
+                    if(b.getAttribute('onclick').includes('true')) {
+                        b.classList.add('correct');
+                        b.style.opacity = '0.5';
+                    }
+                }
+            }
+        }
+    }
+
+    // --- STREAMING_CHUNK:Interactive Game Logic & State ---
+    
+    // Game Variables
+    let p1Score = 0;
+    let p2Score = 0;
+    
+    // Player states
+    let p1State = { temp: 0, solute: 0 };
+    let p2State = { temp: 0, solute: 0 };
+    
+    let masterTimer = null;
+    let timeLeft = 60;
+    let currentChallenge = null;
+    let isGameRunning = false;
+
+    // Challenge Bank based on a simple 1:1 ratio curve for speed (0=0, 20=20, 40=40, etc)
+    const challenges = [
+        { reqTemp: 40, reqSolute: 40, text: "Make it SATURATED at 40°C!" },
+        { reqTemp: 60, reqSolute: 60, text: "Make it SATURATED at 60°C!" },
+        { reqTemp: 80, reqSolute: 80, text: "Make it SATURATED at 80°C!" },
+        { reqTemp: 20, reqSolute: 20, text: "Make it SATURATED at 20°C!" },
+        { reqTemp: 100, reqSolute: 100, text: "Dissolve exactly 100g to saturate it!" },
+        { reqTemp: 40, reqSolute: 40, text: "Dissolve exactly 40g to saturate it!" },
+        { reqTemp: 60, reqSolute: 60, text: "Dissolve exactly 60g to saturate it!" }
+    ];
+
+    function backToMenu() {
+        clearInterval(masterTimer);
+        document.getElementById('game-board').style.display = 'none';
+        document.getElementById('slide-container').style.display = 'none';
+        document.getElementById('menu-container').style.display = 'flex';
+    }
+
+    function startSetupGame() {
+        document.getElementById('menu-container').style.display = 'none';
+        document.getElementById('slide-container').style.display = 'none';
+        document.getElementById('game-board').style.display = 'flex';
+        document.getElementById('game-start-screen').style.display = 'flex';
+        document.getElementById('game-over-screen').style.display = 'none';
+    }
+
+    function startGame() {
+        document.getElementById('game-start-screen').style.display = 'none';
+        document.getElementById('game-over-screen').style.display = 'none';
+        
+        p1Score = 0;
+        p2Score = 0;
+        updateScores();
+        
+        resetBeaker(1);
+        resetBeaker(2);
+        
+        timeLeft = 60;
+        document.getElementById('game-timer').innerText = timeLeft;
+        document.getElementById('game-timer').classList.remove('text-red-500', 'animate-pulse');
+        
+        isGameRunning = true;
+        
+        loadNewChallenge();
+        
+        clearInterval(masterTimer);
+        masterTimer = setInterval(gameTick, 1000);
+    }
+
+    function gameTick() {
+        if(!isGameRunning) return;
+        
+        timeLeft--;
+        document.getElementById('game-timer').innerText = timeLeft;
+        
+        if (timeLeft <= 10) {
+            document.getElementById('game-timer').classList.add('text-red-500', 'animate-pulse');
+        }
+        
+        if (timeLeft <= 0) {
+            endGame();
+        }
+    }
+
+    function loadNewChallenge() {
+        // Pick random challenge
+        const randomIndex = Math.floor(Math.random() * challenges.length);
+        currentChallenge = challenges[randomIndex];
+        
+        const challengeEl = document.getElementById('game-challenge');
+        challengeEl.innerText = currentChallenge.text;
+        
+        // Pop animation for new text
+        challengeEl.style.transform = 'scale(1.1)';
+        setTimeout(() => challengeEl.style.transform = 'scale(1)', 200);
+    }
+
+    // --- STREAMING_CHUNK:Beaker Interaction Logic ---
+    function addHeat(pNum) {
+        if(!isGameRunning) return;
+        let state = pNum === 1 ? p1State : p2State;
+        
+        if (state.temp < 100) {
+            state.temp += 20;
+            updateBeakerVisuals(pNum);
+        }
+    }
+
+    function addSolute(pNum) {
+        if(!isGameRunning) return;
+        let state = pNum === 1 ? p1State : p2State;
+        
+        if (state.solute < 100) {
+            state.solute += 20;
+            updateBeakerVisuals(pNum);
+            dropSoluteBlock(pNum, state.solute);
+        }
+    }
+
+    function resetBeaker(pNum) {
+        if(pNum === 1) p1State = { temp: 0, solute: 0 };
+        else p2State = { temp: 0, solute: 0 };
+        
+        updateBeakerVisuals(pNum);
+        document.getElementById(`p${pNum}-solute-group`).innerHTML = ""; // Clear cubes
+    }
+
+    function updateBeakerVisuals(pNum) {
+        let state = pNum === 1 ? p1State : p2State;
+        
+        // Update Thermometer Fill (Height maps 0-100 to 0-190px)
+        const thermoHeight = (state.temp / 100) * 190;
+        document.getElementById(`p${pNum}-thermo-fill`).setAttribute('height', thermoHeight);
+        
+        // Update Text
+        document.getElementById(`p${pNum}-temp-txt`).textContent = `${state.temp}°C`;
+        document.getElementById(`p${pNum}-solute-txt`).textContent = `${state.solute}g`;
+        
+        // Change water color slightly based on temp (blue -> red)
+        const waterNode = document.getElementById(`p${pNum}-water`);
+        if(state.temp < 40) waterNode.setAttribute('fill', '#3b82f6'); // Blue
+        else if(state.temp < 80) waterNode.setAttribute('fill', '#8b5cf6'); // Purple
+        else waterNode.setAttribute('fill', '#ef4444'); // Red
+    }
+
+    function dropSoluteBlock(pNum, currentSoluteTotal) {
+        const group = document.getElementById(`p${pNum}-solute-group`);
+        
+        // Number of blocks currently = total / 20. 
+        // We calculate a base Y so they stack up at the bottom.
+        const numBlocks = currentSoluteTotal / 20;
+        const baseY = 210 - (numBlocks * 22); // Stack upward from bottom (Y=210)
+        
+        // X position with slight random jitter to look like a pile
+        const randomX = 140 + Math.random() * 80;
+        const randomRot = -15 + Math.random() * 30;
+
+        const block = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        block.setAttribute("x", randomX);
+        block.setAttribute("y", baseY);
+        block.setAttribute("width", "25");
+        block.setAttribute("height", "20");
+        block.setAttribute("rx", "4");
+        block.setAttribute("fill", "#d8b4fe"); // light purple
+        block.setAttribute("stroke", "#a855f7");
+        block.setAttribute("stroke-width", "2");
+        block.setAttribute("class", "solute-cube");
+        
+        // Center rotation for the drop animation
+        block.style.transformOrigin = `${randomX + 12}px ${baseY + 10}px`;
+        
+        group.appendChild(block);
+    }
+
+    // --- STREAMING_CHUNK:Checking Win Logic ---
+    function mixAndCheck(pNum) {
+        if(!isGameRunning) return;
+        
+        let state = pNum === 1 ? p1State : p2State;
+        let labArea = document.getElementById(`p${pNum}-lab-area`);
+        
+        // Check if exactly matches goal
+        if (state.temp === currentChallenge.reqTemp && state.solute === currentChallenge.reqSolute) {
+            // SUCCESS!
+            labArea.classList.remove('shake-error');
+            void labArea.offsetWidth; // trigger reflow
+            labArea.classList.add('glow-success');
+            
+            // Add score
+            if (pNum === 1) p1Score++;
+            else p2Score++;
+            updateScores();
+            
+            // Show feedback text briefly over challenge
+            let chText = document.getElementById('game-challenge');
+            let oldText = chText.innerText;
+            chText.innerText = `PLAYER ${pNum} GOT IT! +1 POINT`;
+            chText.classList.replace('bg-indigo-600', 'bg-green-600');
+            
+            // Reset both players to force them to build the new challenge
+            resetBeaker(1);
+            resetBeaker(2);
+            
+            setTimeout(() => {
+                chText.classList.replace('bg-green-600', 'bg-indigo-600');
+                loadNewChallenge();
+            }, 1500);
+
+        } else {
+            // ERROR!
+            labArea.classList.remove('glow-success');
+            void labArea.offsetWidth;
+            labArea.classList.add('shake-error');
+            
+            // Empty their beaker as a penalty
+            resetBeaker(pNum);
+        }
+    }
+
+    function updateScores() {
+        document.getElementById('p1-score').innerText = p1Score;
+        document.getElementById('p2-score').innerText = p2Score;
+        
+        // Max score visual is arbitrarily 10 for the beaker fill, but it can go higher numerically
+        const maxVisualScore = 10;
+        const maxHeight = 90;
+        const startY = 107;
+        
+        const p1Height = Math.min((p1Score / maxVisualScore) * maxHeight, maxHeight);
+        const p1Rect = document.getElementById('p1-beaker-fill');
+        p1Rect.setAttribute('height', p1Height);
+        p1Rect.setAttribute('y', startY - p1Height);
+        
+        const p2Height = Math.min((p2Score / maxVisualScore) * maxHeight, maxHeight);
+        const p2Rect = document.getElementById('p2-beaker-fill');
+        p2Rect.setAttribute('height', p2Height);
+        p2Rect.setAttribute('y', startY - p2Height);
+    }
+
+    function endGame() {
+        isGameRunning = false;
+        clearInterval(masterTimer);
+        
+        document.getElementById('game-over-screen').style.display = 'flex';
+        let winnerText = document.getElementById('game-winner-text');
+        
+        document.getElementById('game-final-scores').innerText = `Final Score: P1 [ ${p1Score} ] - P2 [ ${p2Score} ]`;
+        
+        if (p1Score > p2Score) {
+            winnerText.innerText = "Player 1 Wins!";
+            winnerText.style.color = "#60a5fa";
+        } else if (p2Score > p1Score) {
+            winnerText.innerText = "Player 2 Wins!";
+            winnerText.style.color = "#f472b6";
+        } else {
+            winnerText.innerText = "It's a TIE!";
+            winnerText.style.color = "#fef08a";
+        }
+    }
+
+</script>
+</body>
+</html>
