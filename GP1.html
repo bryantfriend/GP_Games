@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Skills Interactive Lesson</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Light green background to match book theme */
+            overflow-x: hidden;
+        }
+
+        .slide-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            pointer-events: none; /* Prevent clicks on hidden slides */
+        }
+
+        .slide-container.active {
+            opacity: 1;
+            pointer-events: auto; /* Enable clicks on active slide */
+            position: relative;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            60% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        .animate-bounce-in {
+            animation: bounceIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes drawSVG {
+            to { stroke-dashoffset: 0; }
+        }
+        
+        .draw-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: drawSVG 2s ease-out forwards;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin: 0.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid transparent;
+            user-select: none;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .card.selected {
+            border-color: #3b82f6; /* Blue border for selected */
+            background-color: #eff6ff;
+        }
+        
+        .card.matched {
+            background-color: #dcfce7; /* Green for match */
+            border-color: #22c55e;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .card.wrong {
+            background-color: #fee2e2; /* Red for wrong */
+            border-color: #ef4444;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        .dropzone {
+            border: 2px dashed #9ca3af;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .dropzone.dragover {
+            background-color: #e5e7eb;
+            border-color: #4b5563;
+        }
+
+        .card.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+            box-shadow: none;
+            border-color: #9ca3af;
+            border-style: dashed;
+        }
+        
+        .score-pop {
+            animation: popOut 0.5s ease-out forwards;
+        }
+
+        @keyframes popOut {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-20px) scale(1.5); opacity: 0; }
+        }
+
+        .icon-large {
+            width: 150px;
+            height: 150px;
+            margin: 1rem auto;
+        }
+        
+        .feedback-msg {
+            min-height: 24px;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+
+        /* Timer Circular Progress */
+        .timer-circle {
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            transition: stroke-dashoffset 1s linear;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="app" class="relative w-full min-h-screen">
+        
+        <!-- Navigation Controls (Fixed) -->
+        <div class="fixed bottom-0 left-0 w-full bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-4 flex justify-between items-center z-50">
+            <button id="prevBtn" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors font-semibold">Previous</button>
+            
+            <!-- Progress Indicator -->
+            <div class="flex-1 px-8 hidden md:block">
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="progressBar" class="bg-teal-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div id="slideCounter" class="text-center text-sm mt-1 text-gray-500 font-medium">Slide 1 of 22</div>
+            </div>
+
+            <button id="nextBtn" class="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors font-semibold shadow-md">Next</button>
+        </div>
+
+        <!-- Slide 1: Welcome -->
+        <div class="slide-container active" id="slide-1">
+            <div class="max-w-2xl bg-white p-8 rounded-2xl shadow-xl animate-bounce-in">
+                <h1 class="text-4xl font-bold text-teal-800 mb-4">Welcome to Research Skills!</h1>
+                <p class="text-lg text-gray-600 mb-6">Today, we are going to learn what makes research effective. Open your books to the page starting with "Starting with research skills: Lesson 1".</p>
+                
+                <svg class="icon-large animate-float mx-auto" viewBox="0 0 100 100" fill="none" stroke="#0f766e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="45" cy="45" r="25" fill="#f0fdf4"/>
+                    <line x1="63" y1="63" x2="85" y2="85" stroke-width="6"/>
+                    <path class="draw-path" d="M35 45 A 10 10 0 0 1 45 35" stroke="#14b8a6"/>
+                </svg>
+                
+                <p class="mt-6 text-xl font-semibold text-teal-600">Let's get started!</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: Goals Intro -->
+        <div class="slide-container" id="slide-2">
+            <div class="max-w-3xl w-full">
+                <h2 class="text-3xl font-bold text-teal-800 mb-6 text-left border-b-4 border-teal-500 pb-2 inline-block">Our Learning Goals</h2>
+                <div class="bg-white p-6 rounded-xl shadow-lg text-left">
+                    <div class="flex items-center gap-6 mb-4">
+                        <svg class="w-20 h-20 animate-bounce-in shrink-0" viewBox="0 0 100 100" fill="none" stroke="#0d9488" stroke-width="3">
+                            <circle cx="50" cy="50" r="40" fill="#ccfbf1"/>
+                            <circle cx="50" cy="50" r="25" fill="#5eead4"/>
+                            <circle cx="50" cy="50" r="10" fill="#0d9488"/>
+                            <path class="draw-path" d="M85 15 L 55 45" stroke="#ef4444" stroke-width="6" stroke-linecap="round"/>
+                            <polygon points="55,45 65,40 60,35" fill="#ef4444" stroke="none"/>
+                        </svg>
+                        <div>
+                            <p class="text-lg text-gray-700">Look at the blue box at the top of your page. Setting clear goals is like aiming for a target—it helps us focus our minds and measure our success!</p>
+                        </div>
+                    </div>
+                    <ul class="list-disc list-inside space-y-3 text-lg text-gray-700 ml-4">
+                        <li class="p-2 bg-teal-50 rounded shadow-sm border-l-4 border-teal-500">I can discuss the features of <strong>effective research</strong>.</li>
+                        <li class="p-2 bg-gray-50 rounded opacity-75">I can evaluate a research question.</li>
+                        <li class="p-2 bg-gray-50 rounded opacity-75">I can write a research question.</li>
+                    </ul>
+                    <p class="mt-6 text-md font-bold text-teal-700 italic">We will focus on the first goal today.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: What is Effective Research? -->
+        <div class="slide-container" id="slide-3">
+             <div class="max-w-2xl bg-white p-8 rounded-2xl shadow-xl">
+                <h2 class="text-3xl font-bold text-orange-600 mb-4">Tip Time!</h2>
+                
+                <svg class="icon-large animate-float mx-auto" viewBox="0 0 100 100" fill="none" stroke="#ea580c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M50 85 C 40 85, 40 75, 40 75 L 60 75 C 60 75, 60 85, 50 85 Z" fill="#fed7aa"/>
+                    <path d="M40 75 L 60 75" stroke-width="4"/>
+                    <path d="M43 65 L 57 65" stroke-width="4"/>
+                    <path class="draw-path" d="M30 40 C 30 20, 70 20, 70 40 C 70 55, 60 60, 60 65 L 40 65 C 40 60, 30 55, 30 40 Z" fill="#fff7ed"/>
+                    <line x1="50" y1="10" x2="50" y2="20" stroke="#f97316"/>
+                    <line x1="25" y1="25" x2="32" y2="32" stroke="#f97316"/>
+                    <line x1="75" y1="25" x2="68" y2="32" stroke="#f97316"/>
+                </svg>
+
+                <p class="text-xl text-gray-700 leading-relaxed text-left border-l-4 border-orange-400 pl-4 bg-orange-50 p-4 rounded-r-lg mb-4">
+                    Read the orange <strong>'Tip'</strong> box on the right side of your page. <br><br>
+                    It says effective research helps you find <span class="text-orange-600 font-bold">relevant information</span>, <span class="text-orange-600 font-bold">facts/statistics</span>, and <span class="text-orange-600 font-bold">check information</span>.
+                </p>
+                <p class="text-lg text-gray-600 font-semibold mt-6">Over the next 3 slides, we will break down exactly what these three things mean.</p>
+            </div>
+        </div>
+
+        <!-- Slide 4: Deep Dive - Relevant Information -->
+        <div class="slide-container" id="slide-4">
+             <div class="max-w-3xl w-full bg-white p-8 rounded-2xl shadow-xl border-t-8 border-blue-500">
+                <h2 class="text-3xl font-bold text-blue-800 mb-6">1. Finding "Relevant" Information</h2>
+                
+                <div class="flex flex-col md:flex-row items-center gap-8 mb-6">
+                    <svg class="w-48 h-48 animate-bounce-in" viewBox="0 0 100 100" fill="none" stroke="#3b82f6" stroke-width="2">
+                        <circle cx="50" cy="50" r="45" fill="#eff6ff" stroke-width="2"/>
+                        <circle cx="50" cy="50" r="30" fill="#dbeafe" stroke-width="2"/>
+                        <circle cx="50" cy="50" r="15" fill="#93c5fd" stroke-width="2"/>
+                        <!-- Arrow hitting target -->
+                        <path class="draw-path" d="M85 15 L 55 45" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+                        <polygon points="55,45 62,38 58,34" fill="#ef4444" stroke="none"/>
+                    </svg>
+                    
+                    <div class="text-left">
+                        <p class="text-xl text-gray-700 mb-4">Relevant information means it <strong>directly answers your specific question.</strong></p>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <p class="font-bold text-gray-800">Example:</p>
+                            <p class="text-gray-600 mt-1">If your research question is <em>"What do polar bears eat?"</em>, an article about how fast polar bears can swim is interesting, but it is <strong>NOT relevant</strong> to your specific question.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Deep Dive - Facts/Statistics -->
+        <div class="slide-container" id="slide-5">
+             <div class="max-w-3xl w-full bg-white p-8 rounded-2xl shadow-xl border-t-8 border-purple-500">
+                <h2 class="text-3xl font-bold text-purple-800 mb-6">2. Facts & Statistics</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-purple-50 p-6 rounded-xl border border-purple-200 text-center relative overflow-hidden">
+                        <h3 class="text-2xl font-bold text-purple-700 mb-4">Facts</h3>
+                        <svg class="w-24 h-24 mx-auto mb-4" viewBox="0 0 100 100" fill="none" stroke="#7e22ce" stroke-width="3">
+                            <path d="M20 80 L 20 20 L 80 20 L 80 80 Z" fill="#f3e8ff"/>
+                            <path class="draw-path" d="M30 50 L 45 65 L 70 35" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <p class="text-gray-700">Statements that can be proven true with evidence.</p>
+                        <p class="text-sm font-bold text-purple-900 mt-2">"Water boils at 100°C."</p>
+                    </div>
+                    
+                    <div class="bg-gray-100 p-6 rounded-xl border border-gray-300 text-center opacity-75">
+                        <h3 class="text-2xl font-bold text-gray-600 mb-4">Opinions</h3>
+                        <svg class="w-24 h-24 mx-auto mb-4" viewBox="0 0 100 100" fill="none" stroke="#4b5563" stroke-width="3">
+                            <path d="M20 30 C 20 10, 80 10, 80 30 C 80 50, 60 55, 50 70 C 40 55, 20 50, 20 30 Z" fill="#e5e7eb"/>
+                            <circle cx="35" cy="30" r="4" fill="#4b5563"/>
+                            <circle cx="65" cy="30" r="4" fill="#4b5563"/>
+                            <path d="M40 45 Q 50 55 60 45" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                        <p class="text-gray-700">Personal feelings or beliefs. Not good for research evidence!</p>
+                        <p class="text-sm font-bold text-gray-800 mt-2">"Winter is the best season."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Deep Dive - Checking Information -->
+        <div class="slide-container" id="slide-6">
+             <div class="max-w-3xl w-full bg-white p-8 rounded-2xl shadow-xl border-t-8 border-green-500">
+                <h2 class="text-3xl font-bold text-green-800 mb-6">3. Checking Information (Cross-checking)</h2>
+                
+                <p class="text-xl text-gray-700 mb-8">Never rely on just one source. Effective researchers check if multiple sources agree!</p>
+
+                <div class="flex justify-center items-center gap-4 mb-6">
+                    <!-- Source 1 -->
+                    <div class="animate-float" style="animation-delay: 0s">
+                        <svg class="w-20 h-20" viewBox="0 0 100 100" fill="none" stroke="#059669" stroke-width="3">
+                            <rect x="25" y="15" width="50" height="70" rx="4" fill="#d1fae5"/>
+                            <line x1="35" y1="35" x2="65" y2="35"/>
+                            <line x1="35" y1="50" x2="65" y2="50"/>
+                            <line x1="35" y1="65" x2="50" y2="65"/>
+                        </svg>
+                        <p class="font-bold text-green-700 mt-2">Website A</p>
+                    </div>
+                    
+                    <span class="text-3xl text-gray-400 font-bold">+</span>
+                    
+                    <!-- Source 2 -->
+                    <div class="animate-float" style="animation-delay: 0.5s">
+                        <svg class="w-20 h-20" viewBox="0 0 100 100" fill="none" stroke="#0284c7" stroke-width="3">
+                            <rect x="25" y="15" width="50" height="70" rx="4" fill="#e0f2fe"/>
+                            <line x1="35" y1="35" x2="65" y2="35"/>
+                            <line x1="35" y1="50" x2="65" y2="50"/>
+                            <line x1="35" y1="65" x2="50" y2="65"/>
+                        </svg>
+                        <p class="font-bold text-blue-700 mt-2">Book B</p>
+                    </div>
+                    
+                    <span class="text-3xl text-gray-400 font-bold">=</span>
+                    
+                    <!-- Result -->
+                    <div class="animate-bounce-in">
+                        <svg class="w-24 h-24" viewBox="0 0 100 100" fill="none" stroke="#16a34a" stroke-width="4">
+                            <circle cx="50" cy="50" r="40" fill="#bbf7d0"/>
+                            <path class="draw-path" d="M30 50 L 45 65 L 70 35" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <p class="font-bold text-green-800 mt-2 text-xl">Verified Fact!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Prior Learning Question 1 Intro -->
+        <div class="slide-container" id="slide-7">
+             <div class="max-w-3xl w-full">
+                <div class="bg-red-800 text-white p-4 rounded-t-xl">
+                    <h2 class="text-2xl font-bold text-left">Prior learning - Question 1</h2>
+                </div>
+                <div class="bg-white p-8 rounded-b-xl shadow-lg border-2 border-red-800">
+                    <p class="text-2xl text-left font-medium mb-6">Let's look at question 1 in the red box.</p>
+                    <p class="text-xl text-left mb-8 italic">"Which of these features are part of effective research and which are not?"</p>
+                    
+                    <div class="bg-blue-50 p-6 rounded-lg mb-6 border-l-4 border-blue-500">
+                        <h3 class="text-xl font-bold text-blue-800 mb-2">How we will vote:</h3>
+                        <div class="flex justify-around items-center mt-4">
+                            <div class="text-center bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                                <span class="text-6xl animate-bounce">☝️</span>
+                                <p class="font-bold text-xl mt-4 text-green-700">1 Finger = YES</p>
+                                <p class="text-sm text-gray-600">(It IS effective research)</p>
+                            </div>
+                            <div class="text-center bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                                <span class="text-6xl animate-bounce" style="animation-delay: 0.2s">✌️</span>
+                                <p class="font-bold text-xl mt-4 text-red-700">2 Fingers = NO</p>
+                                <p class="text-sm text-gray-600">(It is NOT effective)</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="text-lg text-left text-gray-600 font-semibold bg-yellow-100 p-3 rounded">We are going to go through options A, B, C, and D together. Get ready to vote!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Option A -->
+        <div class="slide-container" id="slide-8">
+            <div class="max-w-3xl w-full">
+                <div class="flex items-start bg-white p-6 rounded-xl shadow-md border-l-8 border-red-600 mb-6">
+                    <span class="text-4xl font-bold text-red-600 mr-4">A</span>
+                    <div class="flex-1 text-left mt-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="w-8 h-8 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M20 21a8 8 0 0 0-16 0"/>
+                            </svg>
+                            <p class="text-2xl font-bold text-gray-800">Check the Author</p>
+                        </div>
+                        <p class="text-xl text-gray-600">Looking at an author’s webpage to see where they work, their expertise and what else they have published.</p>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-100 p-6 rounded-xl text-center">
+                    <h3 class="text-2xl font-semibold text-teal-800 mb-4">Is this effective research?</h3>
+                    <p class="text-lg text-gray-600 mb-6 font-bold">Hold up your fingers to vote!</p>
+                    
+                    <button id="reveal-btn-A" class="px-8 py-4 bg-indigo-600 text-white rounded-xl text-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg" onclick="revealAnswer('A', true, 'Yes! Checking an author\'s credentials helps ensure the information is reliable and from an expert.')">Reveal Answer</button>
+                    
+                    <div id="feedback-A" class="feedback-msg text-xl mt-6 hidden p-6 rounded-lg bg-green-100 border-4 border-green-400"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Option B -->
+        <div class="slide-container" id="slide-9">
+             <div class="max-w-3xl w-full">
+                <div class="flex items-start bg-white p-6 rounded-xl shadow-md border-l-8 border-red-600 mb-6">
+                    <span class="text-4xl font-bold text-red-600 mr-4">B</span>
+                    <div class="flex-1 text-left mt-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="w-8 h-8 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                            <p class="text-2xl font-bold text-gray-800">Copy and Paste</p>
+                        </div>
+                        <p class="text-xl text-gray-600">Copying and pasting relevant information from a newspaper article found on the internet.</p>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-100 p-6 rounded-xl text-center">
+                    <h3 class="text-2xl font-semibold text-teal-800 mb-4">Is this effective research?</h3>
+                    <p class="text-lg text-gray-600 mb-6 font-bold">Hold up your fingers to vote!</p>
+                    
+                    <button id="reveal-btn-B" class="px-8 py-4 bg-indigo-600 text-white rounded-xl text-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg" onclick="revealAnswer('B', false, 'Correct, this is NOT effective! It\'s plagiarism. You should read, understand, and make your own notes.')">Reveal Answer</button>
+                    
+                    <div id="feedback-B" class="feedback-msg text-xl mt-6 hidden p-6 rounded-lg bg-red-100 border-4 border-red-400"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Option C -->
+        <div class="slide-container" id="slide-10">
+             <div class="max-w-3xl w-full">
+                <div class="flex items-start bg-white p-6 rounded-xl shadow-md border-l-8 border-red-600 mb-6">
+                    <span class="text-4xl font-bold text-red-600 mr-4">C</span>
+                    <div class="flex-1 text-left mt-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="w-8 h-8 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 20h9"/>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                            </svg>
+                            <p class="text-2xl font-bold text-gray-800">Make Notes</p>
+                        </div>
+                        <p class="text-xl text-gray-600">Making notes from an information source to answer questions relevant to a research study.</p>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-100 p-6 rounded-xl text-center">
+                    <h3 class="text-2xl font-semibold text-teal-800 mb-4">Is this effective research?</h3>
+                    <p class="text-lg text-gray-600 mb-6 font-bold">Hold up your fingers to vote!</p>
+                    
+                    <button id="reveal-btn-C" class="px-8 py-4 bg-indigo-600 text-white rounded-xl text-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg" onclick="revealAnswer('C', true, 'Yes! Making notes in your own words focusing on your specific questions is excellent research practice.')">Reveal Answer</button>
+                    
+                    <div id="feedback-C" class="feedback-msg text-xl mt-6 hidden p-6 rounded-lg bg-green-100 border-4 border-green-400"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Option D -->
+        <div class="slide-container" id="slide-11">
+             <div class="max-w-3xl w-full">
+                <div class="flex items-start bg-white p-6 rounded-xl shadow-md border-l-8 border-red-600 mb-6">
+                    <span class="text-4xl font-bold text-red-600 mr-4">D</span>
+                    <div class="flex-1 text-left mt-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="w-8 h-8 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                            </svg>
+                            <p class="text-2xl font-bold text-gray-800">Record Sources</p>
+                        </div>
+                        <p class="text-xl text-gray-600">Recording the title of an article, the date published and the author’s name to add to a reference list.</p>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-100 p-6 rounded-xl text-center">
+                    <h3 class="text-2xl font-semibold text-teal-800 mb-4">Is this effective research?</h3>
+                    <p class="text-lg text-gray-600 mb-6 font-bold">Hold up your fingers to vote!</p>
+                    
+                    <button id="reveal-btn-D" class="px-8 py-4 bg-indigo-600 text-white rounded-xl text-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg" onclick="revealAnswer('D', true, 'Correct! Keeping track of your sources is crucial so you can find them again and give proper credit.')">Reveal Answer</button>
+                    
+                    <div id="feedback-D" class="feedback-msg text-xl mt-6 hidden p-6 rounded-lg bg-green-100 border-4 border-green-400"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Fill in the book Part 1 -->
+        <div class="slide-container" id="slide-12">
+            <div class="max-w-3xl bg-white p-8 rounded-2xl shadow-xl w-full">
+                <h2 class="text-3xl font-bold text-teal-800 mb-4">Time to write!</h2>
+                
+                <svg class="icon-large animate-bounce-in mx-auto" viewBox="0 0 100 100" fill="none" stroke="#1f2937" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="20" y="10" width="60" height="80" rx="5" fill="#f9fafb"/>
+                    <line x1="30" y1="30" x2="70" y2="30"/>
+                    <line x1="30" y1="50" x2="70" y2="50"/>
+                    <line x1="30" y1="70" x2="50" y2="70"/>
+                    <path d="M75 80 L 85 90 L 95 80 L 85 20 Z" fill="#fcd34d" stroke="#d97706"/>
+                    <path d="M75 80 L 85 90 L 95 80" fill="#374151"/>
+                </svg>
+
+                <p class="text-xl text-gray-700 text-left mb-6 font-medium">
+                    In your book under Question 1, write down the letters of the features that ARE effective research on the lines provided.
+                </p>
+                <div class="bg-gray-100 p-6 rounded-xl text-3xl text-center font-black font-mono tracking-[1em] text-teal-700 border-2 border-dashed border-teal-300">
+                    A,C,D
+                </div>
+                <p class="text-md text-red-500 font-bold mt-4">(Remember: B is NOT effective because it is plagiarism).</p>
+            </div>
+        </div>
+
+        <!-- Slide 13: Question 2 -->
+        <div class="slide-container" id="slide-13">
+            <div class="max-w-3xl w-full">
+                <div class="bg-red-800 text-white p-4 rounded-t-xl">
+                    <h2 class="text-2xl font-bold text-left">Prior learning - Question 2</h2>
+                </div>
+                <div class="bg-white p-8 rounded-b-xl shadow-lg border-2 border-red-800 text-left">
+                    <p class="text-2xl font-bold mb-4">"Do your classmates agree with you? Yes/No Why?"</p>
+                    
+                    <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-200 mb-6 flex items-center gap-6">
+                        <svg class="w-24 h-24 text-indigo-500 animate-float shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <div>
+                            <h3 class="text-xl font-bold text-indigo-900 mb-2">Think - Pair - Share</h3>
+                            <p class="text-lg text-gray-700">Turn to your partner. Discuss why A, C, and D are good, and why B is bad. Do you both agree?</p>
+                        </div>
+                    </div>
+                    
+                    <p class="text-center font-bold text-xl text-red-600">Get ready for the timer on the next slide!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Timer -->
+        <div class="slide-container" id="slide-14">
+            <div class="max-w-2xl bg-white p-8 rounded-2xl shadow-xl w-full text-center">
+                <h2 class="text-3xl font-bold text-indigo-800 mb-2">Discussion Time</h2>
+                <p class="text-gray-600 mb-8">Discuss Question 2 with your partner.</p>
+                
+                <div class="relative w-64 h-64 mx-auto mb-8">
+                    <svg class="w-full h-full" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" stroke-width="8" />
+                        <circle id="timer-path" class="timer-circle" cx="50" cy="50" r="45" fill="none" stroke="#4f46e5" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="0" />
+                    </svg>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                        <span id="timer-text" class="text-5xl font-mono font-black text-indigo-900">2:00</span>
+                    </div>
+                </div>
+
+                <button id="start-timer-btn" class="px-8 py-3 bg-green-500 text-white rounded-full text-xl font-bold hover:bg-green-600 transition shadow-md" onclick="startTimer(120)">Start Timer</button>
+                
+                <div class="mt-8 text-left bg-gray-50 p-4 rounded border-l-4 border-gray-400">
+                    <p class="font-bold text-gray-700 text-sm">Example Answer to write down after discussing:</p>
+                    <p class="text-gray-600 italic mt-1 text-sm">"Yes, my partner agreed. We both realized that copying and pasting (B) doesn't show understanding, while the others (A, C, D) are good habits for finding reliable information."</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 15: The Who, When, Why Framework -->
+        <div class="slide-container" id="slide-15">
+             <div class="max-w-4xl w-full bg-white p-8 rounded-2xl shadow-xl border-t-8 border-yellow-400">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">How else can we check a source?</h2>
+                <p class="text-gray-600 mb-8">Before we answer Question 3, let's learn the <strong>3 W's</strong> of evaluating sources.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- WHO -->
+                    <div class="bg-blue-50 p-6 rounded-xl text-center border border-blue-100">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <h3 class="text-xl font-bold text-blue-900 mb-2">WHO</h3>
+                        <p class="text-sm text-gray-700">Who wrote this? Are they an expert or just a random person?</p>
+                    </div>
+                    
+                    <!-- WHEN -->
+                    <div class="bg-green-50 p-6 rounded-xl text-center border border-green-100">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <h3 class="text-xl font-bold text-green-900 mb-2">WHEN</h3>
+                        <p class="text-sm text-gray-700">When was this published? Is the information outdated or recent?</p>
+                    </div>
+                    
+                    <!-- WHY -->
+                    <div class="bg-red-50 p-6 rounded-xl text-center border border-red-100">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <h3 class="text-xl font-bold text-red-900 mb-2">WHY</h3>
+                        <p class="text-sm text-gray-700">Why was this written? To inform you with facts, or to sell you something?</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 16: Question 3 Intro -->
+        <div class="slide-container" id="slide-16">
+             <div class="max-w-3xl w-full">
+                <div class="bg-red-800 text-white p-4 rounded-t-xl">
+                    <h2 class="text-2xl font-bold text-left">Prior learning - Question 3</h2>
+                </div>
+                <div class="bg-white p-8 rounded-b-xl shadow-lg border-2 border-red-800 text-left flex flex-col items-center">
+                    <svg class="w-20 h-20 text-yellow-500 mb-4 animate-bounce-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v2M4.93 4.93l1.41 1.41M2 12h2M4.93 19.07l1.41-1.41M12 22v-2M19.07 19.07l-1.41-1.41M22 12h-2M19.07 4.93l-1.41 1.41"/>
+                        <circle cx="12" cy="12" r="4"/>
+                    </svg>
+
+                    <div class="w-full text-center">
+                        <p class="text-2xl font-bold mb-4 bg-yellow-50 p-4 rounded inline-block">"Add one further feature to explain how to conduct effective research."</p>
+                        <p class="text-xl text-gray-700 mb-4 mt-6">We need to think of a NEW good habit for researching that wasn't in list A-D.</p>
+                        <p class="text-lg font-semibold text-teal-700 mt-4">Let's brainstorm on the next slide!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 17: Brainstorming Q3 -->
+        <div class="slide-container" id="slide-17">
+            <div class="max-w-4xl bg-white p-8 rounded-2xl shadow-xl w-full">
+                <h2 class="text-2xl font-bold text-teal-800 mb-6">Which of these is a GOOD addition for Question 3?</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                    <div class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition" onclick="selectBrainstorm(this, false)">
+                        <p class="font-medium text-lg">Only looking at one website to save time.</p>
+                        <p class="text-red-500 font-bold hidden mt-2 result-msg">❌ Poor practice. You need multiple sources to verify facts.</p>
+                    </div>
+                    <div class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition" onclick="selectBrainstorm(this, true)">
+                        <p class="font-medium text-lg">Checking multiple sources to see if they agree on the facts.</p>
+                        <p class="text-green-600 font-bold hidden mt-2 result-msg">✅ Great idea! This is called cross-referencing.</p>
+                    </div>
+                    <div class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition" onclick="selectBrainstorm(this, false)">
+                        <p class="font-medium text-lg">Believing everything you read on social media.</p>
+                        <p class="text-red-500 font-bold hidden mt-2 result-msg">❌ Not a good idea. Social media is often unreliable.</p>
+                    </div>
+                    <div class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition" onclick="selectBrainstorm(this, true)">
+                        <p class="font-medium text-lg">Checking if the source is up-to-date (When was it written?).</p>
+                        <p class="text-green-600 font-bold hidden mt-2 result-msg">✅ Excellent! Evaluating the 'When' is a key feature.</p>
+                    </div>
+                </div>
+                <p class="mt-6 text-gray-500 italic text-sm">Click on the options above to see if they are good additions.</p>
+            </div>
+        </div>
+
+        <!-- Slide 18: Fill in the book Part 2 -->
+        <div class="slide-container" id="slide-18">
+             <div class="max-w-3xl bg-white p-8 rounded-2xl shadow-xl w-full">
+                <h2 class="text-3xl font-bold text-teal-800 mb-4">Write your final answer!</h2>
+                
+                <p class="text-xl text-gray-700 text-left mb-6 font-medium">
+                    In your book under Question 3, write down one of the good features we just discussed.
+                </p>
+                
+                <div class="bg-yellow-50 p-8 rounded-xl border-l-8 border-yellow-400 text-left space-y-4 shadow-sm">
+                    <p class="font-bold text-yellow-800 text-xl">Pick ONE to write down:</p>
+                    <ul class="list-disc ml-6 space-y-4 text-lg font-medium text-gray-800">
+                        <li>"Checking multiple different websites to make sure the facts are correct."</li>
+                        <li>"Evaluating the 'Who, When, and Why' of a source to make sure it is trustworthy."</li>
+                        <li>"Making sure the information is up-to-date and recent."</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 19: Game Intro -->
+        <div class="slide-container" id="slide-19">
+             <div class="max-w-2xl bg-white p-8 rounded-2xl shadow-xl text-center animate-bounce-in w-full">
+                <h1 class="text-5xl font-extrabold text-indigo-600 mb-6">Let's Play a Game!</h1>
+                
+                <svg class="icon-large mx-auto animate-float" viewBox="0 0 100 100" fill="none" stroke="#4f46e5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="10" y="30" width="80" height="40" rx="20" fill="#e0e7ff"/>
+                    <!-- D-pad -->
+                    <path d="M25 45 h 10 v -10 h 10 v 10 h 10 v 10 h -10 v 10 h -10 v -10 h -10 z" fill="#818cf8" stroke="none"/>
+                    <!-- Buttons -->
+                    <circle cx="70" cy="55" r="5" fill="#ef4444" stroke="none"/>
+                    <circle cx="80" cy="45" r="5" fill="#22c55e" stroke="none"/>
+                </svg>
+
+                <p class="text-xl text-gray-700 mb-6">
+                    To make sure you understand effective research, we are going to play a matching sorting game.
+                </p>
+                <div class="bg-indigo-50 p-4 rounded-lg inline-block text-left mb-6 border border-indigo-100">
+                    <p class="font-bold text-indigo-800">Rules:</p>
+                    <ul class="list-disc ml-5 text-indigo-900">
+                        <li>Drag the cards into the correct box.</li>
+                        <li><strong>+10 points</strong> for a correct match.</li>
+                        <li><strong>-5 points</strong> for a wrong match.</li>
+                        <li>Clear all 3 levels to win!</li>
+                    </ul>
+                </div>
+                <p class="text-2xl text-indigo-700 font-black">
+                    Get ready on the next slide!
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 20: The Game -->
+        <div class="slide-container" id="slide-20">
+            <div class="max-w-5xl w-full bg-white p-6 rounded-2xl shadow-xl flex flex-col h-[85vh] relative">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-4 border-b pb-4">
+                    <h2 class="text-3xl font-bold text-indigo-800">Sort the Research Actions</h2>
+                    <div class="flex gap-4 mt-4 md:mt-0">
+                        <div class="bg-indigo-100 text-indigo-800 px-4 py-2 rounded-lg font-bold text-lg border border-indigo-200 shadow-sm">
+                            Level: <span id="game-level">1</span>/3
+                        </div>
+                        <div class="bg-teal-100 text-teal-800 px-4 py-2 rounded-lg font-bold text-lg border border-teal-200 shadow-sm relative">
+                            Score: <span id="game-score">0</span>
+                            <span id="score-animator" class="absolute -top-4 -right-2 text-green-600 font-black opacity-0"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="text-center text-gray-600 mb-6 font-medium text-lg">Drag and drop each card into the correct category box below.</p>
+
+                <!-- Cards Area -->
+                <div id="game-cards" class="flex flex-wrap justify-center gap-3 mb-8 flex-1 content-start overflow-y-auto p-2 min-h-[150px]">
+                    <!-- Cards injected by JS -->
+                </div>
+
+                <!-- Dropzones -->
+                <div class="grid grid-cols-2 gap-6 mt-auto">
+                    <div class="bg-green-50 rounded-xl p-4 border-2 border-green-300 shadow-inner">
+                        <h3 class="text-xl font-bold text-green-800 text-center mb-4">✅ Effective Research</h3>
+                        <div id="zone-effective" class="dropzone bg-white bg-opacity-50" data-category="effective">
+                            <span class="text-gray-400 pointer-events-none text-center font-medium">Drag effective practices here</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-red-50 rounded-xl p-4 border-2 border-red-300 shadow-inner">
+                        <h3 class="text-xl font-bold text-red-800 text-center mb-4">❌ Ineffective/Poor</h3>
+                        <div id="zone-ineffective" class="dropzone bg-white bg-opacity-50" data-category="ineffective">
+                            <span class="text-gray-400 pointer-events-none text-center font-medium">Drag poor practices here</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Level Complete Overlay -->
+                <div id="game-complete" class="hidden absolute inset-0 bg-white/95 z-10 flex flex-col items-center justify-center rounded-2xl backdrop-blur-sm">
+                    <h2 id="end-title" class="text-6xl font-black text-green-600 mb-4 animate-bounce-in drop-shadow-sm">Level Cleared!</h2>
+                    <p id="end-desc" class="text-2xl text-gray-700 mb-8 font-medium">Great job evaluating those sources.</p>
+                    
+                    <svg class="icon-large animate-float" viewBox="0 0 100 100" fill="none" stroke="#ca8a04" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M30 20 L 70 20 L 60 60 C 60 70, 40 70, 40 60 Z" fill="#fef08a"/>
+                        <path d="M45 65 L 45 80 L 35 85 L 65 85 L 55 80 L 55 65" fill="#fef08a"/>
+                        <path d="M30 25 C 15 25, 15 45, 33 40" fill="none" stroke-width="4"/>
+                        <path d="M70 25 C 85 25, 85 45, 67 40" fill="none" stroke-width="4"/>
+                        <circle cx="50" cy="40" r="8" fill="#eab308" stroke="none"/>
+                    </svg>
+
+                    <button id="next-level-btn" class="mt-8 px-10 py-4 bg-indigo-600 text-white rounded-full text-2xl font-bold hover:bg-indigo-700 transition-colors shadow-lg hover:scale-105 transform">Next Level</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 21: Post-Game Review -->
+        <div class="slide-container" id="slide-21">
+            <div class="max-w-3xl w-full bg-white p-8 rounded-2xl shadow-xl border-t-8 border-teal-500">
+                <h2 class="text-4xl font-bold text-teal-800 mb-6">Game Complete!</h2>
+                <p class="text-2xl text-gray-700 mb-8">What did we learn from playing?</p>
+                
+                <div class="space-y-4 text-left">
+                    <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500 flex items-center gap-4 shadow-sm">
+                        <span class="text-3xl">✅</span>
+                        <p class="text-lg text-gray-800 font-medium">Effective research takes <strong>time</strong>. You have to read, take notes, and check facts.</p>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-lg border-l-4 border-red-500 flex items-center gap-4 shadow-sm">
+                        <span class="text-3xl">❌</span>
+                        <p class="text-lg text-gray-800 font-medium">Ineffective research is usually trying to take <strong>shortcuts</strong> (copying, trusting one source, guessing).</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 22: Exit Ticket -->
+        <div class="slide-container" id="slide-22">
+            <div class="max-w-2xl w-full bg-white p-8 rounded-2xl shadow-xl text-center">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Exit Ticket</h2>
+                
+                <svg class="w-32 h-32 mx-auto mb-6 text-yellow-500 animate-float" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M2 10a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v4a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4v-4zm4-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H6zm3 3h6v2H9v-2z"></path>
+                </svg>
+
+                <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 text-left mb-6 shadow-inner">
+                    <p class="text-xl font-bold text-gray-800 mb-2">Before you pack up, think about:</p>
+                    <p class="text-lg text-gray-600 italic">"What is one bad research habit you used to do, that you will stop doing after today's lesson?"</p>
+                </div>
+                
+                <p class="text-2xl font-black text-teal-600 mt-8 animate-pulse">Great job today, class!</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // State management
+        let currentSlide = 1;
+        const totalSlides = 22; // Updated for 40-minute pacing
+        
+        // Game State
+        let matchedCount = 0;
+        let currentLevel = 1;
+        let score = 0;
+        const maxLevels = 3;
+        let draggedCard = null;
+
+        // Level Data
+        const levelData = {
+            1: [
+                { id: 'g3', text: "Making notes in your own words", category: 'effective' },
+                { id: 'g2', text: "Copying and pasting a whole article", category: 'ineffective' },
+                { id: 'g5', text: "Using only one random blog for facts", category: 'ineffective' },
+                { id: 'g6', text: "Checking multiple sources to see if they agree", category: 'effective' }
+            ],
+            2: [
+                { id: 'g1', text: "Looking at an author's webpage to check expertise", category: 'effective' },
+                { id: 'g9', text: "Believing a claim you saw in a random meme", category: 'ineffective' },
+                { id: 'g10', text: "Checking if a URL ends in .gov or .edu", category: 'effective' },
+                { id: 'g11', text: "Using a 20-year-old article for current technology news", category: 'ineffective' }
+            ],
+            3: [
+                { id: 'g4', text: "Recording title, date, and author for references", category: 'effective' },
+                { id: 'g7', text: "Forgetting to write down where you found information", category: 'ineffective' },
+                { id: 'g8', text: "Evaluating a research question to see if it's too broad", category: 'effective' },
+                { id: 'g12', text: "Changing an expert's quotes to fit your argument", category: 'ineffective' },
+                { id: 'g13', text: "Cross-referencing facts across three trusted books", category: 'effective' },
+                { id: 'g14', text: "Trusting a website that has lots of spelling errors", category: 'ineffective' }
+            ]
+        };
+
+        // DOM Elements
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressBar = document.getElementById('progressBar');
+        const slideCounter = document.getElementById('slideCounter');
+        
+        // Navigation Logic
+        function updateUI() {
+            // Update buttons
+            prevBtn.disabled = currentSlide === 1;
+            nextBtn.disabled = currentSlide === totalSlides;
+            
+            if(currentSlide === totalSlides) {
+                nextBtn.classList.add('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+            }
+
+            // Update Progress Bar
+            const progress = ((currentSlide - 1) / (totalSlides - 1)) * 100;
+            progressBar.style.width = `${progress}%`;
+            slideCounter.textContent = `Slide ${currentSlide} of ${totalSlides}`;
+
+            // Show/Hide Slides
+            document.querySelectorAll('.slide-container').forEach((slide, index) => {
+                if (index + 1 === currentSlide) {
+                    slide.classList.add('active');
+                    
+                    // Reset reveal states when navigating back to a question slide (Slides 8-11 correspond to A,B,C,D)
+                    if (currentSlide >= 8 && currentSlide <= 11) {
+                        const letter = String.fromCharCode(64 + (currentSlide - 7)); // Slide 8 -> A, Slide 9 -> B
+                        const btn = document.getElementById(`reveal-btn-${letter}`);
+                        const feedback = document.getElementById(`feedback-${letter}`);
+                        if(btn) btn.classList.remove('hidden');
+                        if(feedback) feedback.classList.add('hidden');
+                    }
+                    
+                    // Reset Timer if going away and coming back
+                    if (currentSlide === 14) {
+                        resetTimer();
+                    }
+
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (currentSlide > 1) {
+                currentSlide--;
+                updateUI();
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+                updateUI();
+                // Initialize game on Slide 20
+                if(currentSlide === 20 && matchedCount === 0 && currentLevel === 1) {
+                    initGame(); 
+                }
+            }
+        });
+
+        // Question Checking Logic (Slides 8-11)
+        function revealAnswer(optionId, isEffective, feedbackText) {
+            const btn = document.getElementById(`reveal-btn-${optionId}`);
+            const feedbackEl = document.getElementById(`feedback-${optionId}`);
+            
+            btn.classList.add('hidden');
+            feedbackEl.classList.remove('hidden');
+            
+            if (isEffective) {
+                feedbackEl.innerHTML = `
+                    <div class="flex items-center justify-center gap-2 mb-2 text-green-700 font-bold text-3xl animate-bounce-in">
+                        <span>☝️ YES (Effective)</span>
+                    </div>
+                    <p class="text-green-800 text-lg">${feedbackText}</p>
+                `;
+            } else {
+                feedbackEl.innerHTML = `
+                    <div class="flex items-center justify-center gap-2 mb-2 text-red-700 font-bold text-3xl animate-bounce-in">
+                        <span>✌️ NO (Ineffective)</span>
+                    </div>
+                    <p class="text-red-800 text-lg">${feedbackText}</p>
+                `;
+            }
+        }
+
+        // Brainstorm Logic (Slide 17)
+        function selectBrainstorm(element, isGood) {
+            const container = element.parentElement;
+            container.querySelectorAll('.result-msg').forEach(msg => msg.classList.add('hidden'));
+            container.querySelectorAll('div').forEach(div => div.classList.remove('ring-4', 'ring-teal-400'));
+
+            element.querySelector('.result-msg').classList.remove('hidden');
+            element.classList.add('ring-4', 'ring-teal-400');
+        }
+
+        // Timer Logic (Slide 14)
+        let timerInterval;
+        const FULL_DASH_ARRAY = 283;
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            document.getElementById('timer-text').textContent = "2:00";
+            document.getElementById('timer-path').style.strokeDashoffset = 0;
+            document.getElementById('start-timer-btn').disabled = false;
+            document.getElementById('start-timer-btn').classList.remove('opacity-50');
+        }
+
+        function startTimer(durationInSeconds) {
+            clearInterval(timerInterval);
+            let timePassed = 0;
+            let timeLeft = durationInSeconds;
+            
+            const btn = document.getElementById('start-timer-btn');
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            
+            const timeText = document.getElementById('timer-text');
+            const timePath = document.getElementById('timer-path');
+
+            timerInterval = setInterval(() => {
+                timePassed += 1;
+                timeLeft = durationInSeconds - timePassed;
+                
+                // Format Time
+                const minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                if (seconds < 10) { seconds = `0${seconds}`; }
+                timeText.textContent = `${minutes}:${seconds}`;
+
+                // Update Circle dash
+                const rawTimeFraction = timeLeft / durationInSeconds;
+                const dashoffset = FULL_DASH_ARRAY - (rawTimeFraction * FULL_DASH_ARRAY);
+                timePath.style.strokeDashoffset = dashoffset;
+
+                if (timeLeft === 0) {
+                    clearInterval(timerInterval);
+                    timeText.textContent = "0:00";
+                    timeText.classList.add('text-red-600', 'animate-pulse');
+                    setTimeout(() => timeText.classList.remove('text-red-600', 'animate-pulse'), 3000);
+                }
+            }, 1000);
+        }
+
+        // Game Logic (Slide 20)
+        function updateScoreDisplay(amount) {
+            score += amount;
+            document.getElementById('game-score').textContent = score;
+            
+            const animator = document.getElementById('score-animator');
+            animator.textContent = amount > 0 ? `+${amount}` : amount;
+            animator.className = `absolute -top-4 -right-4 font-black text-2xl ${amount > 0 ? 'text-green-600' : 'text-red-500'}`;
+            
+            animator.classList.remove('score-pop');
+            void animator.offsetWidth;
+            animator.classList.add('score-pop');
+        }
+
+        function initGame() {
+            const container = document.getElementById('game-cards');
+            container.innerHTML = '';
+            matchedCount = 0;
+            
+            document.getElementById('game-complete').classList.add('hidden');
+            document.getElementById('game-level').textContent = currentLevel;
+            document.getElementById('game-score').textContent = score;
+            
+            const effZone = document.getElementById('zone-effective');
+            effZone.innerHTML = '<span class="text-gray-400 pointer-events-none text-center font-medium">Drag effective practices here</span>';
+            
+            const ineffZone = document.getElementById('zone-ineffective');
+            ineffZone.innerHTML = '<span class="text-gray-400 pointer-events-none text-center font-medium">Drag poor practices here</span>';
+
+            const items = levelData[currentLevel];
+            const shuffledItems = [...items].sort(() => Math.random() - 0.5);
+
+            shuffledItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card text-sm md:text-base w-full sm:w-[calc(50%-0.75rem)] md:w-[calc(33%-0.75rem)] min-h-[80px] text-center flex items-center justify-center font-bold text-gray-700 cursor-grab active:cursor-grabbing border-gray-300 shadow-md hover:shadow-lg';
+                card.textContent = item.text;
+                card.dataset.id = item.id;
+                card.dataset.category = item.category;
+                card.setAttribute('draggable', true);
+                
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+
+                container.appendChild(card);
+            });
+
+            document.querySelectorAll('.dropzone').forEach(zone => {
+                const newZone = zone.cloneNode(true);
+                zone.parentNode.replaceChild(newZone, zone);
+                
+                newZone.addEventListener('dragover', handleDragOver);
+                newZone.addEventListener('dragleave', handleDragLeave);
+                newZone.addEventListener('drop', handleDrop);
+            });
+            
+            const nextBtn = document.getElementById('next-level-btn');
+            nextBtn.onclick = handleNextLevel;
+        }
+
+        function handleDragStart(e) {
+            draggedCard = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.id); 
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            draggedCard = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault(); 
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            if (!draggedCard) return;
+
+            const targetCategory = this.dataset.category;
+            const cardCategory = draggedCard.dataset.category;
+
+            if (targetCategory === cardCategory) {
+                // Correct
+                draggedCard.classList.remove('selected', 'dragging');
+                draggedCard.classList.add('matched');
+                draggedCard.setAttribute('draggable', false);
+                
+                updateScoreDisplay(10);
+                this.appendChild(draggedCard);
+                
+                const placeholder = this.querySelector('span');
+                if(placeholder) placeholder.remove();
+
+                matchedCount++;
+                checkGameWin();
+            } else {
+                // Wrong
+                draggedCard.classList.add('wrong');
+                updateScoreDisplay(-5);
+                
+                setTimeout(() => {
+                    if(draggedCard) draggedCard.classList.remove('wrong');
+                }, 500);
+            }
+        }
+
+        function checkGameWin() {
+            const currentItemsLength = levelData[currentLevel].length;
+            
+            if (matchedCount === currentItemsLength) {
+                setTimeout(() => {
+                    const completeOverlay = document.getElementById('game-complete');
+                    const title = document.getElementById('end-title');
+                    const desc = document.getElementById('end-desc');
+                    const btn = document.getElementById('next-level-btn');
+                    
+                    completeOverlay.classList.remove('hidden');
+                    
+                    if (currentLevel < maxLevels) {
+                        title.textContent = `Level ${currentLevel} Cleared!`;
+                        desc.textContent = "Keep up the good work!";
+                        btn.textContent = "Next Level";
+                    } else {
+                        title.textContent = "You Did It!";
+                        desc.textContent = `Final Score: ${score} - Master Researcher!`;
+                        btn.textContent = "Play Again";
+                    }
+                }, 500);
+            }
+        }
+
+        function handleNextLevel() {
+            if (currentLevel < maxLevels) {
+                currentLevel++;
+                initGame();
+            } else {
+                currentLevel = 1;
+                score = 0;
+                initGame();
+            }
+        }
+
+        // Initialize UI on load
+        updateUI();
+
+    </script>
+</body>
+</html>
