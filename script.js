@@ -15,8 +15,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const games = [
                
         {
+            fileName: 'GP1.html',
+            title: 'Intro to Effective Research 📖'
+        },
+        {
             fileName: 'chemistry1.html',
-            title: 'Solubility'
+            title: 'Solubility 🧪'
         },
         {
             fileName: 'physics1.html',
