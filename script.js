@@ -15,6 +15,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const games = [
                
         {
+            fileName: 'GP_Lesson_1.html',
+            title: 'GP 1.2'
+        },
+        {
+            fileName: 'GP_Lesson_2.html',
+            title: 'GP 1'
+        },
+        {
             fileName: 'GP1.html',
             title: 'Intro to Effective Research 📖'
         },
