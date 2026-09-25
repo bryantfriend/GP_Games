@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Ranker Lesson</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- SortableJS for drag-and-drop ranking -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Light green background fitting the textbook theme */
+            color: #1f2937;
+            /* Prevent accidental selection while dragging on smartboard */
+            user-select: none; 
+        }
+        
+        .hide { display: none !important; }
+        
+        /* Drag and Drop Styles */
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #e5e7eb;
+        }
+        .sortable-drag {
+            cursor: grabbing !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: scale(1.02);
+        }
+        
+        /* Floating words animation for Idea Board */
+        @keyframes popIn {
+            0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+            70% { transform: scale(1.1) translateY(-5px); opacity: 1; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .idea-word {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Large Touch Targets for Smartboard */
+        input[type="text"] {
+            user-select: text; /* Allow typing in the input */
+        }
+        
+        /* Teacher Hint Reveal Animation */
+        .hint-reveal {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: all 0.5s ease-in-out;
+        }
+        .hint-reveal.open {
+            max-height: 100px;
+            opacity: 1;
+            margin-top: 0.5rem;
+        }
+
+        /* Slide Transitions */
+        .presentation-slide {
+            transition: opacity 0.4s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col h-screen overflow-hidden">
+
+    <header class="bg-teal-700 text-white shadow-lg p-4 flex justify-between items-center z-10 shrink-0">
+        <div class="flex items-center gap-4">
+            <i class="fa-solid fa-chalkboard text-3xl"></i>
+            <h1 class="text-3xl font-bold tracking-wide">Research Skills: Lesson 1</h1>
+        </div>
+        <nav class="flex gap-4">
+            <button onclick="switchTab('slides')" id="tab-slides" class="px-6 py-3 bg-teal-600 hover:bg-teal-500 rounded-xl font-bold text-xl transition-colors border-b-4 border-teal-800 active:translate-y-1 active:border-b-0">
+                1. Presentation
+            </button>
+            <button onclick="switchTab('idea-board')" id="tab-idea" class="px-6 py-3 bg-teal-800 hover:bg-teal-700 rounded-xl font-bold text-xl transition-colors border-b-4 border-teal-900 active:translate-y-1 active:border-b-0 opacity-70">
+                2. Idea Board
+            </button>
+            <button onclick="switchTab('ranker')" id="tab-ranker" class="px-6 py-3 bg-teal-800 hover:bg-teal-700 rounded-xl font-bold text-xl transition-colors border-b-4 border-teal-900 active:translate-y-1 active:border-b-0 opacity-70">
+                3. Question Ranker
+            </button>
+        </nav>
+    </header>
+
+    <main class="flex-1 w-full p-6 flex flex-col overflow-hidden">
+        
+        <!-- VIEW: SLIDES (Presentation) -->
+        <div id="view-slides" class="flex-1 flex flex-col items-center w-full max-w-6xl mx-auto h-full">
+            <!-- Slides Container -->
+            <div class="flex-1 w-full relative bg-white rounded-3xl shadow-xl overflow-hidden border-4 border-teal-100 flex">
+                
+                <div id="slide1" class="presentation-slide absolute inset-0 flex p-12 bg-slate-900 text-white">
+                    <div class="flex-1 flex flex-col justify-center pr-8">
+                        <p class="text-teal-400 text-2xl font-bold uppercase tracking-widest mb-4">Lesson 1</p>
+                        <h1 class="text-6xl md:text-7xl font-black leading-tight mb-8">What is a <br>Research Question?</h1>
+                        <p class="text-slate-400 text-3xl">Finding the best topic for your project.</p>
+                    </div>
+                    <div class="flex-1 flex items-center justify-center">
+                        <img src="https://img.magnific.com/premium-vector/man-sitting-front-laptop-computer-studying-diligently-library-student-front-laptop-studying-library-simple-minimalist-flat-vector-illustration_538213-119026.jpg" alt="Students studying" class="w-full h-full object-contain rounded-3xl shadow-2xl">
+                    </div>
+                </div>
+
+                <div id="slide2" class="presentation-slide absolute inset-0 hide flex flex-col justify-center items-center text-center p-12 bg-slate-50">
+                    <div class="w-24 h-3 bg-teal-600 rounded-full mb-8"></div>
+                    <h2 class="text-6xl md:text-7xl font-black text-slate-900">Part 1: What is research?</h2>
+                </div>
+
+                <div id="slide3" class="presentation-slide absolute inset-0 hide flex flex-col justify-center items-center p-12 text-center bg-white">
+                    <i class="fa-solid fa-magnifying-glass text-8xl text-teal-500 mb-10"></i>
+                    <p class="text-5xl md:text-6xl font-bold text-slate-800 leading-snug max-w-4xl">Finding new information to answer a question.</p>
+                </div>
+
+                <div id="slide4" class="presentation-slide absolute inset-0 hide flex flex-col justify-center items-center p-12 text-center bg-sky-50">
+                    <h2 class="text-5xl font-black text-slate-900 mb-12">Why do we research?</h2>
+                    <div class="flex gap-8 w-full max-w-5xl">
+                        <div class="flex-1 bg-white p-8 rounded-2xl shadow-md border-t-8 border-blue-500">
+                            <i class="fa-solid fa-lightbulb text-6xl text-blue-500 mb-6"></i>
+                            <h3 class="text-3xl font-bold mb-4">To Learn</h3>
+                            <p class="text-xl text-slate-600">We want to understand something new.</p>
+                        </div>
+                        <div class="flex-1 bg-white p-8 rounded-2xl shadow-md border-t-8 border-green-500">
+                            <i class="fa-solid fa-check-double text-6xl text-green-500 mb-6"></i>
+                            <h3 class="text-3xl font-bold mb-4">To Check Facts</h3>
+                            <p class="text-xl text-slate-600">We want to see if something is true.</p>
+                        </div>
+                        <div class="flex-1 bg-white p-8 rounded-2xl shadow-md border-t-8 border-purple-500">
+                            <i class="fa-solid fa-comments text-6xl text-purple-500 mb-6"></i>
+                            <h3 class="text-3xl font-bold mb-4">To Argue</h3>
+                            <p class="text-xl text-slate-600">We want to prove a point with evidence.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="slide5" class="presentation-slide absolute inset-0 hide flex flex-col justify-center items-center text-center p-12 bg-slate-900">
+                    <i class="fa-solid fa-chalkboard-user text-8xl text-teal-400 mb-10"></i>
+                    <h2 class="text-6xl md:text-7xl font-black text-white mb-6">Let's try an activity!</h2>
+                    <p class="text-4xl text-slate-400">Switch to the "Idea Board" tab.</p>
+                </div>
+
+                <div id="slide6" class="presentation-slide absolute inset-0 hide flex flex-col justify-center items-center text-center p-12 bg-slate-50">
+                    <div class="w-24 h-3 bg-amber-500 rounded-full mb-8"></div>
+                    <h2 class="text-6xl md:text-7xl font-black text-slate-900 mb-6">Part 2: The Rules</h2>
+                    <p class="text-4xl text-slate-500">How to spot a good question.</p>
+                </div>
+
+                <div id="slide7" class="presentation-slide absolute inset-0 hide flex flex-col justify-center p-12 bg-white">
+                    <div class="flex items-center gap-6 mb-8">
+                        <div class="w-20 h-20 bg-red-100 rounded-full flex justify-center items-center"><i class="fa-solid fa-calculator text-4xl text-red-500"></i></div>
+                        <h2 class="text-5xl font-black text-slate-900">Rule 1: Not too simple</h2>
+                    </div>
+                    <p class="text-3xl text-slate-700 mb-8 ml-24 max-w-3xl">If you can answer the question with a quick Google search, it's too simple.</p>
+                    <div class="ml-24 bg-slate-100 p-8 rounded-2xl border-l-8 border-slate-300 w-fit">
+                        <p class="text-2xl font-bold text-slate-800 mb-2"><i class="fa-solid fa-xmark text-red-500 mr-2"></i> Bad: "What is the capital of France?"</p>
+                        <p class="text-2xl font-bold text-slate-800"><i class="fa-solid fa-check text-green-500 mr-2"></i> Good: "How did Paris become a cultural capital?"</p>
+                    </div>
+                </div>
+
+                <div id="slide8" class="presentation-slide absolute inset-0 hide flex flex-col justify-center p-12 bg-white">
+                    <div class="flex items-center gap-6 mb-8">
+                        <div class="w-20 h-20 bg-orange-100 rounded-full flex justify-center items-center"><i class="fa-solid fa-earth-americas text-4xl text-orange-500"></i></div>
+                        <h2 class="text-5xl font-black text-slate-900">Rule 2: Not too big</h2>
+                    </div>
+                    <p class="text-3xl text-slate-700 mb-8 ml-24 max-w-3xl">You don't have time to write a 1,000-page book! Pick a focused topic.</p>
+                    <div class="ml-24 bg-slate-100 p-8 rounded-2xl border-l-8 border-slate-300 w-fit">
+                        <p class="text-2xl font-bold text-slate-800 mb-2"><i class="fa-solid fa-xmark text-red-500 mr-2"></i> Bad: "Why do wars happen?"</p>
+                        <p class="text-2xl font-bold text-slate-800"><i class="fa-solid fa-check text-green-500 mr-2"></i> Good: "What caused the start of WWI?"</p>
+                    </div>
+                </div>
+
+                <div id="slide9" class="presentation-slide absolute inset-0 hide flex flex-col justify-center p-12 bg-white">
+                    <div class="flex items-center gap-6 mb-8">
+                        <div class="w-20 h-20 bg-teal-100 rounded-full flex justify-center items-center"><i class="fa-solid fa-people-arrows text-4xl text-teal-500"></i></div>
+                        <h2 class="text-5xl font-black text-slate-900">Rule 3: Creates debate</h2>
+                    </div>
+                    <p class="text-3xl text-slate-700 mb-8 ml-24 max-w-3xl">A good question has more than one right answer. People can disagree.</p>
+                    <div class="ml-24 bg-slate-100 p-8 rounded-2xl border-l-8 border-slate-300 w-fit">
+                        <p class="text-2xl font-bold text-slate-800 mb-2"><i class="fa-solid fa-xmark text-red-500 mr-2"></i> Bad: "Are dogs animals?"</p>
+                        <p class="text-2xl font-bold text-slate-800"><i class="fa-solid fa-check text-green-500 mr-2"></i> Good: "Are dogs better pets than cats?"</p>
+                    </div>
+                </div>
+
+                <div id="slide10" class="presentation-slide absolute inset-0 hide flex flex-col p-12 bg-slate-50">
+                    <h2 class="text-5xl font-black text-slate-900 mb-12 text-center w-full">Remember the Rules:</h2>
+                    <div class="flex gap-8 flex-1 items-center h-full">
+                        <div class="flex-1 flex flex-col items-center text-center">
+                            <div class="w-32 h-32 bg-red-100 rounded-full flex justify-center items-center mb-6 shadow-sm"><i class="fa-solid fa-calculator text-5xl text-red-500"></i></div>
+                            <h3 class="text-3xl font-black text-slate-900 mb-4">Not too simple</h3>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center text-center">
+                            <div class="w-32 h-32 bg-orange-100 rounded-full flex justify-center items-center mb-6 shadow-sm"><i class="fa-solid fa-earth-americas text-5xl text-orange-500"></i></div>
+                            <h3 class="text-3xl font-black text-slate-900 mb-4">Not too big</h3>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center text-center">
+                            <div class="w-32 h-32 bg-teal-100 rounded-full flex justify-center items-center mb-6 shadow-sm"><i class="fa-solid fa-people-arrows text-5xl text-teal-500"></i></div>
+                            <h3 class="text-3xl font-black text-slate-900 mb-4">Creates debate</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="slide11" class="presentation-slide absolute inset-0 hide flex flex-col justify-center items-center text-center p-12 bg-indigo-50">
+                    <div class="w-24 h-3 bg-indigo-500 rounded-full mb-8"></div>
+                    <h2 class="text-6xl md:text-7xl font-black text-indigo-900 mb-6">Part 3: Let's Practice!</h2>
+                    <p class="text-4xl text-indigo-700">Look at the questions in your book.</p>
+                </div>
+
+                <div id="slide12" class="presentation-slide absolute inset-0 hide flex flex-col p-12 bg-white">
+                    <p class="text-red-500 text-2xl font-bold uppercase tracking-widest mb-10">Test Knowledge: Question A</p>
+                    <div class="flex flex-1 gap-12 items-center">
+                        <div class="flex-1">
+                            <h2 class="text-5xl md:text-6xl font-black text-slate-900 leading-tight">"When do children start school?"</h2>
+                        </div>
+                        <div class="flex-1 bg-slate-50 p-10 rounded-3xl border-l-[16px] border-red-500 shadow-lg">
+                            <div class="flex items-center gap-6 mb-8">
+                                <i class="fa-solid fa-circle-xmark text-6xl text-red-500"></i>
+                                <h3 class="text-5xl font-black text-red-500">Too simple!</h3>
+                            </div>
+                            <ul class="space-y-6">
+                                <li class="text-3xl text-slate-700 flex items-center gap-4"><i class="fa-solid fa-arrow-right text-slate-400"></i> Answer is just a number.</li>
+                                <li class="text-3xl text-slate-700 flex items-center gap-4"><i class="fa-solid fa-arrow-right text-slate-400"></i> No debate possible.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="slide13" class="presentation-slide absolute inset-0 hide flex flex-col justify-center items-center text-center p-12 bg-sky-50">
+                    <h2 class="text-5xl font-black text-slate-900 mb-8">How can we fix Question A?</h2>
+                    <p class="text-3xl text-slate-700 mb-12 italic">"When do children start school?"</p>
+                    <div class="bg-white p-8 rounded-2xl border-4 border-sky-200 w-full max-w-4xl cursor-pointer hover:bg-sky-100 transition-colors">
+                        <p class="text-3xl font-bold text-sky-800">"Is it better for children to start school at age 4 or age 6?"</p>
+                    </div>
+                    <p class="text-2xl text-slate-500 mt-6">(Discuss with class: Why is this better?)</p>
+                </div>
+
+                <div id="slide14" class="presentation-slide absolute inset-0 hide flex flex-col p-12 bg-white">
+                    <p class="text-orange-500 text-2xl font-bold uppercase tracking-widest mb-10">Test Knowledge: Question C</p>
+                    <div class="flex flex-1 gap-12 items-center">
+                        <div class="flex-1 flex flex-col justify-center">
+                            <h2 class="text-5xl md:text-6xl font-black text-slate-900 leading-tight mb-10">"What is poverty?"</h2>
+                            <div class="bg-orange-50 p-8 rounded-3xl border-2 border-orange-200">
+                                <h3 class="text-4xl font-black text-orange-600 mb-4">Too big!</h3>
+                                <p class="text-3xl text-orange-900">Needs a whole book, not one project.</p>
+                            </div>
+                        </div>
+                        <div class="flex-1 flex justify-center items-center h-full">
+                            <img src="https://img.magnific.com/premium-vector/earth-globe-with-green-continents-modern-world-map-concept-world-map-realistic-blue-ball-illustration_175838-870.jpg?semt=ais_hybrid&w=740&q=80" alt="Globe" class="max-h-full object-contain rounded-3xl drop-shadow-xl">
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="slide15" class="presentation-slide absolute inset-0 hide flex flex-col justify-center items-center text-center p-12 bg-sky-50">
+                    <h2 class="text-5xl font-black text-slate-900 mb-8">How can we fix Question C?</h2>
+                    <p class="text-3xl text-slate-700 mb-12 italic">"What is poverty?"</p>
+                    <div class="bg-white p-8 rounded-2xl border-4 border-sky-200 w-full max-w-4xl cursor-pointer hover:bg-sky-100 transition-colors">
+                        <p class="text-3xl font-bold text-sky-800">"How does child poverty affect test scores in our city?"</p>
+                    </div>
+                    <p class="text-2xl text-slate-500 mt-6">(Discuss with class: We made it focused!)</p>
+                </div>
+
+                <div id="slide16" class="presentation-slide absolute inset-0 hide flex flex-col p-12 bg-slate-50">
+                    <p class="text-purple-500 text-2xl font-bold uppercase tracking-widest mb-4">Test Knowledge: Question D</p>
+                    <div class="flex flex-1 flex-col justify-center items-center text-center">
+                        <h2 class="text-5xl md:text-6xl font-black text-slate-900 leading-tight mb-12 max-w-4xl">"Why are social networking sites bad?"</h2>
+                        <div class="bg-white p-10 rounded-3xl border-4 border-slate-100 shadow-lg flex flex-col items-center">
+                            <i class="fa-solid fa-scale-unbalanced text-7xl text-purple-500 mb-6"></i>
+                            <h3 class="text-4xl font-black text-purple-600 mb-4">Unfair question!</h3>
+                            <p class="text-3xl text-slate-700">Only looks at bad things. No balance.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="slide17" class="presentation-slide absolute inset-0 hide flex flex-col justify-center items-center text-center p-12 bg-slate-900">
+                    <i class="fa-solid fa-ranking-star text-8xl text-blue-400 mb-10"></i>
+                    <h2 class="text-6xl md:text-7xl font-black text-white mb-6">Time to Vote!</h2>
+                    <p class="text-4xl text-slate-400">Switch to the "Question Ranker" tab.</p>
+                </div>
+
+                <div id="slide18" class="presentation-slide absolute inset-0 hide flex flex-col p-12 bg-white">
+                    <div class="flex items-center gap-6 mb-10">
+                        <i class="fa-solid fa-trophy text-5xl text-yellow-400 drop-shadow-md"></i>
+                        <p class="text-emerald-500 text-2xl font-bold uppercase tracking-widest">The Best Question (B)</p>
+                    </div>
+                    <h2 class="text-5xl md:text-6xl font-black text-slate-900 leading-tight mb-12">"Should we remove all sugar from our diet?"</h2>
+                    <div class="flex gap-8 flex-1">
+                        <div class="flex-1 bg-emerald-50 p-10 rounded-3xl border-2 border-emerald-100 shadow-sm">
+                            <i class="fa-solid fa-check text-5xl text-emerald-500 mb-6"></i>
+                            <h3 class="text-4xl font-black text-emerald-800 mb-4">Clear Topic</h3>
+                            <p class="text-2xl text-emerald-900">We know exactly what to study (sugar).</p>
+                        </div>
+                        <div class="flex-1 bg-emerald-50 p-10 rounded-3xl border-2 border-emerald-100 shadow-sm">
+                            <i class="fa-solid fa-comments text-5xl text-emerald-500 mb-6"></i>
+                            <h3 class="text-4xl font-black text-emerald-800 mb-4">Great Debate</h3>
+                            <p class="text-2xl text-emerald-900">Health rules vs. personal choice.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="slide19" class="presentation-slide absolute inset-0 hide flex flex-col p-12 bg-slate-50">
+                    <h2 class="text-5xl font-black text-slate-900 mb-10 text-center">Summary Checklist</h2>
+                    <p class="text-3xl text-slate-600 mb-8 text-center">Before you start your project, check your question:</p>
+                    <div class="bg-white p-8 rounded-3xl border-4 border-slate-200 max-w-4xl mx-auto w-full">
+                        <ul class="space-y-6">
+                            <li class="flex items-center gap-4 text-3xl font-bold text-slate-800"><i class="fa-solid fa-square-check text-green-500 text-4xl"></i> Is it focused? (Not too big)</li>
+                            <li class="flex items-center gap-4 text-3xl font-bold text-slate-800"><i class="fa-solid fa-square-check text-green-500 text-4xl"></i> Does it need research? (Not too simple)</li>
+                            <li class="flex items-center gap-4 text-3xl font-bold text-slate-800"><i class="fa-solid fa-square-check text-green-500 text-4xl"></i> Is it fair and balanced?</li>
+                            <li class="flex items-center gap-4 text-3xl font-bold text-slate-800"><i class="fa-solid fa-square-check text-green-500 text-4xl"></i> Can people debate it?</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="slide20" class="presentation-slide absolute inset-0 hide flex flex-col justify-center items-center text-center p-12 bg-slate-900">
+                    <i class="fa-solid fa-book-open text-8xl text-sky-400 mb-10"></i>
+                    <h2 class="text-6xl md:text-7xl font-black text-white mb-6">Check your goals!</h2>
+                    <p class="text-4xl text-slate-400">Tick the 'Achieved' box in your textbook.</p>
+                </div>
+            </div>
+
+            <!-- Slide Controls -->
+            <div class="mt-6 w-full flex justify-between items-center bg-white p-4 rounded-2xl shadow-md border-2 border-slate-100">
+                <button onclick="prevSlide()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-2xl px-8 py-4 rounded-xl transition-colors flex items-center gap-3 active:scale-95">
+                    <i class="fa-solid fa-chevron-left"></i> Previous
+                </button>
+                <div id="slide-counter" class="text-2xl font-bold text-slate-500 tracking-wide">
+                    Slide 1 of 20
+                </div>
+                <button onclick="nextSlide()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-2xl px-8 py-4 rounded-xl shadow-md transition-colors flex items-center gap-3 active:scale-95">
+                    Next <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- VIEW: IDEA BOARD (Prior Learning) -->
+        <div id="view-idea-board" class="hide flex-1 flex flex-col items-center w-full max-w-6xl mx-auto h-full fade-in">
+            <div class="text-center mb-8 w-full">
+                <div class="inline-block bg-red-600 text-white px-6 py-2 rounded-full font-bold text-xl mb-4 shadow-md">Prior Learning</div>
+                <h2 class="text-4xl md:text-5xl font-extrabold text-teal-800 mb-4">What does the term 'research' mean?</h2>
+                <p class="text-gray-600 text-2xl">Come to the board and type 1 or 2 words!</p>
+            </div>
+            
+            <!-- Smartboard Input Area -->
+            <div class="w-full max-w-3xl flex gap-4 mb-8 bg-white p-4 rounded-2xl shadow-md border-2 border-teal-100">
+                <input type="text" id="smartboard-input" placeholder="Type a word (e.g. learning, finding...)" class="flex-1 text-3xl p-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100 transition-all">
+                <button onclick="addWordToBoard()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-2xl px-8 py-4 rounded-xl shadow-md transition-colors flex items-center gap-3">
+                    <i class="fa-solid fa-plus text-3xl"></i> Add Word
+                </button>
+            </div>
+
+            <!-- The Word Cloud Container -->
+            <div class="flex-1 w-full bg-white rounded-3xl shadow-inner border-4 border-dashed border-teal-200 p-8 flex flex-wrap content-start justify-center gap-6 overflow-y-auto relative bg-[url('https://www.transparenttextures.com/patterns/notebook-dark.png')]">
+                <div id="empty-cloud-msg" class="absolute inset-0 flex items-center justify-center text-3xl text-teal-300/50 font-bold pointer-events-none">
+                    Words will appear here!
+                </div>
+                <!-- Words injected via JS -->
+                <div id="word-container" class="w-full flex flex-wrap justify-center gap-4 z-10"></div>
+            </div>
+            
+            <div class="mt-4 flex justify-end w-full">
+                <button onclick="clearWords()" class="text-gray-400 hover:text-red-500 font-bold text-lg flex items-center gap-2 transition-colors">
+                    <i class="fa-solid fa-trash"></i> Clear Board
+                </button>
+            </div>
+        </div>
+
+        <!-- VIEW: RANKER (Starter Activity) -->
+        <div id="view-ranker" class="hide flex-1 flex flex-col items-center w-full max-w-6xl mx-auto h-full">
+            <div class="text-center mb-6 w-full">
+                <div class="inline-block bg-teal-600 text-white px-6 py-2 rounded-full font-bold text-xl mb-4 shadow-md">Starter Activity</div>
+                <h2 class="text-4xl md:text-5xl font-extrabold text-blue-800 mb-2">Which is the best research question?</h2>
+                <p class="text-gray-600 text-2xl">Work together to drag the <strong class="text-blue-600">BEST</strong> to #1 and the <strong class="text-red-500">WORST</strong> to #4.</p>
+            </div>
+
+            <div class="flex-1 w-full bg-white p-6 md:p-8 rounded-3xl shadow-xl border-t-8 border-blue-500 flex gap-6">
+                
+                <!-- Rank Numbers Column -->
+                <div class="flex flex-col justify-between py-6 pr-4 text-3xl font-black text-gray-300 items-center select-none border-r-4 border-gray-100">
+                    <div class="flex-1 flex items-center text-blue-500">#1</div>
+                    <div class="flex-1 flex items-center text-gray-400">#2</div>
+                    <div class="flex-1 flex items-center text-gray-400">#3</div>
+                    <div class="flex-1 flex items-center text-red-400">#4</div>
+                </div>
+
+                <!-- Draggable List -->
+                <ul id="smartboard-sortable" class="flex-1 flex flex-col gap-4 h-full justify-between">
+                    <!-- List items generated by JS -->
+                </ul>
+            </div>
+
+            <!-- Teacher Controls -->
+            <div class="mt-8 w-full flex justify-center gap-6">
+                <button onclick="toggleTeacherHints()" id="btn-hints" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-2xl px-10 py-5 rounded-2xl shadow-lg transition-transform transform active:scale-95 flex items-center gap-3">
+                    <i class="fa-solid fa-lightbulb"></i> Show Teacher Discussion Notes
+                </button>
+                <button onclick="resetRanker()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-xl px-8 py-5 rounded-2xl shadow-md transition-colors flex items-center gap-3">
+                    <i class="fa-solid fa-rotate-right"></i> Reset Order
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Data ---
+        // The questions from the textbook image and simplified ESL explanations
+        const QUESTIONS = [
+            { id: 'A', text: 'When do children start school?', hint: 'Too simple! We can answer this with just a number.', type: 'bad' },
+            { id: 'B', text: 'Should we remove all sugar from our diet?', hint: 'Great question! It makes people debate and needs lots of research.', type: 'good' },
+            { id: 'C', text: 'What is poverty?', hint: 'Too big! This topic is too large for one small research project.', type: 'bad' },
+            { id: 'D', text: 'Why are social networking sites bad?', hint: 'Unfair question! It only looks at the bad side, not the good side.', type: 'bad' }
+        ];
+
+        let hintsVisible = false;
+        let currentSlide = 1;
+        const totalSlides = 20;
+
+        // --- Tab Navigation ---
+        function switchTab(tabName) {
+            const activeClass = "px-6 py-3 bg-teal-600 hover:bg-teal-500 rounded-xl font-bold text-xl transition-colors border-b-4 border-teal-800 active:translate-y-1 active:border-b-0".split(" ");
+            const inactiveClass = "px-6 py-3 bg-teal-800 hover:bg-teal-700 rounded-xl font-bold text-xl transition-colors border-b-4 border-teal-900 active:translate-y-1 active:border-b-0 opacity-70".split(" ");
+            
+            const updateBtn = (id, isActive) => {
+                const el = document.getElementById(id);
+                el.className = ''; // Reset classes
+                if (isActive) {
+                    el.classList.add(...activeClass);
+                } else {
+                    el.classList.add(...inactiveClass);
+                }
+            };
+
+            updateBtn('tab-slides', tabName === 'slides');
+            updateBtn('tab-idea', tabName === 'idea-board');
+            updateBtn('tab-ranker', tabName === 'ranker');
+            
+            // Switch views
+            document.getElementById('view-slides').classList.toggle('hide', tabName !== 'slides');
+            document.getElementById('view-idea-board').classList.toggle('hide', tabName !== 'idea-board');
+            document.getElementById('view-ranker').classList.toggle('hide', tabName !== 'ranker');
+
+            if (tabName === 'idea-board') {
+                document.getElementById('smartboard-input').focus();
+            }
+        }
+
+        // --- Slide Logic ---
+        function showSlide(index) {
+            if (index < 1) index = 1;
+            if (index > totalSlides) index = totalSlides;
+            currentSlide = index;
+
+            // Hide all slides
+            document.querySelectorAll('.presentation-slide').forEach(slide => {
+                slide.classList.add('hide');
+            });
+            
+            // Show current slide
+            document.getElementById('slide' + currentSlide).classList.remove('hide');
+            
+            // Update counter
+            document.getElementById('slide-counter').innerText = `Slide ${currentSlide} of ${totalSlides}`;
+        }
+
+        function nextSlide() { showSlide(currentSlide + 1); }
+        function prevSlide() { showSlide(currentSlide - 1); }
+
+        // --- Idea Board Logic ---
+        function addWordToBoard() {
+            const inputEl = document.getElementById('smartboard-input');
+            const word = inputEl.value.trim();
+            
+            if (word === '') return;
+
+            document.getElementById('empty-cloud-msg').style.display = 'none';
+
+            // Create colorful word tag
+            const colors = [
+                'bg-blue-100 text-blue-800 border-blue-300', 
+                'bg-green-100 text-green-800 border-green-300', 
+                'bg-purple-100 text-purple-800 border-purple-300', 
+                'bg-yellow-100 text-yellow-800 border-yellow-300', 
+                'bg-pink-100 text-pink-800 border-pink-300', 
+                'bg-indigo-100 text-indigo-800 border-indigo-300'
+            ];
+            
+            const tag = document.createElement('div');
+            const colorClass = colors[Math.floor(Math.random() * colors.length)];
+            
+            tag.className = `idea-word ${colorClass} border-2 px-8 py-4 rounded-full text-4xl font-extrabold shadow-sm inline-block cursor-pointer hover:scale-105 transition-transform`;
+            tag.textContent = word;
+            
+            // Allow teacher to click a word to remove it if a student typed something silly
+            tag.onclick = function() {
+                this.remove();
+                if(document.getElementById('word-container').children.length === 0) {
+                    document.getElementById('empty-cloud-msg').style.display = 'flex';
+                }
+            };
+
+            document.getElementById('word-container').appendChild(tag);
+            
+            // Clear input for the next student
+            inputEl.value = '';
+            inputEl.focus();
+        }
+
+        function clearWords() {
+            document.getElementById('word-container').innerHTML = '';
+            document.getElementById('empty-cloud-msg').style.display = 'flex';
+        }
+
+        // Allow pressing Enter key on the smartboard keyboard to add word
+        document.getElementById('smartboard-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                addWordToBoard();
+            }
+        });
+
+
+        // --- Ranker Logic ---
+        function initRanker() {
+            const list = document.getElementById('smartboard-sortable');
+            list.innerHTML = '';
+            
+            // Render the blocks
+            QUESTIONS.forEach(q => {
+                const li = document.createElement('li');
+                li.className = "flex-1 bg-white border-4 border-gray-200 p-6 rounded-2xl shadow-sm flex flex-col justify-center cursor-grab hover:border-blue-400 hover:bg-blue-50 transition-all group active:cursor-grabbing";
+                li.setAttribute('data-id', q.id);
+                
+                li.innerHTML = `
+                    <div class="flex items-center gap-6">
+                        <div class="bg-gray-100 text-gray-400 p-4 rounded-xl group-hover:bg-blue-100 group-hover:text-blue-500 transition-colors">
+                            <i class="fa-solid fa-grip-lines text-3xl"></i>
+                        </div>
+                        <span class="font-black text-4xl text-blue-900 w-10">${q.id}</span>
+                        <span class="text-gray-800 text-3xl font-semibold flex-1 leading-tight">${q.text}</span>
+                    </div>
+                    <!-- Hidden Teacher Hint -->
+                    <div class="hint-reveal ${hintsVisible ? 'open' : ''} ml-24 mr-4 mt-4 bg-${q.type === 'good' ? 'green' : 'red'}-50 border-l-8 border-${q.type === 'good' ? 'green' : 'red'}-400 p-4 rounded-r-lg">
+                        <span class="text-2xl text-${q.type === 'good' ? 'green' : 'red'}-800 font-medium">
+                            <i class="fa-solid ${q.type === 'good' ? 'fa-check-circle' : 'fa-xmark-circle'} mr-2"></i>
+                            ${q.hint}
+                        </span>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+
+            // Initialize SortableJS
+            new Sortable(list, {
+                animation: 250,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                handle: 'li', // The whole block is draggable on smartboard for ease
+            });
+        }
+
+        function toggleTeacherHints() {
+            hintsVisible = !hintsVisible;
+            const hints = document.querySelectorAll('.hint-reveal');
+            const btn = document.getElementById('btn-hints');
+            
+            hints.forEach(hint => {
+                if (hintsVisible) {
+                    hint.classList.add('open');
+                } else {
+                    hint.classList.remove('open');
+                }
+            });
+
+            if (hintsVisible) {
+                btn.innerHTML = `<i class="fa-solid fa-eye-slash"></i> Hide Teacher Notes`;
+                btn.classList.replace('bg-purple-600', 'bg-gray-600');
+                btn.classList.replace('hover:bg-purple-700', 'hover:bg-gray-700');
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-lightbulb"></i> Show Teacher Discussion Notes`;
+                btn.classList.replace('bg-gray-600', 'bg-purple-600');
+                btn.classList.replace('hover:bg-gray-700', 'hover:bg-purple-700');
+            }
+        }
+
+        function resetRanker() {
+            hintsVisible = false;
+            const btn = document.getElementById('btn-hints');
+            btn.innerHTML = `<i class="fa-solid fa-lightbulb"></i> Show Teacher Discussion Notes`;
+            btn.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+            btn.classList.add('bg-purple-600', 'hover:bg-purple-700');
+            initRanker();
+        }
+
+        // Initialize App on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initRanker();
+            showSlide(1);
+        });
+
+    </script>
+</body>
+</html>
