@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const games = [
                
         {
+            fileName: 'vote4me.html',
+            title: 'Vote for me'
+        },
+        {
             fileName: 'GP_Lesson_3.html',
             title: 'GP 1.3'
         },
