@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Please Vote for Me - Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Slate 50 */
+            overflow-x: hidden;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .float-1 { animation: float 6s ease-in-out infinite; }
+        .float-2 { animation: float 8s ease-in-out infinite reverse; }
+        .float-3 { animation: float 7s ease-in-out infinite 1s; }
+        
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        
+        .draw-path {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            animation: draw 0.6s ease-out forwards;
+        }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+        
+        .pop-in { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 relative">
+
+    <!-- Animated SVG Background Elements -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <!-- Ballot Box -->
+        <svg class="absolute top-10 left-10 w-24 h-24 opacity-20 float-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        </svg>
+        <!-- Vote Checkmark -->
+        <svg class="absolute bottom-20 left-[15%] w-32 h-32 opacity-10 float-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <!-- Star (Democracy/China connection) -->
+        <svg class="absolute top-1/4 right-10 w-20 h-20 opacity-20 float-3 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+        </svg>
+         <!-- Megaphone -->
+        <svg class="absolute bottom-10 right-[20%] w-24 h-24 opacity-15 float-1 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
+        </svg>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-10 max-w-3xl w-full relative z-10 border-t-8 border-blue-500">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-block animate-bounce mb-3 bg-blue-100 p-4 rounded-full shadow-inner text-blue-600">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76"></path>
+                </svg>
+            </div>
+            <h1 class="text-4xl font-extrabold text-gray-800 mb-2 tracking-tight">Please Vote for Me</h1>
+            <p class="text-gray-500 font-medium">Documentary Discussion Quiz</p>
+        </div>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="space-y-6">
+            <!-- Question section will be injected here by JS -->
+        </div>
+
+        <!-- Results Container (Hidden initially) -->
+        <div id="results-container" class="hidden text-center space-y-4">
+            <h2 class="text-2xl font-bold text-gray-800">Quiz Completed!</h2>
+            <p id="score-display" class="text-lg text-gray-700"></p>
+            <button onclick="restartQuiz()" class="mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors w-full sm:w-auto">
+                Retake Quiz
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const questionsData = [
+            {
+                "correctAnswer": "To assist the teacher in maintaining discipline and enforcing rules.",
+                "question": "What is the primary role of a 'class monitor' in the Chinese educational system as depicted in the film?",
+                "options": [
+                    "To organize fun activities for the students.",
+                    "To assist the teacher in maintaining discipline and enforcing rules.",
+                    "To act as a student representative to the school board.",
+                    "To tutor other students who are struggling."
+                ]
+            },
+            {
+                "correctAnswer": "Cheng Cheng uses manipulation, Luo Lei relies on his incumbency, and Xiaofei focuses on sincerity.",
+                "question": "How do the campaign strategies of the three candidates differ?",
+                "options": [
+                    "They all rely heavily on bribing classmates.",
+                    "They all focus purely on their academic achievements.",
+                    "Cheng Cheng uses manipulation, Luo Lei relies on his incumbency, and Xiaofei focuses on sincerity.",
+                    "They do not have strategies; it's just a popularity contest."
+                ]
+            },
+            {
+                "correctAnswer": "They actively coach their children on strategy and provide material support.",
+                "question": "What role do the parents play in the election process?",
+                "options": [
+                    "They remain entirely neutral and let the children figure it out.",
+                    "They actively coach their children on strategy and provide material support.",
+                    "They try to stop the election because it's too stressful.",
+                    "They are only involved in setting up the classroom."
+                ]
+            },
+            {
+                "correctAnswer": "It highlights how resources and existing power structures can influence the outcome.",
+                "question": "How does the film explore the concept of \"fairness\" in a democratic election?",
+                "options": [
+                    "By showing that every student has an exactly equal chance of winning.",
+                    "It concludes that elections are always completely fair.",
+                    "It highlights how resources and existing power structures can influence the outcome.",
+                    "By demonstrating that rules strictly prevent any unfair advantages."
+                ]
+            },
+            {
+                "correctAnswer": "It can lead to emotional distress, manipulation, and damaged relationships among peers.",
+                "question": "What is a potential negative consequence of the competitive campaign tactics shown in the film?",
+                "options": [
+                    "Students learn to cooperate better on school projects.",
+                    "It can lead to emotional distress, manipulation, and damaged relationships among peers.",
+                    "It makes the students care less about the election.",
+                    "There are no negative consequences shown."
+                ]
+            },
+            {
+                "correctAnswer": "It provides him with existing authority and resources he can leverage to gain support.",
+                "question": "How does incumbency affect Luo Lei's campaign?",
+                "options": [
+                    "It makes him arrogant so no one wants to vote for him.",
+                    "It provides him with existing authority and resources he can leverage to gain support.",
+                    "It means he doesn't have to campaign at all.",
+                    "It disqualifies him from running again."
+                ]
+            },
+            {
+                "correctAnswer": "To assess the candidates' ability to perform publicly and appeal to popular sentiment.",
+                "question": "In the context of the film, why might a talent show be included as part of an election campaign?",
+                "options": [
+                    "Because class monitors need to be professional entertainers.",
+                    "To give the students a break from studying.",
+                    "To assess the candidates' ability to perform publicly and appeal to popular sentiment.",
+                    "It was a requirement from the school board for physical education."
+                ]
+            },
+            {
+                "correctAnswer": "It can be messy, susceptible to manipulation, and reflects existing power structures.",
+                "question": "What does the documentary suggest about the nature of democracy when applied to a setting without prior experience with it?",
+                "options": [
+                    "It immediately results in a perfectly utopian society.",
+                    "It always fails and reverts to a dictatorship.",
+                    "It can be messy, susceptible to manipulation, and reflects existing power structures.",
+                    "It is a completely smooth and simple process."
+                ]
+            },
+            {
+                "correctAnswer": "By highlighting their weaknesses and orchestrating public criticism against them.",
+                "question": "How does Cheng Cheng attempt to undermine his opponents during the campaign?",
+                "options": [
+                    "By ignoring them completely.",
+                    "By offering them positions in his 'cabinet'.",
+                    "By highlighting their weaknesses and orchestrating public criticism against them.",
+                    "By physically fighting them in the schoolyard."
+                ]
+            },
+            {
+                "correctAnswer": "They view the election as a crucial opportunity for their child to gain status and advantage.",
+                "question": "What is the primary motivation for the parents' intense involvement in the election?",
+                "options": [
+                    "They have nothing better to do with their time.",
+                    "They view the election as a crucial opportunity for their child to gain status and advantage.",
+                    "They are trying to get hired by the school.",
+                    "They want to make a documentary themselves."
+                ]
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let userAnswers = [];
+
+        const quizContainer = document.getElementById('quiz-container');
+        const resultsContainer = document.getElementById('results-container');
+        const scoreDisplay = document.getElementById('score-display');
+
+        function loadQuestion() {
+            const currentQ = questionsData[currentQuestionIndex];
+            
+            // Randomize options for this question
+            const shuffledOptions = [...currentQ.options].sort(() => Math.random() - 0.5);
+
+            let optionsHtml = '';
+            shuffledOptions.forEach((option, index) => {
+                optionsHtml += `
+                    <label class="block p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 flex items-center gap-4 group">
+                        <div class="relative flex items-center justify-center shrink-0">
+                            <input type="radio" name="question" value="${option}" class="peer w-6 h-6 text-blue-600 border-gray-300 focus:ring-blue-500 opacity-0 absolute">
+                            <div class="w-6 h-6 rounded-full border-2 border-gray-300 peer-checked:border-blue-600 peer-checked:bg-blue-600 transition-all flex items-center justify-center shadow-sm">
+                                <svg class="w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </div>
+                        <span class="text-gray-700 font-medium group-hover:text-gray-900">${option}</span>
+                    </label>
+                `;
+            });
+
+            const progressPercent = (currentQuestionIndex / questionsData.length) * 100;
+
+            quizContainer.innerHTML = `
+                <div class="fade-in">
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-slate-100 rounded-full h-3 mb-8 overflow-hidden shadow-inner">
+                      <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-3 rounded-full transition-all duration-700 ease-out" style="width: ${progressPercent}%"></div>
+                    </div>
+                    
+                    <div class="flex justify-between text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Q ${currentQuestionIndex + 1} of ${questionsData.length}
+                        </span>
+                        <span class="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+                            Score: ${score}
+                        </span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 leading-relaxed">${currentQ.question}</h2>
+                    <div class="space-y-3" id="options-form">
+                        ${optionsHtml}
+                    </div>
+                    
+                    <div class="mt-8 flex flex-col sm:flex-row justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100 gap-4">
+                         <div id="feedback-area" class="text-lg font-bold flex items-center w-full sm:w-auto"></div>
+                         
+                         <button id="submit-btn" onclick="submitAnswer()" class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl transition-all shadow-md transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2">
+                             Submit
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                         </button>
+                         
+                         <button id="next-btn" onclick="nextQuestion()" class="hidden w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-gray-800 to-gray-900 hover:from-black hover:to-gray-800 text-white font-bold rounded-xl transition-all shadow-lg transform hover:scale-105 flex items-center justify-center gap-2 animate-pulse">
+                             Next Question
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                         </button>
+                    </div>
+                </div>
+            `;
+            
+            // Add listeners to radio buttons to enable submit button only when an option is selected
+            const radioButtons = document.querySelectorAll('input[name="question"]');
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true; // initially disabled
+            
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    submitBtn.disabled = false;
+                });
+            });
+        }
+
+        function submitAnswer() {
+            const selectedOption = document.querySelector('input[name="question"]:checked');
+            if (!selectedOption) return;
+
+            const answer = selectedOption.value;
+            const currentQ = questionsData[currentQuestionIndex];
+            const isCorrect = answer === currentQ.correctAnswer;
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const feedbackArea = document.getElementById('feedback-area');
+            const allRadios = document.querySelectorAll('input[name="question"]');
+
+            // Disable all inputs
+            allRadios.forEach(r => r.disabled = true);
+
+            if (isCorrect) {
+                score++;
+                feedbackArea.innerHTML = `
+                    <div class="flex items-center gap-3 text-green-600 pop-in bg-green-100 px-4 py-2 rounded-lg">
+                        <svg class="w-7 h-7 draw-path" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>Brilliant!</span>
+                    </div>`;
+                selectedOption.closest('label').classList.replace('border-slate-100', 'border-green-500');
+                selectedOption.closest('label').classList.add('bg-green-50', 'shadow-md', 'transform', 'scale-[1.02]');
+            } else {
+                feedbackArea.innerHTML = `
+                    <div class="flex items-center gap-3 text-red-600 pop-in bg-red-100 px-4 py-2 rounded-lg">
+                        <svg class="w-7 h-7 draw-path" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>Not quite.</span>
+                    </div>`;
+                selectedOption.closest('label').classList.replace('border-slate-100', 'border-red-400');
+                selectedOption.closest('label').classList.add('bg-red-50', 'opacity-75');
+                
+                // Highlight correct answer
+                allRadios.forEach(r => {
+                    if(r.value === currentQ.correctAnswer) {
+                         const correctLabel = r.closest('label');
+                         correctLabel.classList.replace('border-slate-100', 'border-green-500');
+                         correctLabel.classList.add('bg-green-50', 'border-dashed', 'border-2', 'shadow-inner');
+                         // Add a small checkmark badge to the correct one
+                         const span = correctLabel.querySelector('span');
+                         span.innerHTML += ` <svg class="inline w-6 h-6 text-green-600 ml-2 pop-in" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                    }
+                });
+            }
+
+            submitBtn.classList.add('hidden');
+            nextBtn.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questionsData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizContainer.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+            resultsContainer.classList.add('pop-in');
+            
+            const percentage = (score / questionsData.length) * 100;
+            let message = "";
+            let trophySvg = "";
+            
+            if (percentage === 100) {
+                message = "Flawless Victory! You have a deep understanding of the documentary.";
+                trophySvg = `
+                    <svg class="w-32 h-32 mx-auto text-yellow-400 drop-shadow-2xl float-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                    </svg>`;
+            } else if (percentage >= 70) {
+                message = "Great campaign! You understand the key themes of the election very well.";
+                trophySvg = `
+                    <svg class="w-32 h-32 mx-auto text-blue-500 drop-shadow-xl float-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                    </svg>`;
+            } else {
+                message = "Good effort! Consider re-watching the documentary to see how the election unfolded.";
+                trophySvg = `
+                    <svg class="w-32 h-32 mx-auto text-slate-400 drop-shadow-md float-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>`;
+            }
+
+            // Replace contents of results container to include the dynamic SVG
+            resultsContainer.innerHTML = `
+                ${trophySvg}
+                <h2 class="text-4xl font-extrabold text-gray-800 mt-6 mb-2">Campaign Completed!</h2>
+                
+                <div class="bg-blue-50 p-6 rounded-2xl border-2 border-blue-100 my-8 inline-block shadow-sm">
+                    <p class="text-2xl text-gray-700 font-medium">You scored <span class="font-black text-blue-600 text-5xl mx-3 drop-shadow-sm">${score}</span> out of ${questionsData.length}</p>
+                </div>
+                
+                <p class="text-xl text-gray-600 font-medium max-w-md mx-auto leading-relaxed mb-8">${message}</p>
+                
+                <button onclick="restartQuiz()" class="px-10 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg rounded-xl transition-all transform hover:scale-105 shadow-xl w-full sm:w-auto flex items-center justify-center gap-3 mx-auto">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Run Again
+                </button>
+            `;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainer.classList.add('hidden');
+            quizContainer.classList.remove('hidden');
+            loadQuestion();
+        }
+
+        // Initialize the first question when the page loads
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
